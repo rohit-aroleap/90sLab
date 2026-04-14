@@ -1559,7 +1559,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.012</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.013</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -4879,20 +4879,21 @@ function toggleAccordion(sectionId) {
       if (s) s.classList.remove('open');
     });
     el.classList.add('open');
-    // Scroll within sidebar container
+    // Scroll within sidebar container — wait for collapse/expand transitions
     setTimeout(function() {
       var sidebar = document.querySelector('.sidebar');
-      if (sidebar) {
-        var header = el.querySelector('.accordion-header');
-        var target = header || el;
-        var sidebarRect = sidebar.getBoundingClientRect();
-        var targetRect = target.getBoundingClientRect();
-        var navBar = document.getElementById('sidebar-nav');
-        var navHeight = navBar ? navBar.offsetHeight : 0;
-        var scrollTop = sidebar.scrollTop + (targetRect.top - sidebarRect.top) - navHeight - 10;
-        sidebar.scrollTo({ top: scrollTop, behavior: 'smooth' });
-      }
-    }, 50);
+      if (!sidebar) return;
+      var header = el.querySelector('.accordion-header');
+      var target = header || el;
+      var sidebarTop = sidebar.getBoundingClientRect().top;
+      var navBar = document.getElementById('sidebar-nav');
+      var navHeight = navBar ? navBar.offsetHeight : 0;
+      var headerTop = document.querySelector('.sidebar-header');
+      var headerHeight = headerTop ? headerTop.offsetHeight : 0;
+      var offset = navHeight + headerHeight + 10;
+      var targetTop = target.getBoundingClientRect().top;
+      sidebar.scrollTo({ top: sidebar.scrollTop + (targetTop - sidebarTop) - offset, behavior: 'smooth' });
+    }, 400);
   }
 }
 
