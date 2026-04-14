@@ -1,0 +1,3865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The 90s Lab · Report Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;700;800&family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&family=Raleway:wght@300;400;500;600&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── GLOBAL ──────────────────────────────────────────────────────── */
+:root {
+  --ink: #1a1410;
+  --cream: #f5f0e8;
+  --warm: #e8dcc8;
+  --rust: #c4622d;
+  --sage: #7a9e7e;
+  --gold: #c9a84c;
+  --muted: #8a7968;
+  --paper: #faf6ee;
+  --red: #b54020;
+  --amber: #c9954c;
+  --green: #4a8c5c;
+  --panel: #1f1a15;
+  --input-bg: #2a2318;
+  --input-border: #3d3326;
+  --input-focus: #c4622d;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'DM Mono', monospace;
+  background: var(--ink);
+  color: var(--cream);
+  min-height: 100vh;
+}
+
+/* ── LAYOUT ────────────────────────────────────────────────────── */
+.app-shell {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+}
+
+/* ── SIDEBAR ───────────────────────────────────────────────────── */
+.sidebar {
+  background: #ffffff;
+  border-right: 1px solid #e8e0d4;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.sidebar-header {
+  padding: 28px 28px 0;
+  border-bottom: none;
+  position: sticky;
+  top: 0;
+  background: #ffffff;
+  z-index: 10;
+}
+
+.sidebar-logo {
+  font-family: 'Instrument Serif', serif;
+  font-size: 24px;
+  font-style: italic;
+  color: var(--rust);
+  margin-bottom: 2px;
+}
+
+.sidebar-tagline {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(26,20,16,0.4);
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 10px 14px;
+  background: #faf8f5;
+  border-top: 2px solid var(--rust);
+  border-bottom: 1px solid #e0d8cc;
+  margin: 12px -28px 0;
+}
+
+.sidebar-progress {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 4px 6px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  color: #8a7968;
+}
+
+.sidebar-progress-bar {
+  flex: 1;
+  height: 4px;
+  background: #e0d8cc;
+  border-radius: 2px;
+  margin: 0 10px;
+  overflow: hidden;
+}
+
+.sidebar-progress-fill {
+  height: 100%;
+  background: var(--rust);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.sidebar-nav-tab {
+  font-family: 'Nunito', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8a7968;
+  padding: 5px 10px;
+  border: 1.5px solid #d4c9b4;
+  border-radius: 20px;
+  cursor: pointer;
+  background: #ffffff;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.sidebar-nav-tab:hover {
+  border-color: var(--rust);
+  color: var(--rust);
+  background: rgba(196,98,45,0.05);
+}
+
+.sidebar-nav-tab.active {
+  background: var(--rust);
+  border-color: var(--rust);
+  color: #ffffff;
+}
+
+.sidebar-nav-tab.has-dot {
+  position: relative;
+}
+
+.sidebar-nav-tab.has-dot::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 7px;
+  height: 7px;
+  background: #e07020;
+  border-radius: 50%;
+  border: 1.5px solid #ffffff;
+}
+
+.sidebar-nav-tab.active.has-dot::after {
+  background: #ffd080;
+  border-color: var(--rust);
+}
+
+.sidebar-form {
+  padding: 20px 28px 40px;
+  flex: 1;
+}
+
+/* SECTION GROUP */
+.form-group-title {
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--rust);
+  padding: 22px 0 10px;
+  border-bottom: 1px solid #e8e0d4;
+  margin-bottom: 16px;
+}
+
+.form-group-title:first-child { padding-top: 4px; }
+
+/* Alternating station backgrounds */
+.station-section {
+  margin: 0 -28px;
+  padding: 4px 28px 8px;
+  border-top: 1px solid #e0d8cc;
+}
+.station-section:first-child {
+  border-top: none;
+}
+.station-section.alt {
+  background: #f5f0e8;
+}
+
+/* FIELD */
+.field {
+  margin-bottom: 14px;
+}
+
+.field label {
+  display: block;
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: #4a3f32;
+  margin-bottom: 5px;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  background: #faf8f5;
+  border: 1.5px solid #d4c9b4;
+  border-radius: 6px;
+  color: #1a1410;
+  font-family: 'Nunito', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  -webkit-appearance: none;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: var(--rust);
+  box-shadow: 0 0 0 3px rgba(196,98,45,0.1);
+  background: #ffffff;
+}
+
+.field select option { background: #faf8f5; color: #1a1410; }
+
+.field-hint {
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  color: #8a7968;
+  margin-top: 4px;
+  line-height: 1.55;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* AGE BADGE PREVIEW */
+.age-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 10px 14px;
+  background: rgba(196,98,45,0.06);
+  border: 1px solid rgba(196,98,45,0.2);
+  border-radius: 6px;
+}
+
+.age-preview-label {
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  color: #8a7968;
+  flex: 1;
+}
+
+.age-preview-val {
+  font-family: 'Instrument Serif', serif;
+  font-size: 26px;
+  font-style: italic;
+  color: var(--rust);
+}
+
+/* PRINT BUTTON */
+.btn-print {
+  display: block;
+  width: calc(100% - 56px);
+  margin: 0 28px 28px;
+  padding: 15px;
+  background: var(--rust);
+  color: #ffffff;
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.btn-print:hover { background: #d46e35; }
+.btn-print:active { transform: scale(0.98); }
+
+.btn-secondary {
+  display: block;
+  width: calc(100% - 56px);
+  margin: 0 28px 12px;
+  padding: 11px;
+  background: transparent;
+  color: #8a7968;
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border: 1.5px solid #d4c9b4;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.btn-secondary:hover { border-color: var(--rust); color: var(--rust); }
+
+/* ── PREVIEW PANE ──────────────────────────────────────────────── */
+.preview-pane {
+  background: #f0ebe3;
+  overflow-y: auto;
+}
+
+.preview-toolbar {
+  background: rgba(26,20,16,0.9);
+  backdrop-filter: blur(8px);
+  padding: 12px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 1px solid rgba(245,240,232,0.06);
+}
+
+.preview-toolbar-label {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(245,240,232,0.35);
+}
+
+.preview-scale-note {
+  font-size: 10px;
+  color: rgba(245,240,232,0.2);
+}
+
+/* ── THE REPORT (inside preview) ───────────────────────────────── */
+#report-output {
+  font-family: 'DM Mono', monospace;
+  background: var(--paper);
+  color: var(--ink);
+  --ink: #1a1410;
+  --cream: #f5f0e8;
+  --warm: #e8dcc8;
+  --rust: #c4622d;
+  --sage: #7a9e7e;
+  --gold: #c9a84c;
+  --muted: #8a7968;
+  --paper: #faf6ee;
+  --red: #b54020;
+  --amber: #c9954c;
+  --green: #4a8c5c;
+}
+
+/* All report styles scoped under #report-output */
+/* ── COVER: Split Dark/Cream layout ── */
+#report-output {
+  font-family: 'Libre Baskerville', serif;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+#report-output .cover {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: row;
+  position: relative;
+  overflow: hidden;
+}
+
+#report-output .cover-left {
+  width: 52%;
+  background: var(--ink);
+  color: var(--cream);
+  display: flex;
+  flex-direction: column;
+  padding: 48px 52px;
+  position: relative;
+  overflow: hidden;
+}
+
+#report-output .cover-bg-text {
+  position: absolute;
+  bottom: -50px;
+  left: -30px;
+  font-family: 'Instrument Serif', serif;
+  font-size: 340px;
+  color: rgba(255,255,255,0.03);
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+#report-output .cover-right {
+  width: 48%;
+  background: var(--cream);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  padding: 48px 48px;
+}
+
+#report-output .lab-tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--rust);
+  border: 1px solid var(--rust);
+  padding: 5px 12px;
+  display: inline-block;
+}
+
+#report-output .report-date {
+  font-size: 11px;
+  color: rgba(26,20,16,0.4);
+  letter-spacing: 0.08em;
+  text-align: right;
+}
+
+#report-output .cover-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+#report-output .cover-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 16px;
+}
+
+#report-output .cover-name {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(52px, 6vw, 88px);
+  line-height: 0.92;
+  letter-spacing: -0.02em;
+  font-weight: 400;
+  margin-bottom: 8px;
+  color: var(--cream);
+}
+
+#report-output .cover-name em { font-style: italic; color: var(--rust); }
+
+#report-output .cover-subtitle {
+  font-size: 12px;
+  color: rgba(245,240,232,0.45);
+  margin-top: 18px;
+  line-height: 1.75;
+}
+
+#report-output .cover-date-foot {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: rgba(245,240,232,0.25);
+  letter-spacing: 0.08em;
+  margin-top: auto;
+  padding-top: 32px;
+}
+
+/* Right panel */
+#report-output .cover-assess-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: rgba(26,20,16,0.35);
+  letter-spacing: 0.1em;
+  text-align: right;
+  margin-bottom: auto;
+}
+
+#report-output .cover-scores-stack {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 28px;
+}
+
+#report-output .cover-score-item {
+  border-left: 3px solid;
+  padding-left: 18px;
+}
+
+#report-output .cover-score-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(26,20,16,0.4);
+  margin-bottom: 4px;
+}
+
+#report-output .cover-score-val {
+  font-family: 'Instrument Serif', serif;
+  font-size: 44px;
+  line-height: 1;
+}
+
+#report-output .cover-score-unit {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: rgba(26,20,16,0.4);
+  margin-top: 3px;
+}
+
+#report-output .verdict-banner {
+  background: var(--ink);
+  color: var(--cream);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: auto;
+}
+
+#report-output .verdict-icon { font-size: 20px; flex-shrink: 0; }
+
+#report-output .verdict-text-main {
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  font-style: normal;
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+}
+
+#report-output .verdict-text-sub {
+  font-size: 10px;
+  color: rgba(245,240,232,0.6);
+  margin-top: 2px;
+  line-height: 1.5;
+  display: none;
+}
+
+#report-output .section {
+  padding: 72px 60px;
+  border-bottom: 1px solid rgba(26,20,16,0.1);
+  background: var(--paper);
+}
+
+#report-output .section.warm { background: var(--warm); }
+
+#report-output .section-number {
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--rust);
+  margin-bottom: 10px;
+}
+
+#report-output .section-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(36px, 4.5vw, 56px);
+  font-weight: 400;
+  line-height: 1.05;
+  margin-bottom: 16px;
+}
+
+#report-output .section-title em { font-style: italic; color: var(--rust); }
+
+#report-output .section-lead {
+  font-family: 'Libre Baskerville', serif;
+  font-size: 16px;
+  color: var(--muted);
+  line-height: 1.85;
+  max-width: 600px;
+  margin-bottom: 48px;
+}
+
+#report-output .story-card {
+  background: var(--ink);
+  color: var(--cream);
+  padding: 48px;
+  margin-bottom: 48px;
+  position: relative;
+  overflow: hidden;
+}
+
+#report-output .story-card::before {
+  content: '"';
+  position: absolute;
+  top: -20px;
+  left: 36px;
+  font-family: 'Instrument Serif', serif;
+  font-size: 220px;
+  color: rgba(255,255,255,0.04);
+  line-height: 1;
+  pointer-events: none;
+}
+
+#report-output .story-card-label {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 20px;
+}
+
+#report-output .story-card-text {
+  font-family: 'Libre Baskerville', serif;
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(20px, 2.5vw, 28px);
+  line-height: 1.5;
+  font-style: italic;
+  max-width: 740px;
+}
+
+#report-output .story-card-text strong { color: var(--rust); font-style: normal; }
+#report-output .story-card-attribution { margin-top: 24px; font-size: 13px; color: rgba(245,240,232,0.4); }
+
+#report-output .result-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2px;
+  background: var(--ink);
+  border: 2px solid var(--ink);
+  margin-bottom: 48px;
+}
+
+#report-output .result-card {
+  background: var(--paper);
+  padding: 36px 32px;
+}
+
+#report-output .result-card.warm-bg { background: var(--warm); }
+
+#report-output .result-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 16px;
+}
+
+#report-output .result-station {
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+#report-output .result-age-badge { display: flex; flex-direction: column; align-items: flex-end; }
+
+#report-output .age-equiv-label {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+#report-output .age-equiv-val {
+  font-family: 'Instrument Serif', serif;
+  font-size: 40px;
+  line-height: 1;
+  font-style: italic;
+}
+
+#report-output .age-equiv-unit { font-size: 10px; color: var(--muted); }
+
+#report-output .timeline-bar-wrap { margin: 20px 0 16px; }
+
+#report-output .timeline-bar-track {
+  height: 6px;
+  background: var(--warm);
+  position: relative;
+  margin-bottom: 6px;
+}
+
+#report-output .timeline-bar-fill {
+  height: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+#report-output .timeline-bar-marker {
+  position: absolute;
+  top: -3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  border: 2px solid var(--paper);
+}
+
+#report-output .timeline-labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+
+#report-output .result-life-meaning {
+  background: var(--warm);
+  padding: 16px 20px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--ink);
+  margin-top: 16px;
+  border-left: 3px solid var(--rust);
+}
+
+#report-output .result-life-meaning strong {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--rust);
+  margin-bottom: 6px;
+}
+
+#report-output .score-table { width: 100%; border-collapse: collapse; margin-bottom: 48px; }
+
+#report-output .score-table th {
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 14px 20px;
+  text-align: left;
+  border-bottom: 2px solid var(--ink);
+}
+
+#report-output .score-table td {
+  font-family: 'Libre Baskerville', serif;
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(26,20,16,0.08);
+  vertical-align: middle;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+#report-output .score-table tr:last-child td { border-bottom: none; }
+
+#report-output .score-test-name {
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+#report-output .result-pill {
+  display: inline-block;
+  padding: 4px 14px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid;
+}
+
+#report-output .age-number {
+  font-family: 'Instrument Serif', serif;
+  font-size: 28px;
+  font-style: italic;
+}
+
+#report-output .life-meaning-cell {
+  font-family: 'Libre Baskerville', serif;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--muted);
+  line-height: 1.6;
+  max-width: 240px;
+}
+
+#report-output .verdict-section {
+  background: var(--ink);
+  color: var(--cream);
+  padding: 72px 60px;
+}
+
+#report-output .verdict-score-hero {
+  display: flex;
+  align-items: flex-end;
+  gap: 24px;
+  margin: 40px 0;
+  flex-wrap: wrap;
+}
+
+#report-output .verdict-big-number {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(100px, 16vw, 180px);
+  line-height: 0.85;
+  font-style: italic;
+  color: var(--rust);
+}
+
+#report-output .verdict-big-context { padding-bottom: 16px; }
+
+#report-output .verdict-big-context .label {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(245,240,232,0.4);
+  margin-bottom: 8px;
+}
+
+#report-output .verdict-big-context .message {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(20px, 2.5vw, 30px);
+  line-height: 1.3;
+  max-width: 500px;
+}
+
+#report-output .hope-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  background: rgba(245,240,232,0.1);
+  border: 1px solid rgba(245,240,232,0.1);
+  margin-top: 48px;
+}
+
+#report-output .hope-card {
+  background: rgba(245,240,232,0.04);
+  padding: 32px 28px;
+}
+
+#report-output .hope-number {
+  font-family: 'Instrument Serif', serif;
+  font-size: 48px;
+  font-style: italic;
+  color: rgba(245,240,232,0.1);
+  line-height: 1;
+  margin-bottom: 16px;
+}
+
+#report-output .hope-card h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 12px;
+}
+
+#report-output .hope-card p { font-size: 12px; line-height: 1.8; color: rgba(245,240,232,0.6); }
+
+#report-output .hope-impact {
+  display: inline-block;
+  margin-top: 16px;
+  font-size: 10px;
+  color: var(--sage);
+  letter-spacing: 0.1em;
+  border-bottom: 1px solid var(--sage);
+  padding-bottom: 2px;
+}
+
+#report-output .closing {
+  padding: 60px 60px 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 32px;
+  border-top: 1px solid rgba(26,20,16,0.1);
+  background: var(--paper);
+}
+
+#report-output .closing-message {
+  font-family: 'Libre Baskerville', serif;
+  font-size: clamp(20px, 2.5vw, 28px);
+  font-style: italic;
+  line-height: 1.4;
+  max-width: 560px;
+  color: var(--ink);
+}
+
+#report-output .closing-message strong { font-style: normal; color: var(--rust); }
+#report-output .closing-meta { text-align: right; }
+#report-output .closing-meta p { font-family: 'Nunito', sans-serif; font-size: 13px; color: var(--muted); line-height: 1.7; }
+#report-output .footer-mark { font-family: 'Instrument Serif', serif; font-size: 22px; font-style: italic; color: var(--rust); margin-top: 8px; }
+
+/* ── PRINT STYLES ──────────────────────────────────────────────── */
+@media print {
+  /* ── Page background — cream so gaps are invisible ── */
+  @page { background: #f5f0e8; }
+  html, body { background: #f5f0e8 !important; }
+
+  /* ── Layout ───────────────────────────────── */
+  .app-shell { display: block !important; }
+  .sidebar { display: none !important; }
+  .preview-pane {
+    overflow: visible !important;
+    background: white !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+  .preview-toolbar { display: none !important; }
+  body {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  html {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* ── Force ALL backgrounds to print (Safari critical) ── */
+  *, *::before, *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* ── Page breaks ──────────────────────────── */
+  #report-output .cover {
+    page-break-after: always;
+    break-after: page;
+    min-height: 100vh;
+  }
+  /* Two stations per page — odd station forces page break before,
+     even station follows naturally on the same page             */
+  #report-output .print-page-start,
+  #report-output .verdict-section,
+  #report-output .machine-section {
+    page-break-before: always;
+    break-before: page;
+  }
+
+  /* No fixed heights — let content breathe naturally */
+  #report-output .section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* After every odd station (page-start), insert a divider but NO new page —
+     the even station continues on the same page below it */
+  #report-output .print-page-start {
+    border-bottom: 1px solid rgba(26,20,16,0.15) !important;
+  }
+
+  /* Keep internals together */
+  #report-output .simple-result-card,
+  #report-output .score-table,
+  #report-output .verdict-section,
+  #report-output .machine-section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* ── Dark sections ────────────────────────── */
+  #report-output .story-card,
+  #report-output .verdict-section {
+    background-color: #1a1410 !important;
+    color: #f5f0e8 !important;
+  }
+  /* Split cover — left dark, right cream */
+  #report-output .cover { background: none !important; }
+  #report-output .cover-left {
+    background-color: #1a1410 !important;
+    color: #f5f0e8 !important;
+  }
+  #report-output .cover-right {
+    background-color: #f5f0e8 !important;
+    color: #1a1410 !important;
+  }
+  #report-output .verdict-banner {
+    background-color: #1a1410 !important;
+    color: #f5f0e8 !important;
+  }
+
+  /* ── Warm / cream sections ────────────────── */
+  #report-output .section.warm,
+  #report-output .result-card.warm-bg {
+    background-color: #e8dcc8 !important;
+  }
+  #report-output .simple-result-card {
+    background-color: #faf6ee !important;
+    border: 1px solid #d4c9b4 !important;
+  }
+
+  /* ── Score bars & badges ──────────────────── */
+  #report-output .timeline-bar-track {
+    background-color: #e0d8c8 !important;
+  }
+  #report-output .timeline-bar-fill {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* ── Tables ───────────────────────────────── */
+  #report-output .score-table th {
+    background-color: #1a1410 !important;
+    color: #f5f0e8 !important;
+  }
+  #report-output .score-table tr:nth-child(even) td {
+    background-color: #f5f0e8 !important;
+  }
+
+  /* ── Result grid ──────────────────────────── */
+  #report-output .result-grid {
+    background-color: #1a1410 !important;
+    border-color: #1a1410 !important;
+  }
+
+  /* ── Hope & life cards ────────────────────── */
+  #report-output .hope-grid {
+    background-color: rgba(245,240,232,0.1) !important;
+  }
+  #report-output .hope-card {
+    background-color: rgba(245,240,232,0.07) !important;
+  }
+  #report-output .result-life-meaning {
+    background-color: #e8dcc8 !important;
+  }
+
+  /* ── Callout boxes (inline style backgrounds) ─ */
+  /* Safari can't target inline rgba() styles — convert key colours to solid */
+  #report-output [style*="rgba(74,140,92"] {
+    background-color: #d4ead9 !important;
+    border-left-color: #4a8c5c !important;
+  }
+  #report-output [style*="rgba(201,168,76"] {
+    background-color: #f5eac8 !important;
+    border-left-color: #c9a84c !important;
+  }
+  #report-output [style*="rgba(181,64,32"] {
+    background-color: #f5d5c8 !important;
+    border-left-color: #b54020 !important;
+  }
+  #report-output [style*="rgba(196,98,45,0.15)"] {
+    background-color: #f5ddd0 !important;
+  }
+
+  /* ── Typography colours ───────────────────── */
+  #report-output .cover-name em,
+  #report-output .section-title em,
+  #report-output .verdict-big-number {
+    color: #c4622d !important;
+  }
+  #report-output .cover-score-val,
+  #report-output .cover-eyebrow {
+    color: #c9a84c !important;
+  }
+  #report-output .closing {
+    background-color: #faf6ee !important;
+  }
+
+  /* ── Safari font fix ──────────────────────── */
+  * {
+    -webkit-font-smoothing: antialiased !important;
+    text-rendering: optimizeLegibility !important;
+  }
+
+  /* ── A4 print: stretch layout to full width, boost small text ── */
+
+  /* Remove card max-width so it fills the full A4 column */
+  #report-output .simple-result-card {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 28px 32px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Tighten section padding so more content fits per half-page */
+  #report-output .section {
+    padding: 40px 48px !important;
+  }
+
+  /* Boost small eyebrow/label text */
+  #report-output .section-number,
+  #report-output .result-station {
+    font-size: 12px !important;
+    letter-spacing: 0.18em !important;
+  }
+
+  /* Timeline bar labels */
+  #report-output .timeline-labels {
+    font-size: 12px !important;
+  }
+
+  /* Score badge label + unit */
+  #report-output .score-badge-label,
+  #report-output .score-badge-unit {
+    font-size: 11px !important;
+  }
+
+  /* Result value — bigger and bolder */
+  #report-output .result-value {
+    font-size: 18px !important;
+  }
+
+  /* Callout box text */
+  #report-output .simple-result-card [style*="font-size:13px"],
+  #report-output .simple-result-card [style*="font-size:14px"],
+  #report-output .simple-result-card [style*="font-size:15px"] {
+    font-size: 13px !important;
+    line-height: 1.75 !important;
+  }
+
+  /* Recommendation / explanation labels */
+  #report-output [style*="font-size:10px; font-weight:600; letter-spacing"] {
+    font-size: 11px !important;
+  }
+
+  /* Score badge number — keep large */
+  #report-output .score-badge-val {
+    font-size: 44px !important;
+  }
+
+  /* Section title — slightly smaller to fit better */
+  #report-output .section-title {
+    font-size: 34px !important;
+    margin-bottom: 10px !important;
+  }
+
+  /* Section lead */
+  #report-output .section-lead {
+    font-size: 14px !important;
+    margin-bottom: 28px !important;
+  }
+}
+
+/* ── SCROLLBAR ─────────────────────────────────────────────────── */
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(26,20,16,0.15); border-radius: 2px; }
+
+.preview-pane::-webkit-scrollbar { width: 6px; }
+.preview-pane::-webkit-scrollbar-track { background: #e0dbd3; }
+.preview-pane::-webkit-scrollbar-thumb { background: rgba(26,20,16,0.2); }
+
+/* ── SCORE BADGE (replaces age badge) ─────────────────────────── */
+#report-output .score-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+#report-output .score-badge-label {
+  font-family: 'Nunito', sans-serif;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+#report-output .score-badge-val {
+  font-family: 'Instrument Serif', serif;
+  font-size: 48px;
+  line-height: 1;
+  font-style: italic;
+}
+
+#report-output .score-badge-unit {
+  font-family: 'Nunito', sans-serif;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* ── SIMPLE RESULT CARD ────────────────────────────────────────── */
+#report-output .simple-result-card {
+  background: var(--paper);
+  border: 1px solid rgba(26,20,16,0.15);
+  padding: 36px 40px;
+  max-width: 700px;
+}
+
+#report-output .section.warm .simple-result-card {
+  background: var(--cream);
+}
+
+#report-output .result-value {
+  font-family: 'Libre Baskerville', serif;
+  font-size: 22px;
+  margin-top: 8px;
+  color: var(--ink);
+}
+
+/* score preview strip in sidebar */
+.score-input-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #f5f0e8;
+  border: 1.5px solid #d4c9b4;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: rgba(245,240,232,0.4);
+}
+
+.score-input-preview span:nth-child(2) {
+  font-family: 'Instrument Serif', serif;
+  font-size: 28px;
+  font-style: italic;
+  margin-left: auto;
+  line-height: 1;
+}
+
+/* warn badge */
+.warn-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid rgba(196,98,45,0.4);
+  color: var(--rust);
+  margin-top: 8px;
+}
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ══════════════════════ SIDEBAR FORM ══════════════════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">The 90s Lab</div>
+      <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
+      <div class="sidebar-tagline">Assessment Report Generator</div>
+      <nav class="sidebar-nav" id="sidebar-nav">
+      <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
+      <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
+      <div class="sidebar-nav-tab" onclick="scrollToSection('section-s02', this)">Stair Climb</div>
+      <div class="sidebar-nav-tab" onclick="scrollToSection('section-s03', this)">Walk in Dark</div>
+      <div class="sidebar-nav-tab" onclick="scrollToSection('section-s04', this)">Grip Strength</div>
+      <div class="sidebar-nav-tab" onclick="scrollToSection('section-s05', this)">Sit &amp; Reach</div>
+      <div class="sidebar-nav-tab" onclick="scrollToSection('section-s06', this)">Scratch Back</div>
+      <div class="sidebar-nav-tab" onclick="scrollToSection('section-s07', this)">Plank</div>
+      <div class="sidebar-nav-tab" onclick="scrollToSection('section-s08', this)">Overhead Squat</div>
+      <div class="sidebar-nav-tab" onclick="scrollToSection('section-s09', this)">Wall Squat</div>
+      <div class="sidebar-nav-tab" onclick="scrollToSection('section-machine', this)">Machine</div>
+      <div class="sidebar-nav-tab" onclick="scrollToSection('section-notes', this)">Notes</div>
+      <div class="sidebar-progress">
+        <span id="progress-label">0 / 9 stations</span>
+        <div class="sidebar-progress-bar"><div class="sidebar-progress-fill" id="progress-fill" style="width:0%"></div></div>
+        <span id="progress-pct">0%</span>
+      </div>
+      </nav>
+    </div>
+
+    <div class="sidebar-form">
+
+      <!-- CLIENT INFO -->
+      <div class="station-section" id="section-client">
+      <div class="form-group-title">Client Information</div>
+
+      <div class="field field-row">
+        <div>
+          <label>First Name</label>
+          <input type="text" id="f-firstname" placeholder="Priya" value="Priya">
+        </div>
+        <div>
+          <label>Last Name</label>
+          <input type="text" id="f-lastname" placeholder="Sharma" value="Sharma">
+        </div>
+      </div>
+
+      <div class="field field-row">
+        <div>
+          <label>Age (years)</label>
+          <input type="number" id="f-age" min="20" max="90" value="47" placeholder="47">
+        </div>
+        <div>
+          <label>Gender</label>
+          <select id="f-gender">
+            <option value="female">Female</option>
+            <option value="male">Male</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field field-row">
+        <div>
+          <label>Assessment Date</label>
+          <input type="date" id="f-date">
+        </div>
+        <div>
+          <label>Staff Name</label>
+          <input type="text" id="f-staff" placeholder="Staff name">
+        </div>
+      </div>
+
+      <div class="field field-row">
+        <div>
+          <label>Bodyweight (kg)</label>
+          <input type="number" id="m-bw" min="30" max="200" step="0.5" placeholder="e.g. 68">
+        </div>
+        <div></div>
+      </div>
+
+      </div>
+      <!-- STATION 1 — CHAIR -->
+      <div class="station-section alt" id="section-s01">
+      <div class="form-group-title">Station 01 · Sit-to-Stand</div>
+
+      <div class="field">
+        <label>Chair Height (cm)</label>
+        <select id="f-chair-height">
+          <option value="20">20 cm (ages 10–45)</option>
+          <option value="30">30 cm (ages 46–60)</option>
+          <option value="40" selected>40 cm (ages 61+)</option>
+        </select>
+        <div class="field-hint" style="margin-top:4px;">Default set by age. Change manually if needed.</div>
+      </div>
+
+      <div class="field field-row">
+        <div>
+          <label>Reps completed (out of 20)</label>
+          <input type="number" id="f-chair-reps" min="0" max="20" value="" placeholder="0–20">
+        </div>
+        <div>
+          <label>Completed 20 at lower height?</label>
+          <select id="f-chair-lower">
+            <option value="no" selected>No — could not complete</option>
+            <option value="yes">Yes — completed at lower height</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-hint" style="margin-top:-10px;margin-bottom:8px;">If they completed 20 reps at their age height, test them one level lower. Select Yes only if they also completed 20 at the lower height.</div>
+
+      <div class="field" id="chair-easier-section" style="margin-top:8px; padding:10px 12px; background:#f5f0e8; border-left:3px solid #d4c9b4; border-radius:6px;">
+        <div style="font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:#8a7968; margin-bottom:8px;">Could not complete standard height? Log easier level below.</div>
+        <div style="display:flex; gap:8px; align-items:flex-end;">
+          <div style="flex:1;">
+            <label>Easier chair height (cm)</label>
+            <select id="f-chair-easier-height">
+              <option value="">— select —</option>
+              <option value="20">20 cm</option>
+              <option value="30">30 cm</option>
+              <option value="40">40 cm</option>
+            </select>
+          </div>
+          <div style="flex:1;">
+            <label>Reps at easier height</label>
+            <input type="number" id="f-chair-easier-reps" min="0" max="20" placeholder="0–20">
+          </div>
+        </div>
+        <div class="field-hint" style="margin-top:4px;">Score stays 0. Tracked as baseline for future visits.</div>
+      </div>
+      <div class="score-input-preview">
+        <span id="chair-score-label-display">—</span>
+        <span id="chair-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label>Previous score (optional)</label>
+        <input type="number" id="f-chair-prev" min="0" max="100" placeholder="Leave blank if first visit">
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
+        <textarea id="f-chair-rec" rows="3" style="resize:vertical;" placeholder="Auto-populated from score — edit to personalise"></textarea>
+        <div class="field" style="margin-top:8px;">
+        <label>Coach comments (optional)</label>
+        <textarea id="f-chair-notes" rows="3" placeholder="e.g. Form was shaky on last 3 reps, used armrests slightly..." style="resize:vertical;"></textarea>
+        </div>
+      </div>
+
+      </div>
+      <!-- STATION 2 — STAIRS -->
+      <div class="station-section" id="section-s02">
+      <div class="form-group-title">Station 02 · Stair Climb</div>
+
+      <div class="field">
+        <label>Step Height (cm)</label>
+        <select id="f-stair-height">
+          <option value="45">45 cm (ages 10–45)</option>
+          <option value="35">35 cm (ages 46–60)</option>
+          <option value="30" selected>30 cm (ages 61+)</option>
+        </select>
+        <div class="field-hint" style="margin-top:4px;">Default set by age. Change manually if needed.</div>
+      </div>
+
+      <div class="field field-row" style="margin-top:10px;">
+        <div>
+          <label>Reps completed (out of 20)</label>
+          <input type="number" id="f-stair-reps" min="0" max="20" placeholder="0–20">
+        </div>
+        <div>
+          <label>Completed 20 at higher step?</label>
+          <select id="f-stair-higher">
+            <option value="no" selected>No — could not complete</option>
+            <option value="yes">Yes — completed at higher step</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-hint" style="margin-top:-10px;margin-bottom:8px;">Target is 20 reps at age-appropriate step. If they complete 20, test one level higher. Select Yes only if they also complete 20 at the higher step.</div>
+
+      <div class="field" style="margin-top:8px; padding:10px 12px; background:#f5f0e8; border-left:3px solid #d4c9b4; border-radius:6px;">
+        <div style="font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:#8a7968; margin-bottom:8px;">Could not complete standard height? Log easier level below.</div>
+        <div style="display:flex; gap:8px; align-items:flex-end;">
+          <div style="flex:1;">
+            <label>Easier step height (cm)</label>
+            <select id="f-stair-easier-height">
+              <option value="">— select —</option>
+              <option value="45">45 cm</option>
+              <option value="35">35 cm</option>
+              <option value="30">30 cm</option>
+              <option value="20">20 cm</option>
+            </select>
+          </div>
+          <div style="flex:1;">
+            <label>Reps at easier height</label>
+            <input type="number" id="f-stair-easier-reps" min="0" max="20" placeholder="0–20">
+          </div>
+        </div>
+        <div class="field-hint" style="margin-top:4px;">Score stays 0. Tracked as baseline for future visits.</div>
+      </div>
+      <div class="score-input-preview">
+        <span id="stair-score-label-display">—</span>
+        <span id="stair-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label>Previous score (optional)</label>
+        <input type="number" id="f-stair-prev" min="0" max="100" placeholder="Leave blank if first visit">
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
+        <textarea id="f-stair-rec" rows="3" style="resize:vertical;" placeholder="Auto-populated from score — edit to personalise"></textarea>
+        <div class="field" style="margin-top:8px;">
+        <label>Coach comments (optional)</label>
+        <textarea id="f-stair-notes" rows="3" placeholder="e.g. Held railing on final 4 reps, breathing laboured..." style="resize:vertical;"></textarea>
+        </div>
+      </div>
+
+      </div>
+      <!-- STATION 3 — BALANCE -->
+      <div class="station-section alt" id="section-s03">
+      <div class="form-group-title">Station 03 · Walking in Dark</div>
+      <div class="field-hint" style="margin-bottom:10px;">Test and input fields auto-adapt to age bracket. Score = worst leg ÷ 30 × 100.</div>
+
+      <div id="bal-test-description" style="margin-bottom:12px; padding:10px 12px; background:rgba(196,98,45,0.1); border-left:3px solid var(--rust); font-size:11px; line-height:1.6; color:var(--cream);"></div>
+
+      <div id="bal-single-fields">
+        <div class="field field-row">
+          <div>
+            <label>Left leg (sec)</label>
+            <input type="number" id="f-balance-left" min="0" max="30" placeholder="0–30 sec">
+          </div>
+          <div>
+            <label>Right leg (sec)</label>
+            <input type="number" id="f-balance-right" min="0" max="30" placeholder="0–30 sec">
+          </div>
+        </div>
+      </div>
+      <div id="bal-both-fields" style="display:none;">
+        <div class="field">
+          <label>Both legs (sec)</label>
+          <input type="number" id="f-balance-both" min="0" max="30" placeholder="0–30 sec">
+        </div>
+      </div>
+
+      <div class="field-hint" style="margin-bottom:8px;">If they hold 30 sec, test one bracket harder. Select Yes only if they also complete 30 sec there.</div>
+      <div class="field field-row" style="margin-top:4px;">
+        <div>
+          <label>Completed harder bracket?</label>
+          <select id="f-balance-harder">
+            <option value="no" selected>No — could not complete</option>
+            <option value="yes">Yes — completed 30 sec</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="score-input-preview" style="margin-top:10px;">
+        <span id="balance-score-label-display">—</span>
+        <span id="balance-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label>Previous score (optional)</label>
+        <input type="number" id="f-balance-prev" min="0" max="100" placeholder="Leave blank if first visit">
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
+        <textarea id="f-balance-rec" rows="3" style="resize:vertical;" placeholder="Auto-populated from score — edit to personalise"></textarea>
+        <div class="field" style="margin-top:8px;">
+        <label>Coach comments (optional)</label>
+        <textarea id="f-balance-notes" rows="3" placeholder="e.g. Visible tremor on left leg, arms used for balance..." style="resize:vertical;"></textarea>
+        </div>
+      </div>
+
+      </div>
+      <!-- STATION 4 — GRIP -->
+      <div class="station-section" id="section-s04">
+      <div class="form-group-title">Station 04 · Grip Strength</div>
+      <div class="field-hint" style="margin-bottom:10px;">Two attempts per hand. Best of each is used. Score from Camry norms by age &amp; gender.</div>
+
+      <div style="font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:#6b5d4f; margin-bottom:6px;">Dominant hand (kg)</div>
+      <div class="field field-row">
+        <div>
+          <label>Attempt 1</label>
+          <input type="number" id="f-grip-right-1" min="0" max="100" placeholder="kg" step="0.5">
+        </div>
+        <div>
+          <label>Attempt 2</label>
+          <input type="number" id="f-grip-right-2" min="0" max="100" placeholder="kg" step="0.5">
+        </div>
+      </div>
+
+      <div style="font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:#6b5d4f; margin-bottom:6px; margin-top:8px;">Other hand (kg)</div>
+      <div class="field field-row">
+        <div>
+          <label>Attempt 1</label>
+          <input type="number" id="f-grip-left-1" min="0" max="100" placeholder="kg" step="0.5">
+        </div>
+        <div>
+          <label>Attempt 2</label>
+          <input type="number" id="f-grip-left-2" min="0" max="100" placeholder="kg" step="0.5">
+        </div>
+      </div>
+      <div class="field-hint" style="margin-top:4px; margin-bottom:8px;">Best of each hand used automatically.</div>
+      <div class="score-input-preview">
+        <span id="grip-score-label-display">—</span>
+        <span id="grip-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label>Previous score (optional)</label>
+        <input type="number" id="f-grip-prev" min="0" max="100" placeholder="Leave blank if first visit">
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
+        <textarea id="f-grip-rec" rows="3" style="resize:vertical;" placeholder="Auto-populated from score — edit to personalise"></textarea>
+        <div class="field" style="margin-top:8px;">
+        <label>Coach comments (optional)</label>
+        <textarea id="f-grip-notes" rows="3" placeholder="e.g. Dominant hand noticeably weaker than expected..." style="resize:vertical;"></textarea>
+        </div>
+      </div>
+
+      </div>
+      <!-- STATION 5 — SIT AND REACH -->
+      <div class="station-section alt" id="section-s05">
+      <div class="form-group-title">Station 05 · Sit and Reach</div>
+      <div class="field-hint" style="margin-bottom:10px;">Score is auto-calculated from the cm reading and age. Negative = past ankle (great). 0 = touching. Positive = gap in cm (worse).</div>
+
+      <div class="field field-row">
+        <div>
+          <label>Left leg (cm)</label>
+          <input type="number" id="f-sit-left" min="-20" max="60" step="0.5" placeholder="e.g. 8 or -3">
+        </div>
+        <div>
+          <label>Right leg (cm)</label>
+          <input type="number" id="f-sit-right" min="-20" max="60" step="0.5" placeholder="e.g. 8 or -3">
+        </div>
+      </div>
+      <div class="field-hint" style="margin-top:-10px;margin-bottom:8px;">Scored on worst side. Age bonus applied: 51–65 → +4 cm · 66–80 → +8 cm · 81+ → +12 cm.</div>
+      <div class="score-input-preview">
+        <span id="sit-score-label-display">—</span>
+        <span id="sit-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label>Previous score (optional)</label>
+        <input type="number" id="f-sit-prev" min="0" max="100" placeholder="First visit?">
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
+        <textarea id="f-sit-rec" rows="3" style="resize:vertical;" placeholder="Auto-populated from score — edit to personalise"></textarea>
+        <div class="field" style="margin-top:8px;">
+        <label>Coach comments (optional)</label>
+        <textarea id="f-sit-notes" rows="3" placeholder="e.g. Visibly struggled on left side, hip tightness noted..." style="resize:vertical;"></textarea>
+        </div>
+      </div>
+
+      </div>
+      <!-- STATION 6 — SHOULDER REACH -->
+      <div class="station-section" id="section-s06">
+      <div class="form-group-title">Station 06 · Shoulder Reach</div>
+      <div class="field-hint" style="margin-bottom:10px;">Score is auto-calculated from the cm reading and age. Negative = hands overlapping (great). 0 = touching. Positive = gap in cm (worse).</div>
+
+      <div class="field field-row">
+        <div>
+          <label>Left side (cm)</label>
+          <input type="number" id="f-reach-left" min="-20" max="60" step="0.5" placeholder="e.g. 8 or -3">
+        </div>
+        <div>
+          <label>Right side (cm)</label>
+          <input type="number" id="f-reach-right" min="-20" max="60" step="0.5" placeholder="e.g. 8 or -3">
+        </div>
+      </div>
+      <div class="field-hint" style="margin-top:-10px;margin-bottom:8px;">Scored on worst side. Age bonus: 51–65 → +5 cm · 66–80 → +10 cm · 81+ → +15 cm.</div>
+      <div class="score-input-preview">
+        <span id="reach-score-label-display">—</span>
+        <span id="reach-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label>Previous score (optional)</label>
+        <input type="number" id="f-reach-prev" min="0" max="100" placeholder="First visit?">
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
+        <textarea id="f-reach-rec" rows="3" style="resize:vertical;" placeholder="Auto-populated from score — edit to personalise"></textarea>
+        <div class="field" style="margin-top:8px;">
+        <label>Coach comments (optional)</label>
+        <textarea id="f-reach-notes" rows="3" placeholder="e.g. Right shoulder significantly tighter than left..." style="resize:vertical;"></textarea>
+        </div>
+      </div>
+
+      </div>
+      <!-- STATION 7 — PLANK -->
+      <div class="station-section alt" id="section-s07">
+      <div class="form-group-title">Station 07 · Plank</div>
+      <div class="field-hint" style="margin-bottom:10px;">Score is auto-calculated from hold time and age bracket. Target: 20–30→120s · 31–45→90s · 46–60→60s · 61–75→40s · 76+→20s.</div>
+
+      <div class="field">
+        <label>Hold time (seconds)</label>
+        <input type="number" id="f-plank-secs" min="0" max="300" step="1" placeholder="e.g. 45">
+      </div>
+      <div class="score-input-preview" style="margin-top:8px;">
+        <span id="plank-score-label-display">—</span>
+        <span id="plank-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label>Previous score (optional)</label>
+        <input type="number" id="f-plank-prev" min="0" max="100" placeholder="Leave blank if first visit">
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
+        <textarea id="f-plank-rec" rows="3" style="resize:vertical;" placeholder="Auto-populated from score — edit to personalise"></textarea>
+        <div class="field" style="margin-top:8px;">
+        <label>Coach comments (optional)</label>
+        <textarea id="f-plank-notes" rows="3" placeholder="e.g. Hips dropped at 35 sec, form broke down..." style="resize:vertical;"></textarea>
+        </div>
+      </div>
+
+      </div>
+      <!-- STATION 8 — OVERHEAD SQUAT -->
+      <div class="station-section" id="section-s08">
+      <div class="form-group-title">Station 08 · Overhead Squat</div>
+      <div class="field-hint" style="margin-bottom:12px;">Select depth and any compensations observed. Final score is auto-calculated.</div>
+
+      <style>
+        .squat-radio-card { display:flex; align-items:center; gap:10px; padding:10px 14px; background:#faf8f5; border:1.5px solid #d4c9b4; border-radius:6px; cursor:pointer; margin-bottom:6px; transition:border-color 0.15s, background 0.15s; color:#1a1410; }
+        .squat-radio-card:hover { border-color:var(--rust); background:rgba(196,98,45,0.04); }
+        .squat-radio-card.selected { border-color:var(--rust); background:rgba(196,98,45,0.08); }
+        .squat-radio-dot { width:14px; height:14px; border-radius:50%; border:2px solid #c4b8a4; flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:border-color 0.15s; }
+        .squat-radio-card.selected .squat-radio-dot { border-color:var(--rust); }
+        .squat-radio-dot-inner { width:6px; height:6px; border-radius:50%; background:var(--rust); display:none; }
+        .squat-radio-card.selected .squat-radio-dot-inner { display:block; }
+        .squat-radio-pts { font-family:'Nunito',sans-serif; font-size:11px; font-weight:700; color:#8a7968; margin-left:auto; flex-shrink:0; }
+
+        .squat-check-row { display:flex; align-items:flex-start; gap:0; padding:9px 14px; background:#faf8f5; border:1.5px solid #d4c9b4; border-radius:6px; cursor:pointer; margin-bottom:5px; transition:border-color 0.15s, background 0.15s; color:#1a1410; }
+        .squat-check-row:hover { border-color:var(--rust); background:rgba(196,98,45,0.04); }
+        .squat-check-row.checked { border-color:var(--rust); background:rgba(196,98,45,0.08); }
+        .squat-check-box { width:17px; height:17px; border:2px solid #c4b8a4; border-radius:4px; flex-shrink:0; margin-right:10px; margin-top:1px; display:flex; align-items:center; justify-content:center; transition:border-color 0.15s, background 0.15s; }
+        .squat-check-row.checked .squat-check-box { border-color:var(--rust); background:var(--rust); }
+        .squat-check-tick { color:#fff; font-size:11px; line-height:1; display:none; }
+        .squat-check-row.checked .squat-check-tick { display:block; }
+        .squat-check-label { font-family:'Nunito',sans-serif; font-size:13px; font-weight:500; line-height:1.4; color:#1a1410; }
+        .squat-check-sub { font-family:'Nunito',sans-serif; font-size:11px; color:#8a7968; margin-top:2px; }
+        .squat-check-pts { font-family:'Nunito',sans-serif; font-size:11px; font-weight:700; color:#8a7968; margin-left:auto; flex-shrink:0; padding-left:8px; margin-top:2px; }
+      </style>
+
+      <div class="field">
+        <label style="margin-bottom:8px; display:block;">Depth achieved</label>
+        <input type="hidden" id="f-squat-depth" value="-1">
+        <div class="squat-radio-card" data-val="100" onclick="selectSquatDepth(this)">
+          <div class="squat-radio-dot"><div class="squat-radio-dot-inner"></div></div>
+          <div><div style="font-family:Nunito,sans-serif;font-size:13px;font-weight:500;color:#1a1410;">Full depth</div><div style="font-family:Nunito,sans-serif;font-size:11px;color:#8a7968;margin-top:1px;">Hips below parallel</div></div>
+          <span class="squat-radio-pts">100</span>
+        </div>
+        <div class="squat-radio-card" data-val="80" onclick="selectSquatDepth(this)">
+          <div class="squat-radio-dot"><div class="squat-radio-dot-inner"></div></div>
+          <div><div style="font-family:Nunito,sans-serif;font-size:13px;font-weight:500;color:#1a1410;">Parallel</div><div style="font-family:Nunito,sans-serif;font-size:11px;color:#8a7968;margin-top:1px;">Hips at knee level</div></div>
+          <span class="squat-radio-pts">80</span>
+        </div>
+        <div class="squat-radio-card" data-val="60" onclick="selectSquatDepth(this)">
+          <div class="squat-radio-dot"><div class="squat-radio-dot-inner"></div></div>
+          <div><div style="font-family:Nunito,sans-serif;font-size:13px;font-weight:500;color:#1a1410;">Quarter squat</div><div style="font-family:Nunito,sans-serif;font-size:11px;color:#8a7968;margin-top:1px;">Hips above knees</div></div>
+          <span class="squat-radio-pts">60</span>
+        </div>
+        <div class="squat-radio-card" data-val="40" onclick="selectSquatDepth(this)">
+          <div class="squat-radio-dot"><div class="squat-radio-dot-inner"></div></div>
+          <div><div style="font-family:Nunito,sans-serif;font-size:13px;font-weight:500;color:#1a1410;">Assisted / partial</div><div style="font-family:Nunito,sans-serif;font-size:11px;color:#8a7968;margin-top:1px;">With support or very limited range</div></div>
+          <span class="squat-radio-pts">40</span>
+        </div>
+        <div class="squat-radio-card" data-val="0" onclick="selectSquatDepth(this)">
+          <div class="squat-radio-dot"><div class="squat-radio-dot-inner"></div></div>
+          <div><div style="font-family:Nunito,sans-serif;font-size:13px;font-weight:500;color:#1a1410;">Cannot squat</div><div style="font-family:Nunito,sans-serif;font-size:11px;color:#8a7968;margin-top:1px;">No meaningful movement</div></div>
+          <span class="squat-radio-pts">0</span>
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:14px;">
+        <label style="margin-bottom:8px; display:block;">Compensation flags <span style="font-weight:400; opacity:0.6;">(select all that apply)</span></label>
+        <div class="squat-check-row" id="squat-row-arms" onclick="toggleSquatFlag(this,'f-squat-arms')">
+          <div class="squat-check-box"><span class="squat-check-tick">✓</span></div>
+          <div class="squat-check-label">Arms drifted forward<div class="squat-check-sub">Shoulder / thoracic restriction</div></div>
+          <span class="squat-check-pts">minor</span>
+        </div>
+        <div class="squat-check-row" id="squat-row-heels" onclick="toggleSquatFlag(this,'f-squat-heels')">
+          <div class="squat-check-box"><span class="squat-check-tick">✓</span></div>
+          <div class="squat-check-label">Heels lifted<div class="squat-check-sub">Ankle / calf tightness</div></div>
+          <span class="squat-check-pts">−8</span>
+        </div>
+        <div class="squat-check-row" id="squat-row-knees" onclick="toggleSquatFlag(this,'f-squat-knees')">
+          <div class="squat-check-box"><span class="squat-check-tick">✓</span></div>
+          <div class="squat-check-label">Knees caved inward<div class="squat-check-sub">Hip weakness · future knee pain</div></div>
+          <span class="squat-check-pts">−15</span>
+        </div>
+        <div class="squat-check-row" id="squat-row-lean" onclick="toggleSquatFlag(this,'f-squat-lean')">
+          <div class="squat-check-box"><span class="squat-check-tick">✓</span></div>
+          <div class="squat-check-label">Excessive forward trunk lean<div class="squat-check-sub">Hip flexor or ankle restriction</div></div>
+          <span class="squat-check-pts">−8</span>
+        </div>
+        <div class="squat-check-row" id="squat-row-asym" onclick="toggleSquatFlag(this,'f-squat-asym')">
+          <div class="squat-check-box"><span class="squat-check-tick">✓</span></div>
+          <div class="squat-check-label">Left / right asymmetry<div class="squat-check-sub">One side overcompensating</div></div>
+          <span class="squat-check-pts">−15</span>
+        </div>
+        <!-- hidden checkboxes for JS compatibility -->
+        <input type="checkbox" id="f-squat-arms"  style="display:none">
+        <input type="checkbox" id="f-squat-heels" style="display:none">
+        <input type="checkbox" id="f-squat-knees" style="display:none">
+        <input type="checkbox" id="f-squat-lean"  style="display:none">
+        <input type="checkbox" id="f-squat-asym"  style="display:none">
+      </div>
+
+      <div class="score-input-preview" style="margin-top:12px;">
+        <span id="squat-score-label-display">—</span>
+        <span id="squat-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label>Previous score (optional)</label>
+        <input type="number" id="f-squat-prev" min="0" max="100" placeholder="Leave blank if first visit">
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
+        <textarea id="f-squat-rec" rows="3" style="resize:vertical;" placeholder="Auto-populated from score — edit to personalise"></textarea>
+        <div class="field" style="margin-top:8px;">
+        <label>Coach comments (optional)</label>
+        <textarea id="f-squat-notes" rows="3" placeholder="e.g. Right knee collapsed at bottom, significant forward lean noted..." style="resize:vertical;"></textarea>
+        </div>
+      </div>
+
+      </div>
+      <!-- STATION 9 — WALL SQUAT -->
+      <div class="station-section alt" id="section-s09">
+      <div class="form-group-title">Station 09 · Wall Squats</div>
+      <div class="field-hint" style="margin-bottom:10px;">Score is auto-calculated from hold time and age bracket. Targets: 20–30→90s · 31–45→70s · 46–60→45s · 61–75→30s · 76+→15s.</div>
+
+      <div class="field">
+        <label>Hold time (seconds)</label>
+        <input type="number" id="f-wall-secs" min="0" max="300" step="1" placeholder="e.g. 40">
+      </div>
+      <div class="score-input-preview" style="margin-top:8px;">
+        <span id="wall-score-label-display">—</span>
+        <span id="wall-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label>Previous score (optional)</label>
+        <input type="number" id="f-wall-prev" min="0" max="100" placeholder="Leave blank if first visit">
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
+        <textarea id="f-wall-rec" rows="3" style="resize:vertical;" placeholder="Auto-populated from score — edit to personalise"></textarea>
+        <div class="field" style="margin-top:8px;">
+        <label>Coach comments (optional)</label>
+        <textarea id="f-wall-notes" rows="3" placeholder="e.g. Knees shaking at 25 sec, right knee tracking inward..." style="resize:vertical;"></textarea>
+        </div>
+      </div>
+
+      </div>
+      <!-- MACHINE STRENGTH -->
+      <div class="station-section" id="section-machine">
+      <div class="form-group-title">Machine Strength Profile</div>
+      <div class="field-hint" style="margin-bottom:10px;">Target ranges are auto-calculated from bodyweight, age, and gender — entered in Client Information above.</div>
+
+      <div style="display:grid;grid-template-columns:1fr 60px 55px 55px;gap:4px;margin-bottom:4px;">
+        <span style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#8a7968;padding:4px 2px;font-family:'Nunito',sans-serif;font-weight:600;font-size:10px;">Exercise</span>
+        <span style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#8a7968;padding:4px 2px;text-align:center;font-family:'Nunito',sans-serif;font-weight:600;font-size:10px;">kg</span>
+        <span style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#8a7968;padding:4px 2px;text-align:center;font-family:'Nunito',sans-serif;font-weight:600;font-size:10px;">Min ↓</span>
+        <span style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#8a7968;padding:4px 2px;text-align:center;font-family:'Nunito',sans-serif;font-weight:600;font-size:10px;">Max ↑</span>
+      </div>
+
+      <!-- Row 1: Bicep Curl -->
+      <div style="display:grid;grid-template-columns:1fr 60px 55px 55px;gap:4px;margin-bottom:4px;">
+        <span style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;display:flex;align-items:center;">Bicep Curl</span>
+        <input type="number" id="m1-val" placeholder="kg" min="0" max="300" step="0.5" style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;text-align:center;">
+        <div id="m1-min-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
+        <div id="m1-max-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
+      </div>
+      <!-- Row 2: Tricep Extension -->
+      <div style="display:grid;grid-template-columns:1fr 60px 55px 55px;gap:4px;margin-bottom:4px;">
+        <span style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;display:flex;align-items:center;">Tricep Ext.</span>
+        <input type="number" id="m2-val" placeholder="kg" min="0" max="300" step="0.5" style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;text-align:center;">
+        <div id="m2-min-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
+        <div id="m2-max-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
+      </div>
+      <!-- Row 3: Shoulder Press -->
+      <div style="display:grid;grid-template-columns:1fr 60px 55px 55px;gap:4px;margin-bottom:4px;">
+        <span style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;display:flex;align-items:center;">Shoulder Press</span>
+        <input type="number" id="m3-val" placeholder="kg" min="0" max="300" step="0.5" style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;text-align:center;">
+        <div id="m3-min-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
+        <div id="m3-max-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
+      </div>
+      <!-- Row 4: Lat Pulldown -->
+      <div style="display:grid;grid-template-columns:1fr 60px 55px 55px;gap:4px;margin-bottom:4px;">
+        <span style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;display:flex;align-items:center;">Lat Pulldown</span>
+        <input type="number" id="m4-val" placeholder="kg" min="0" max="300" step="0.5" style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;text-align:center;">
+        <div id="m4-min-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
+        <div id="m4-max-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
+      </div>
+      <!-- Row 5: Bench Press -->
+      <div style="display:grid;grid-template-columns:1fr 60px 55px 55px;gap:4px;margin-bottom:14px;">
+        <span style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;display:flex;align-items:center;">Bench Press</span>
+        <input type="number" id="m5-val" placeholder="kg" min="0" max="300" step="0.5" style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;text-align:center;">
+        <div id="m5-min-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
+        <div id="m5-max-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
+      </div>
+
+      </div>
+      <!-- STAFF NOTES -->
+      <div class="station-section alt" id="section-notes">
+      <div class="form-group-title">Overall Notes</div>
+
+      <div class="field">
+        <label>Staff observations (shown on report)</label>
+        <textarea id="f-notes" rows="3" style="resize:vertical;" placeholder="Any additional clinical observations for the client…"></textarea>
+      </div>
+
+    </div>
+      </div><!-- /sidebar-form -->
+
+    <button class="btn-print" onclick="window.print()">🖨 Print Report</button>
+    <div style="display:flex;gap:8px;padding:0 32px 8px;">
+      <button class="btn-secondary" style="flex:1;margin:0;" onclick="saveForm()">💾 Save</button>
+      <button class="btn-secondary" style="flex:1;margin:0;" onclick="loadForm()">↑ Load</button>
+      <button class="btn-secondary" style="flex:1;margin:0;border-color:var(--rust);color:var(--rust);" onclick="resetForm()">✕ New Client</button>
+    </div>
+    <div id="save-status" style="text-align:center;font-size:10px;color:rgba(245,240,232,0.3);padding:0 32px 24px;letter-spacing:0.1em;"></div>
+
+  </aside>
+
+  <!-- ══════════════════════ PREVIEW PANE ══════════════════════ -->
+  <div class="preview-pane">
+    <div class="preview-toolbar">
+      <span class="preview-toolbar-label">Live Report Preview</span>
+      <span class="preview-scale-note">Updates as you type · Print to export</span>
+    </div>
+
+    <div id="report-output">
+      <!-- dynamically rendered -->
+    </div>
+  </div>
+
+</div><!-- /app-shell -->
+
+<script>
+// ── HELPERS ─────────────────────────────────────────────────────
+function val(id) {
+  const el = document.getElementById(id);
+  return el ? el.value : '';
+}
+
+function num(id) {
+  return parseFloat(val(id)) || 0;
+}
+
+function today() {
+  const d = new Date();
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+// Score: 100 = no decline (funcAge <= chronoAge), drops as gap widens
+// Cap penalty at 40 years gap = score 0
+function calcScore(funcAge, chronoAge) {
+  const gap = funcAge - chronoAge;
+  if (gap <= 0) return 100;
+  return Math.max(0, Math.round(100 - (gap / 40) * 100));
+}
+
+function scoreColor(score) {
+  if (score >= 75) return 'var(--green)';
+  if (score >= 55) return 'var(--amber)';
+  if (score >= 38) return 'var(--rust)';
+  return 'var(--red)';
+}
+
+function scoreLabel(score) {
+  if (score >= 75) return 'Strong';
+  if (score >= 55) return 'Moderate';
+  if (score >= 38) return 'Needs work';
+  return 'Urgent';
+}
+
+function scoreBar(score) {
+  return Math.min(100, Math.max(0, score));
+}
+
+function avgAge(ages) {
+  const valid = ages.filter(a => a > 0);
+  if (!valid.length) return 0;
+  return Math.round(valid.reduce((a,b) => a+b, 0) / valid.length);
+}
+
+function stairLabel(v) {
+  const map = {
+    'completed-easy': 'Completed — easy, no fatigue',
+    'completed-fatigue': 'Completed — noticeable fatigue',
+    'completed-hard': 'Completed — very hard, near failure',
+    'incomplete': 'Did not complete'
+  };
+  return map[v] || v;
+}
+
+function priorityPill(funcAge, chronoAge) {
+  const gap = funcAge - chronoAge;
+  if (funcAge <= chronoAge + 5) return `<span class="result-pill" style="color:var(--green);border-color:var(--green)">Good</span>`;
+  if (gap < 15) return `<span class="result-pill" style="color:var(--amber);border-color:var(--amber)">Medium</span>`;
+  if (gap < 25) return `<span class="result-pill" style="color:var(--rust);border-color:var(--rust)">High</span>`;
+  return `<span class="result-pill" style="color:var(--red);border-color:var(--red);background:rgba(181,64,32,0.07)">Urgent</span>`;
+}
+
+// ── MACHINE STRENGTH ─────────────────────────────────────────────
+const MACHINE_COLORS = ['#e0507a','#2abf9c','#9b6fd4','#4a9fd4','#e0943a'];
+
+// NSS table: [nssLow, nssHigh]
+var NSS = {
+  1: [0.45, 0.65], // Bicep Curl
+  2: [0.30, 0.45], // Tricep Extension
+  3: [0.45, 0.65], // Shoulder Press
+  4: [0.75, 1.05], // Lat Pulldown
+  5: [0.65, 1.00]  // Bench Press
+};
+
+var MACHINE_NAMES = {
+  1: 'Bicep Curl',
+  2: 'Tricep Extension',
+  3: 'Shoulder Press',
+  4: 'Lat Pulldown',
+  5: 'Bench Press'
+};
+
+function calcExpectedLoad(nss, bw, age, gender) {
+  var G   = gender === 'male' ? 1.00 : 0.70;
+  var AAF = Math.max(0.70, 1 - Math.max(0, age - 30) * 0.01);
+  return nss * Math.pow(bw / 70, 0.67) * 70 * G * AAF;
+}
+
+function updateMachineTargets() {
+  var bw     = parseFloat(document.getElementById('m-bw') ? document.getElementById('m-bw').value : '') || 0;
+  var age    = parseFloat(document.getElementById('f-age') ? document.getElementById('f-age').value : '') || 30;
+  var gEl    = document.getElementById('f-gender');
+  var gender = gEl ? (gEl.value === 'male' ? 'male' : 'female') : 'female';
+  for (var i = 1; i <= 5; i++) {
+    var minEl = document.getElementById('m' + i + '-min-display');
+    var maxEl = document.getElementById('m' + i + '-max-display');
+    if (!minEl || !maxEl) continue;
+    if (bw <= 0) { minEl.textContent = '—'; maxEl.textContent = '—'; continue; }
+    var minVal = calcExpectedLoad(NSS[i][0], bw, age, gender);
+    var maxVal = calcExpectedLoad(NSS[i][1], bw, age, gender);
+    minEl.textContent = minVal.toFixed(1);
+    maxEl.textContent = maxVal.toFixed(1);
+  }
+}
+
+function getMachineRows() {
+  var bw     = parseFloat(document.getElementById('m-bw') ? document.getElementById('m-bw').value : '') || 0;
+  var age    = parseFloat(document.getElementById('f-age') ? document.getElementById('f-age').value : '') || 30;
+  var gEl    = document.getElementById('f-gender');
+  var gender = gEl ? (gEl.value === 'male' ? 'male' : 'female') : 'female';
+  var rows = [];
+  for (var i = 1; i <= 5; i++) {
+    var valEl = document.getElementById('m' + i + '-val');
+    var v = parseFloat(valEl ? valEl.value : '') || 0;
+    var minKg = 0, maxKg = 0;
+    if (bw > 0) {
+      minKg = calcExpectedLoad(NSS[i][0], bw, age, gender);
+      maxKg = calcExpectedLoad(NSS[i][1], bw, age, gender);
+    }
+    rows.push({
+      name:  MACHINE_NAMES[i],
+      val:   v,
+      min:   bw > 0 ? Math.round(minKg * 10) / 10 : 0,
+      max:   bw > 0 ? Math.round(maxKg * 10) / 10 : 0,
+      color: MACHINE_COLORS[i - 1]
+    });
+  }
+  return rows;
+}
+
+function buildMachineSection() {
+  var rows = getMachineRows().filter(function(r) { return r.name && r.val > 0; });
+  if (rows.length === 0) return '';
+
+  var maxVal = 0;
+  rows.forEach(function(r) {
+    if (r.val > maxVal) maxVal = r.val;
+    if (r.max > maxVal) maxVal = r.max;
+  });
+  maxVal = maxVal * 1.3;
+
+  var html = '<div class="section" style="background:var(--paper);">';
+  html += '<div class="section-number">Machine Strength</div>';
+  html += '<div class="section-title">Strength<br><em>profile</em></div>';
+  html += '<div class="section-lead" style="margin-bottom:40px;">Measured on resistance machines. Target ranges are normalised for your bodyweight, age, and gender using allometric scaling.</div>';
+  html += '<div style="max-width:720px;">';
+
+  rows.forEach(function(r) {
+    var fill = Math.min(97, (r.val / maxVal) * 100);
+    var tMin = Math.min(97, (r.min / maxVal) * 100);
+    var tMax = Math.min(97, (r.max / maxVal) * 100);
+    var met  = r.min > 0 ? r.val >= r.min : true;
+    var need = met ? '' : 'Need: +' + (r.min - r.val).toFixed(1) + ' kg';
+
+    html += '<div style="margin-bottom:36px;">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">';
+    html += '<span style="font-family:Syne,sans-serif;font-size:15px;font-weight:700;color:var(--ink);">' + r.name + '</span>';
+    html += '<span style="font-family:&quot;Instrument Serif&quot;,serif;font-size:28px;font-style:italic;color:' + r.color + ';">' + r.val + ' kg</span>';
+    html += '</div>';
+    html += '<div style="height:14px;background:rgba(26,20,16,0.08);border-radius:3px;position:relative;margin-bottom:7px;">';
+    html += '<div style="position:absolute;left:0;top:0;height:100%;width:' + fill + '%;background:' + r.color + ';border-radius:3px;"></div>';
+    if (r.min > 0 && r.max > 0) {
+      html += '<div style="position:absolute;left:' + tMin + '%;width:' + (tMax - tMin) + '%;top:0;height:100%;background:' + r.color + ';opacity:0.2;border-radius:3px;"></div>';
+      html += '<div style="position:absolute;left:' + tMin + '%;top:-3px;width:2px;height:20px;background:' + r.color + ';opacity:0.7;"></div>';
+      html += '<div style="position:absolute;left:' + tMax + '%;top:-3px;width:2px;height:20px;background:' + r.color + ';opacity:0.7;"></div>';
+    }
+    html += '</div>';
+    html += '<div style="display:flex;justify-content:space-between;font-size:10px;letter-spacing:0.04em;">';
+    html += '<span style="color:var(--muted);">' + (r.min > 0 && r.max > 0 ? 'Target: ' + r.min.toFixed(1) + '–' + r.max.toFixed(1) + ' kg' : '') + '</span>';
+    html += '<span style="font-weight:600;color:' + (met ? 'var(--green)' : 'var(--rust)') + ';">' + (met ? '✓ Met' : need) + '</span>';
+    html += '</div>';
+    html += '</div>';
+  });
+
+  html += '</div></div>';
+  return html;
+}
+
+// ── MAIN RENDER ──────────────────────────────────────────────────
+function render() {
+  const firstName = val('f-firstname') || 'Client';
+  const lastName  = val('f-lastname') || '';
+  const age       = num('f-age') || 47;
+  const staff     = val('f-staff') || '[Staff Name]';
+  const dateStr   = (() => {
+    const d = val('f-date');
+    if (!d) return today();
+    return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  })();
+
+  const chairReps          = num('f-chair-reps') || 0;
+  const chairEasierHeight  = val('f-chair-easier-height') || '';
+  const chairEasierReps    = num('f-chair-easier-reps') || 0;
+  const chairHasEasier     = chairEasierHeight !== '' && chairEasierReps > 0;
+  const chairLower   = val('f-chair-lower') === 'yes';
+  const chairH       = val('f-chair-height') || '40';
+  // Score: at standard height reps/20 * 100, capped at 100
+  // At lower height: client effectively did 20 at a harder level — award 100 + bonus mapped to 100
+  // Lower height bonus: each rep above 0 at harder level scores higher; 20 reps = 100 (already exceptional)
+  // Practical mapping: lower height reps/20 * 100, but we cap display at 100 and show "functional age" note
+  const chairBaseScore  = Math.round(Math.min(100, (chairReps / 20) * 100));
+  // If tested at lower height, same formula but we flag it for the report
+  const chairScore      = chairBaseScore;
+  const chairPrev       = val('f-chair-prev') !== '' ? Math.min(100, Math.max(0, num('f-chair-prev'))) : null;
+  const chairNotes      = val('f-chair-notes') || '';
+  // Functional age bracket implied by lower-height performance
+  const chairHeightNum  = parseInt(chairH) || 40;
+  const chairLowerHeight = chairHeightNum === 40 ? 30 : chairHeightNum === 30 ? 20 : null;
+
+  const stairReps          = num('f-stair-reps') || 0;
+  const stairEasierHeight  = val('f-stair-easier-height') || '';
+  const stairEasierReps    = num('f-stair-easier-reps') || 0;
+  const stairHasEasier     = stairEasierHeight !== '' && stairEasierReps > 0;
+  const stairHigher     = val('f-stair-higher') === 'yes';
+  const stairH          = val('f-stair-height') || '30';
+  const stairScore      = Math.round(Math.min(100, (stairReps / 20) * 100));
+  const stairPrev       = val('f-stair-prev') !== '' ? Math.min(100, Math.max(0, num('f-stair-prev'))) : null;
+  const stairNotes      = val('f-stair-notes') || '';
+  const stairHeightNum  = parseInt(stairH) || 30;
+  const stairHigherHeight = stairHeightNum === 30 ? 35 : stairHeightNum === 35 ? 45 : null;
+
+  const balAge      = num('f-age') || 30;
+  // Bracket order (easiest → hardest):
+  // 20-30: board + both legs (easiest)
+  // 31-45: board + single leg
+  // 46-60: no board + single leg + eyes closed
+  // 61+:   single leg + eyes open + no board (hardest)
+  function balBracket(ag) {
+    if (ag <= 30) return { label: 'Balance board · both legs',           single: false, harder: 'Balance board · single leg' };
+    if (ag <= 45) return { label: 'Balance board · single leg',          single: true,  harder: 'No board · single leg · eyes closed' };
+    if (ag <= 60) return { label: 'No board · single leg · eyes closed', single: true,  harder: 'Single leg · eyes open · no board' };
+    return              { label: 'Single leg · eyes open · no board',    single: true,  harder: null };
+  }
+  const balInfo     = balBracket(balAge);
+  const balLeft     = num('f-balance-left') || 0;
+  const balRight    = num('f-balance-right') || 0;
+  const balBoth     = num('f-balance-both') || 0;
+  const balHarder   = val('f-balance-harder') === 'yes';
+  // Worst value: for single leg use min (worst leg), for both legs use the single value
+  const balWorst    = balInfo.single
+                        ? (val('f-balance-left') !== '' || val('f-balance-right') !== ''
+                            ? Math.min(
+                                val('f-balance-left')  !== '' ? balLeft  : 999,
+                                val('f-balance-right') !== '' ? balRight : 999
+                              )
+                            : 0)
+                        : balBoth;
+  const balWorstLeg = balInfo.single && val('f-balance-left') !== '' && val('f-balance-right') !== ''
+                        ? (balLeft <= balRight ? 'left' : 'right')
+                        : null;
+  // Score = ((left + right) / 60) * 100  — both legs contribute equally
+  const balLeftSecs  = balInfo.single && val('f-balance-left')  !== '' ? balLeft  : (balInfo.single ? 0 : balBoth);
+  const balRightSecs = balInfo.single && val('f-balance-right') !== '' ? balRight : (balInfo.single ? 0 : balBoth);
+  const balScore     = balInfo.single
+    ? Math.min(100, Math.round(((balLeftSecs + balRightSecs) / 60) * 100))
+    : Math.min(100, Math.round((balBoth / 30) * 100));
+  const balLeftScore  = Math.min(100, Math.round((balLeftSecs  / 30) * 100));
+  const balRightScore = Math.min(100, Math.round((balRightSecs / 30) * 100));
+  const balPrev     = val('f-balance-prev') !== '' ? Math.min(100, Math.max(0, num('f-balance-prev'))) : null;
+  const balNotes    = val('f-balance-notes') || '';
+  const balHighRisk = balWorst > 0 && balWorst < 10;
+
+  // Best of two attempts per hand
+  const gripRight  = Math.max(num('f-grip-right-1') || 0, num('f-grip-right-2') || 0);
+  const gripLeft   = Math.max(num('f-grip-left-1')  || 0, num('f-grip-left-2')  || 0);
+  const gripPrev   = val('f-grip-prev') !== '' ? Math.min(100, Math.max(0, num('f-grip-prev'))) : null;
+  const gripNotes  = val('f-grip-notes') || '';
+  const gripGender = val('f-gender') === 'male' ? 'male' : 'female';
+  const gripAge    = num('f-age') || 30;
+
+  // Camry norms: [weak_cutoff, strong_cutoff] — Normal = between them
+  // Score: Weak=0-49, Normal=50-79 (scaled), Strong=80-100 (scaled)
+  function gripNorms(ag, gen) {
+    var m = [
+      [10,11,12.6,22.4],[12,13,19.4,31.2],[14,15,28.5,44.3],[16,17,32.6,52.4],
+      [18,19,35.7,55.5],[20,24,36.8,56.6],[25,29,37.7,57.5],[30,34,36.0,55.8],
+      [35,39,35.8,55.6],[40,44,35.5,55.3],[45,49,34.7,54.5],[50,54,32.9,50.7],
+      [55,59,30.7,48.5],[60,64,30.2,48.0],[65,69,28.2,44.0],[70,99,21.3,35.1]
+    ];
+    var f = [
+      [10,11,11.8,21.6],[12,13,14.6,24.4],[14,15,15.5,27.3],[16,17,17.2,29.0],
+      [18,19,19.2,31.0],[20,24,21.5,35.3],[25,29,25.6,41.4],[30,34,21.5,35.3],
+      [35,39,20.3,34.1],[40,44,18.9,32.7],[45,49,18.6,32.4],[50,54,18.1,31.9],
+      [55,59,17.7,31.5],[60,64,17.2,31.0],[65,69,15.4,27.2],[70,99,14.7,24.5]
+    ];
+    var table = gen === 'male' ? m : f;
+    for (var i = 0; i < table.length; i++) {
+      if (ag >= table[i][0] && ag <= table[i][1]) return { weak: table[i][2], strong: table[i][3] };
+    }
+    return gen === 'male' ? { weak: 21.3, strong: 35.1 } : { weak: 14.7, strong: 24.5 };
+  }
+  const gripNorm  = gripNorms(gripAge, gripGender);
+  function gripCalcScore(kg) {
+    if (kg <= 0) return 0;
+    if (kg < gripNorm.weak)    return Math.max(0,  Math.round((kg / gripNorm.weak) * 49));
+    if (kg <= gripNorm.strong) return Math.round(50 + ((kg - gripNorm.weak) / (gripNorm.strong - gripNorm.weak)) * 30);
+    return Math.min(100, Math.round(80 + ((kg - gripNorm.strong) / gripNorm.strong) * 20));
+  }
+  const gripScore     = gripCalcScore(gripRight);
+  const gripDiff      = (gripRight > 0 && gripLeft > 0) ? Math.abs(gripRight - gripLeft) : 0;
+  const gripDiffPct   = (gripRight > 0 && gripLeft > 0) ? Math.round((gripDiff / Math.max(gripRight, gripLeft)) * 100) : 0;
+  const gripAsymmetry = gripDiffPct >= 15;
+
+  const sitLeft    = num('f-sit-left') || 0;
+  const sitRight   = num('f-sit-right') || 0;
+  const sitWorst   = (val('f-sit-left') !== '' || val('f-sit-right') !== '')
+                       ? Math.max(
+                           val('f-sit-left')  !== '' ? sitLeft  : -999,
+                           val('f-sit-right') !== '' ? sitRight : -999
+                         )
+                       : 0;
+  const sitPrev    = val('f-sit-prev') !== '' ? Math.min(100, Math.max(0, num('f-sit-prev'))) : null;
+  const sitNotes   = val('f-sit-notes') || '';
+  const sitAge     = num('f-age') || 30;
+  const sitGender  = val('f-gender') || 'male';
+
+  // Brackets: younger = stricter, older = more forgiving (90s simulation)
+  // Returns [lowerBound, upperBound] for "On Track" range
+  function sitBracket(ag, gender) {
+    if (gender === 'female') {
+      if (ag <= 45) return [-5,  2];
+      if (ag <= 60) return [-3,  4];
+      if (ag <= 75) return [-1,  6];
+      return              [  0,  8];
+    } else {
+      if (ag <= 45) return [-7, -1];
+      if (ag <= 60) return [-4,  2];
+      if (ag <= 75) return [-1,  5];
+      return              [  1,  8];
+    }
+  }
+  const sitBounds = sitBracket(sitAge, sitGender);
+  const sitLow    = sitBounds[0]; // On Track lower bound
+  const sitHigh   = sitBounds[1]; // On Track upper bound
+  const sitRange  = sitHigh - sitLow;
+
+  // Fully continuous 0-100 — no dead zones
+  function sitCalcScore(gap) {
+    if (gap < sitLow) {
+      // Above Avg: 80 at boundary, sliding up to 100
+      var aboveRange = Math.abs(sitLow) + 10; // scale over 10cm past boundary
+      return Math.min(100, Math.round(80 + ((sitLow - gap) / aboveRange) * 20));
+    }
+    if (gap <= sitHigh) {
+      // On Track: 80 at lower bound → 60 at upper bound
+      return Math.round(80 - ((gap - sitLow) / sitRange) * 20);
+    }
+    // Below Avg: 60 at boundary → 0 over 2x the range
+    return Math.max(0, Math.round(60 - ((gap - sitHigh) / (sitRange * 2)) * 60));
+  }
+  const sitScore   = (val('f-sit-left') === '' && val('f-sit-right') === '') ? 0 : sitCalcScore(sitWorst);
+
+  const reachLeft  = num('f-reach-left') || 0;
+  const reachRight = num('f-reach-right') || 0;
+  const reachPrev  = val('f-reach-prev') !== '' ? Math.min(100, Math.max(0, num('f-reach-prev'))) : null;
+  const reachNotes = val('f-reach-notes') || '';
+  const reachAge   = num('f-age') || 30;
+  const reachGender = val('f-gender') || 'male';
+
+  // Threshold for "Average" band: Female <60→3cm, 60+→5cm; Male <60→5cm, 60+→7cm
+  function reachThreshold(ag, gender) {
+    if (gender === 'female') return ag < 60 ? 3 : 5;
+    return ag < 60 ? 5 : 7;
+  }
+  const reachThr = reachThreshold(reachAge, reachGender);
+
+  // Per-side score: Good (≤0)→100, Average (0<gap≤thr)→60-80, Needs work (>thr)→0-60
+  function reachCalcScore(gap) {
+    if (gap <= 0)          return 100;                                        // ≤0 cm = Good
+    if (gap <= reachThr)   return Math.round(100 - (gap / reachThr) * 40);   // 0→thr = 100→60
+    return Math.max(0, Math.round(60 - ((gap - reachThr) / reachThr) * 60)); // >thr = 60→0
+  }
+
+  const reachHasLeft  = val('f-reach-left')  !== '';
+  const reachHasRight = val('f-reach-right') !== '';
+  const reachLeftScore  = reachHasLeft  ? reachCalcScore(reachLeft)  : null;
+  const reachRightScore = reachHasRight ? reachCalcScore(reachRight) : null;
+
+  // Overall = average of whichever sides were entered
+  const reachScore = (!reachHasLeft && !reachHasRight) ? 0
+    : (reachHasLeft && reachHasRight) ? Math.round((reachLeftScore + reachRightScore) / 2)
+    : reachHasLeft ? reachLeftScore : reachRightScore;
+
+  // Asymmetry: sides differ by more than 2 cm
+  const reachAsymmetry = reachHasLeft && reachHasRight && Math.abs(reachLeft - reachRight) > 2;
+  const reachAsymDiff  = reachHasLeft && reachHasRight ? Math.abs(reachLeft - reachRight).toFixed(1) : 0;
+
+  const plankAge    = num('f-age') || 30;
+  const plankSecs   = num('f-plank-secs') || 0;
+  const plankPrev   = val('f-plank-prev') !== '' ? Math.min(100, Math.max(0, num('f-plank-prev'))) : null;
+  const plankNotes  = val('f-plank-notes') || '';
+  function plankTarget(ag) {
+    if (ag <= 30) return { target: 120, label: '20–30', harderTarget: null,  harderLabel: null };
+    if (ag <= 45) return { target: 90,  label: '31–45', harderTarget: 120,   harderLabel: '20–30' };
+    if (ag <= 60) return { target: 60,  label: '46–60', harderTarget: 90,    harderLabel: '31–45' };
+    if (ag <= 75) return { target: 40,  label: '61–75', harderTarget: 60,    harderLabel: '46–60' };
+    return              { target: 20,   label: '76+',   harderTarget: 40,    harderLabel: '61–75' };
+  }
+  const plankInfo   = plankTarget(plankAge);
+  const plankScore  = plankSecs > 0 ? Math.min(100, Math.round((plankSecs / plankInfo.target) * 100)) : 0;
+  // Auto-detect: if seconds already meets or beats the harder bracket target, count it as completed
+  const plankHarderAuto = plankInfo.harderTarget !== null && plankSecs >= plankInfo.harderTarget;
+  const plankHarderFinal = plankHarderAuto;
+
+  const squatDepthRaw = num('f-squat-depth');  // -1=not selected, 0/40/60/80/100=depth base score
+  const squatArms   = document.getElementById('f-squat-arms')   ? document.getElementById('f-squat-arms').checked   : false;
+  const squatHeels  = document.getElementById('f-squat-heels')  ? document.getElementById('f-squat-heels').checked  : false;
+  const squatKnees  = document.getElementById('f-squat-knees')  ? document.getElementById('f-squat-knees').checked  : false;
+  const squatLean   = document.getElementById('f-squat-lean')   ? document.getElementById('f-squat-lean').checked   : false;
+  const squatAsym   = document.getElementById('f-squat-asym')   ? document.getElementById('f-squat-asym').checked   : false;
+  const squatDeduct = (squatArms ? 8 : 0) + (squatHeels ? 8 : 0) + (squatKnees ? 15 : 0) + (squatLean ? 8 : 0) + (squatAsym ? 15 : 0);
+  const squatScore  = squatDepthRaw >= 0 ? Math.max(0, squatDepthRaw - squatDeduct) : 0;
+  const squatPrev   = val('f-squat-prev') !== '' ? Math.min(100, Math.max(0, num('f-squat-prev'))) : null;
+  const squatNotes  = val('f-squat-notes') || '';
+  // Build flag list for report
+  const squatFlags  = [
+    squatArms  ? 'Arms drifted forward'         : null,
+    squatHeels ? 'Heels lifted'                  : null,
+    squatKnees ? 'Knees caved inward'            : null,
+    squatLean  ? 'Excessive forward trunk lean'  : null,
+    squatAsym  ? 'Left/right asymmetry'          : null
+  ].filter(Boolean);
+  const squatDepthLabel = squatDepthRaw === 100 ? 'Full depth' : squatDepthRaw === 80 ? 'Parallel' : squatDepthRaw === 60 ? 'Quarter squat' : squatDepthRaw === 40 ? 'Assisted / partial' : squatDepthRaw === 0 ? 'Cannot squat' : 'Not assessed';
+
+  const wallAge    = num('f-age') || 30;
+  const wallSecs   = num('f-wall-secs') || 0;
+  const wallPrev   = val('f-wall-prev') !== '' ? Math.min(100, Math.max(0, num('f-wall-prev'))) : null;
+  const wallNotes  = val('f-wall-notes') || '';
+  function wallTarget(ag) {
+    if (ag <= 30) return { target: 90,  label: '20–30', harderTarget: null, harderLabel: null };
+    if (ag <= 45) return { target: 70,  label: '31–45', harderTarget: 90,   harderLabel: '20–30' };
+    if (ag <= 60) return { target: 45,  label: '46–60', harderTarget: 70,   harderLabel: '31–45' };
+    if (ag <= 75) return { target: 30,  label: '61–75', harderTarget: 45,   harderLabel: '46–60' };
+    return              { target: 15,   label: '76+',   harderTarget: 30,   harderLabel: '61–75' };
+  }
+  const wallInfo        = wallTarget(wallAge);
+  const wallScore       = wallSecs > 0 ? Math.min(100, Math.round((wallSecs / wallInfo.target) * 100)) : 0;
+  const wallHarderAuto  = wallInfo.harderTarget !== null && wallSecs >= wallInfo.harderTarget;
+
+  const overallScore = Math.round((chairScore + stairScore + balScore + gripScore + sitScore + reachScore + plankScore + squatScore + wallScore) / 9);
+  const prevScores   = [chairPrev, stairPrev, balPrev, gripPrev, sitPrev, reachPrev, plankPrev, squatPrev, wallPrev].filter(v => v !== null);
+  const overallPrev  = prevScores.length === 9 ? Math.round(prevScores.reduce((a,b)=>a+b,0)/9) : null;
+
+  // Progress delta HTML helper
+  function delta(current, prev) {
+    if (prev === null) return '';
+    const diff = current - prev;
+    const sign = diff > 0 ? '+' : '';
+    const col  = diff > 0 ? 'var(--green)' : diff < 0 ? 'var(--red)' : 'var(--muted)';
+    const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
+    return `<span style="font-size:11px;color:${col};margin-left:10px;letter-spacing:0.05em;">${arrow} ${sign}${diff} from last visit (${prev})</span>`;
+  }
+
+  // Recommendation helper
+  function recommendation(station, score) {
+    const recs = {
+      chair: {
+        low:  'Start with sit-to-stand from a normal chair height — 3 sets of 8 reps, three times a week. Hold the armrests at first if needed.',
+        mid:  'Progress to lower chair heights. Try 3 sets of 10 reps without using your hands to push off.',
+        high: 'Maintain with regular stair climbing and bodyweight squats. Add weight as you improve.'
+      },
+      stair: {
+        low:  'Practice step-ups on a low step (15–20 cm) daily. Focus on controlled movement, both up and down.',
+        mid:  'Increase step height gradually. Climb stairs instead of using lifts — aim for 4+ flights a day.',
+        high: 'Add load — carry a light backpack while climbing. Maintain with regular stair use.'
+      },
+      balance: {
+        low:  'Stand on one leg while brushing your teeth — 60 seconds each side, twice daily. Start near a wall for safety.',
+        mid:  'Progress to standing on one leg on a folded towel or cushion. Close your eyes for short intervals.',
+        high: 'Try tandem walking (heel-to-toe) and single-leg stands on uneven surfaces to maintain your level.'
+      },
+      grip: {
+        low:  'Carry shopping bags by hand instead of using a trolley. Use a hand gripper for 5 minutes while watching TV.',
+        mid:  'Increase load gradually — heavier bags, gardening, or resistance band exercises for hands and forearms.',
+        high: 'Maintain with regular resistance training. Rock climbing, gardening, and heavy carries all help.'
+      },
+      sit: {
+        low:  'Seated forward fold daily — sit on the floor with legs straight and reach as far as you can, hold 30 seconds. Consistency matters more than intensity.',
+        mid:  'Progress with strap-assisted stretches. Loop a towel around your feet and gently pull yourself forward. Add hamstring and lower-back stretches.',
+        high: 'Maintain with regular yoga, stretching, or swimming. Floor-based stretching three times a week keeps this range.'
+      },
+      reach: {
+        low:  'Doorframe stretches daily: place your hand on a doorframe at shoulder height and gently rotate away. Hold 30 seconds each side. Avoid forcing the range.',
+        mid:  'Add a towel-assisted reach stretch — hold a towel behind your back and gently pull one end upward. Progress the distance over weeks.',
+        high: 'Maintain with overhead stretching and swimming. Reaching for high shelves and light overhead press movements help preserve this range.'
+      },
+      plank: {
+        low:  'Start with a knee plank: hold for 10–15 seconds, 3 sets. Focus on keeping hips level. Progress to full plank only when form is solid.',
+        mid:  'Practice full plank holds for 20–30 seconds, 3–4 sets. Add dead bugs and bird-dogs to build the deep stabilisers that protect you from falls.',
+        high: 'Maintain with varied plank progressions — side plank, plank with reach, or instability surface. Core endurance at this level significantly reduces injury risk from trips.'
+      },
+      wall: {
+        low:  'Begin with a supported wall squat — use a chair in front for safety. Hold for 10 seconds at a time, building gradually. Quad and glute strength at this level is the primary protector of your knee joint.',
+        mid:  'Practice wall squats 3–4 times per week, targeting sets of 30–45 seconds. Add single-leg press and step-up exercises to build the strength needed to reduce knee load during daily activities like stairs and getting up from chairs.',
+        high: 'Excellent knee endurance. Maintain with regular wall squats and progress to dynamic movements — split squats, step-ups with load. This level of quad endurance strongly protects against knee pain in daily life.'
+      },
+      squat: {
+        low:  'Focus on mobility first before loading. Daily ankle and hip flexor stretches, box squats to a high surface, and thoracic spine rotations. The compensations observed today are early warning signs for joint pain in daily movement.',
+        mid:  'Work on the specific restrictions flagged today. Ankle mobility drills, hip flexor stretches, and goblet squats with a light weight will reinforce correct movement patterns. Aim to eliminate compensations before increasing depth or load.',
+        high: 'Excellent movement quality. Maintain with regular overhead squat practice, continue mobility work, and consider adding load progressively. Clean squat mechanics at this level strongly protect against future joint pain.'
+      }
+    };
+    const tier = score < 40 ? 'low' : score < 75 ? 'mid' : 'high';
+    return recs[station][tier];
+  }
+
+  // Identify strongest (highest score)
+  const tests = [
+    { name: 'Sit & Reach', score: sitScore },
+    { name: 'Stairs',  score: stairScore },
+    { name: 'Chair',   score: chairScore },
+    { name: 'Grip',    score: gripScore  },
+    { name: 'Balance', score: balScore   },
+    { name: 'Reach',   score: reachScore },
+    { name: 'Plank',   score: plankScore  },
+    { name: 'Squat',   score: squatScore  },
+    { name: 'Wall Squat', score: wallScore }
+  ];
+  const strongest = tests.reduce((a, b) => a.score > b.score ? a : b);
+
+  // Verdict text
+  const verdictText = overallScore < 45
+    ? `Your scores show meaningful gaps. The good news: most of this is reversible.`
+    : overallScore < 70
+    ? `Some areas have room to improve — and the tools to do it are simple.`
+    : `A solid foundation. Keep building on it.`;
+
+  const staffNotes = val('f-notes');
+
+  // Editable recommendations — use staff text if filled, else auto-generate
+  function getRec(station, score, id) {
+    var custom = val(id);
+    return custom !== '' ? custom : recommendation(station, score);
+  }
+  const chairRec   = getRec('chair',   chairScore,   'f-chair-rec');
+  const stairRec   = getRec('stair',   stairScore,   'f-stair-rec');
+  const balanceRec = getRec('balance', balScore,     'f-balance-rec');
+  const gripRec    = getRec('grip',    gripScore,    'f-grip-rec');
+  const sitRec     = getRec('sit',     sitScore,     'f-sit-rec');
+  const reachRec   = getRec('reach',   reachScore,   'f-reach-rec');
+  const plankRec   = getRec('plank',   plankScore,   'f-plank-rec');
+  const squatRec   = getRec('squat',   squatScore,   'f-squat-rec');
+  const wallRec    = getRec('wall',    wallScore,    'f-wall-rec');
+  var machineSection = buildMachineSection();
+
+
+  const html = `
+<!-- COVER -->
+<div class="cover">
+
+  <!-- LEFT: dark panel — name + tagline -->
+  <div class="cover-left">
+    <div class="cover-bg-text">90</div>
+    <div>
+      <div class="lab-tag">The 90s Lab · Personal Report</div>
+      <div style="font-family:DM Mono,monospace; font-size:9px; letter-spacing:0.12em; font-style:italic; color:rgba(245,240,232,0.4); margin-top:5px;">aging gracefully</div>
+    </div>
+    <div class="cover-main">
+      <div class="cover-eyebrow">Prepared for</div>
+      <div class="cover-name">${firstName}<br><em>${lastName}</em></div>
+      <div class="cover-subtitle">
+        You are ${age} years old today. This report shows what your body is currently aging towards — and what you can still change.
+      </div>
+    </div>
+    <div class="cover-date-foot">${dateStr}</div>
+  </div>
+
+  <!-- RIGHT: cream panel — scores -->
+  <div class="cover-right">
+    <div class="cover-assess-num">Assessment #001</div>
+    <div class="cover-scores-stack">
+      <div class="cover-score-item" style="border-color:var(--gold)">
+        <div class="cover-score-label">Overall Vitality Score</div>
+        <div class="cover-score-val" style="color:var(--gold)">${overallScore}</div>
+        <div class="cover-score-unit">out of 100</div>
+      </div>
+      <div class="cover-score-item" style="border-color:var(--ink)">
+        <div class="cover-score-label">Chronological Age</div>
+        <div class="cover-score-val" style="color:var(--ink)">${age}</div>
+        <div class="cover-score-unit">years old today</div>
+      </div>
+      <div class="cover-score-item" style="border-color:${overallPrev !== null ? (overallScore > overallPrev ? 'var(--sage)' : 'var(--red)') : 'var(--rust)'}">
+        <div class="cover-score-label">${overallPrev !== null ? 'Change Since Last Visit' : 'To Reach 100'}</div>
+        <div class="cover-score-val" style="color:${overallPrev !== null ? (overallScore > overallPrev ? 'var(--sage)' : overallScore < overallPrev ? 'var(--red)' : 'var(--muted)') : 'var(--rust)'}">
+          ${overallPrev !== null ? (overallScore - overallPrev > 0 ? '+' : '') + (overallScore - overallPrev) : '+' + (100 - overallScore)}
+        </div>
+        <div class="cover-score-unit">${overallPrev !== null ? ('was ' + overallPrev + ' last visit') : 'points to close'}</div>
+      </div>
+      <div class="cover-score-item" style="border-color:var(--sage)">
+        <div class="cover-score-label">Strongest Area</div>
+        <div class="cover-score-val" style="color:var(--sage); font-size:32px">${strongest.name}</div>
+        <div class="cover-score-unit">your best result today</div>
+      </div>
+    </div>
+    <div class="verdict-banner">
+      <div class="verdict-icon">${overallScore < 70 ? '⚠️' : '✅'}</div>
+      <div class="verdict-text-main">${verdictText}</div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- STATION 1 — CHAIR -->
+<div class="section">
+  <div class="section-number">Station 01 · Sit-to-Stand</div>
+  <div class="section-title">Getting up<br>from a <em>chair</em></div>
+  <div class="simple-result-card">
+    <div class="result-card-header">
+      <div>
+        <div class="result-station">Your Result</div>
+        <div class="result-value">${chairReps} out of 20 reps · ${chairH} cm chair${chairLower ? ' + completed lower height' : ''}</div>
+      </div>
+      <div class="score-badge">
+        <div class="score-badge-label">Score</div>
+        <div class="score-badge-val" style="color:${scoreColor(chairScore)}">${chairScore}</div>
+        <div class="score-badge-unit">out of 100</div>
+      </div>
+    </div>
+    <div class="timeline-bar-wrap">
+      <div class="timeline-bar-track">
+        <div class="timeline-bar-fill" style="width:${scoreBar(chairScore)}%; background:${scoreColor(chairScore)};"></div>
+        <div class="timeline-bar-marker" style="left:${scoreBar(chairScore)}%; background:${scoreColor(chairScore)};"></div>
+      </div>
+      <div class="timeline-labels"><span>0 — Needs work</span><span style="color:${scoreColor(chairScore)};font-weight:500">${scoreLabel(chairScore)}</span><span>100 — No decline</span></div>
+    </div>
+    ${delta(chairScore, chairPrev)}
+    ${chairScore === 100 && !chairLower ? '<div style="margin-top:14px; padding:14px 18px; background:rgba(201,168,76,0.12); border-left:3px solid var(--gold); font-size:14px; line-height:1.7; color:var(--ink);"><strong style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:5px;">Ready for the next challenge</strong>You completed all 20 reps at your age-appropriate height (' + chairH + ' cm). However, you were not yet able to complete them at the lower height (' + (chairLowerHeight || 'next level') + ' cm). Keep working — that is your next target.</div>' : ''}
+    ${chairLower ? '<div style="margin-top:14px; padding:14px 18px; background:rgba(74,140,92,0.12); border-left:3px solid var(--green); font-size:14px; line-height:1.7; color:var(--ink);"><strong style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--green);display:block;margin-bottom:5px;">Functional Age Younger Than Chronological</strong>You completed all 20 reps at ' + (chairLowerHeight || 'a lower') + ' cm — a height set for a younger age group. Your legs are performing ahead of your years.</div>' : ''}
+    <div style="margin-top:20px; padding:16px 20px; background:var(--warm); border-left:3px solid ${scoreColor(chairScore)}; font-size:14px; line-height:1.8; color:var(--ink);">
+      <strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Recommendation</strong>
+      ${chairRec}
+    </div>
+    ${chairHasEasier ? (function() {
+      var easierPct = Math.round((chairEasierReps / 20) * 100);
+      var barColor = 'var(--amber)';
+      return '<div style="margin-top:16px; padding:14px 18px; background:rgba(201,168,76,0.08); border-left:3px solid var(--amber);">'
+        + '<div style="font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.13em; text-transform:uppercase; color:var(--amber); margin-bottom:8px; font-weight:500;">Baseline — Easier Level (' + chairEasierHeight + ' cm chair)</div>'
+        + '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">'
+        + '<span style="font-size:13px; color:var(--ink);">' + chairEasierReps + ' / 20 reps at ' + chairEasierHeight + ' cm</span>'
+        + '<span style="font-size:10px; color:var(--muted);">score stays 0 · tracked for progress</span>'
+        + '</div>'
+        + '<div class="timeline-bar-track" style="height:4px;">'
+        + '<div class="timeline-bar-fill" style="width:' + easierPct + '%; background:var(--amber); height:4px;"></div>'
+        + '</div>'
+        + '<div style="font-size:10px; color:var(--muted); margin-top:5px;">Target: reach 20 reps here, then progress to standard height (' + chairH + ' cm)</div>'
+        + '</div>';
+    })() : ''}
+    ${chairNotes ? '<div style="margin-top:12px; padding:16px 20px; background:var(--warm); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + chairNotes + '</div>' : ''}
+  </div>
+</div>
+<div class="section warm">
+  <div class="section-number">Station 02 · Stair Climb</div>
+  <div class="section-title">Climbing<br><em>two floors</em></div>
+  <div class="simple-result-card">
+    <div class="result-card-header">
+      <div>
+        <div class="result-station">Your Result</div>
+        <div class="result-value">${stairReps} out of 20 reps · ${stairH} cm step${stairHigher ? ' + completed higher step' : ''}</div>
+      </div>
+      <div class="score-badge">
+        <div class="score-badge-label">Score</div>
+        <div class="score-badge-val" style="color:${scoreColor(stairScore)}">${stairScore}</div>
+        <div class="score-badge-unit">out of 100</div>
+      </div>
+    </div>
+    <div class="timeline-bar-wrap">
+      <div class="timeline-bar-track">
+        <div class="timeline-bar-fill" style="width:${scoreBar(stairScore)}%; background:${scoreColor(stairScore)};"></div>
+        <div class="timeline-bar-marker" style="left:${scoreBar(stairScore)}%; background:${scoreColor(stairScore)};"></div>
+      </div>
+      <div class="timeline-labels"><span>0 — Needs work</span><span style="color:${scoreColor(stairScore)};font-weight:500">${scoreLabel(stairScore)}</span><span>100 — No decline</span></div>
+    </div>
+    ${delta(stairScore, stairPrev)}
+    ${stairScore === 100 && !stairHigher ? '<div style="margin-top:14px; padding:14px 18px; background:rgba(201,168,76,0.12); border-left:3px solid var(--gold); font-size:14px; line-height:1.7; color:var(--ink);"><strong style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:5px;">Ready for the next challenge</strong>You completed all 20 reps at your age-appropriate step (' + stairH + ' cm). However, you were not yet able to complete them at the higher step (' + (stairHigherHeight || 'next level') + ' cm). Keep working — that is your next target.</div>' : ''}
+    ${stairHigher ? '<div style="margin-top:14px; padding:14px 18px; background:rgba(74,140,92,0.12); border-left:3px solid var(--green); font-size:14px; line-height:1.7; color:var(--ink);"><strong style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--green);display:block;margin-bottom:5px;">Functional Age Younger Than Chronological</strong>You completed all 20 reps at ' + (stairHigherHeight || 'a higher') + ' cm — a step height set for a younger age group. Your legs and cardiovascular system are performing ahead of your years.</div>' : ''}
+    <div style="margin-top:20px; padding:16px 20px; background:rgba(26,20,16,0.06); border-left:3px solid ${scoreColor(stairScore)}; font-size:14px; line-height:1.8; color:var(--ink);">
+      <strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Recommendation</strong>
+      ${stairRec}
+    </div>
+    ${stairHasEasier ? (function() {
+      var easierPct = Math.round((stairEasierReps / 20) * 100);
+      return '<div style="margin-top:16px; padding:14px 18px; background:rgba(201,168,76,0.08); border-left:3px solid var(--amber);">'
+        + '<div style="font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.13em; text-transform:uppercase; color:var(--amber); margin-bottom:8px; font-weight:500;">Baseline — Easier Level (' + stairEasierHeight + ' cm step)</div>'
+        + '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">'
+        + '<span style="font-size:13px; color:var(--ink);">' + stairEasierReps + ' / 20 reps at ' + stairEasierHeight + ' cm</span>'
+        + '<span style="font-size:10px; color:var(--muted);">score stays 0 · tracked for progress</span>'
+        + '</div>'
+        + '<div class="timeline-bar-track" style="height:4px;">'
+        + '<div class="timeline-bar-fill" style="width:' + easierPct + '%; background:var(--amber); height:4px;"></div>'
+        + '</div>'
+        + '<div style="font-size:10px; color:var(--muted); margin-top:5px;">Target: reach 20 reps here, then progress to standard height (' + stairH + ' cm)</div>'
+        + '</div>';
+    })() : ''}
+    ${stairNotes ? '<div style="margin-top:12px; padding:16px 20px; background:rgba(26,20,16,0.06); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + stairNotes + '</div>' : ''}
+  </div>
+</div>
+
+
+<!-- STATION 3 — BALANCE -->
+<div class="section">
+  <div class="section-number">Station 03 · Walking in Dark</div>
+  <div class="section-title">Walking in<br><em>the dark</em></div>
+  <div class="simple-result-card" style="${balHighRisk ? 'border-color:rgba(181,64,32,0.35);' : ''}">
+    <div class="result-card-header">
+      <div>
+        <div class="result-station">Your Result</div>
+        <div class="result-value">
+          ${balInfo.single ? 'Left: ' + balLeftSecs + ' sec · Right: ' + balRightSecs + ' sec' : balBoth + ' sec (both legs)'}
+        </div>
+        <div style="font-size: 14px; color:var(--muted); margin-top:4px;">${balInfo.label}</div>
+      </div>
+      <div class="score-badge">
+        <div class="score-badge-label">Score</div>
+        <div class="score-badge-val" style="color:${scoreColor(balScore)}">${balScore}</div>
+        <div class="score-badge-unit">out of 100</div>
+      </div>
+    </div>
+
+    ${(function() {
+      function legBar(secs, score) {
+        return '<div class="timeline-bar-track" style="margin-top:5px;">'
+          + '<div class="timeline-bar-fill" style="width:' + scoreBar(score) + '%; background:' + scoreColor(score) + ';"></div>'
+          + '<div class="timeline-bar-marker" style="left:' + scoreBar(score) + '%; background:' + scoreColor(score) + ';"></div>'
+          + '</div>';
+      }
+      function legRow(label, secs, score) {
+        return '<div style="margin-bottom:10px;">'
+          + '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">'
+          + '<span style="font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted);">' + label + '</span>'
+          + '<span style="font-size:13px; font-weight:500; color:' + scoreColor(score) + ';">' + secs + ' sec</span>'
+          + '</div>'
+          + legBar(secs, score)
+          + '</div>';
+      }
+      if (balInfo.single) {
+        return '<div style="margin-top:16px;">'
+          + legRow('Left leg', balLeftSecs, balLeftScore)
+          + legRow('Right leg', balRightSecs, balRightScore)
+          + '<div style="display:flex; justify-content:space-between; font-size:10px; color:var(--muted); margin-top:4px;">'
+          + '<span>0 sec</span>'
+          + '<span style="color:' + scoreColor(balScore) + '; font-weight:500;">Combined: ' + scoreLabel(balScore) + '</span>'
+          + '<span>30 sec each</span>'
+          + '</div>'
+          + '</div>';
+      } else {
+        return '<div class="timeline-bar-wrap" style="margin-top:16px;">'
+          + '<div class="timeline-bar-track">'
+          + '<div class="timeline-bar-fill" style="width:' + scoreBar(balScore) + '%; background:' + scoreColor(balScore) + ';"></div>'
+          + '<div class="timeline-bar-marker" style="left:' + scoreBar(balScore) + '%; background:' + scoreColor(balScore) + ';"></div>'
+          + '</div>'
+          + '<div class="timeline-labels"><span>0 — Needs work</span><span style="color:' + scoreColor(balScore) + ';font-weight:500">' + scoreLabel(balScore) + '</span><span>100 — No decline</span></div>'
+          + '</div>';
+      }
+    })()}
+    ${balHighRisk ? '<div style="margin-top:14px; font-size:11px; color:var(--red); letter-spacing:0.08em; padding:10px 14px; background:rgba(181,64,32,0.08); border-left:3px solid var(--red);">⚠ High fall risk — under 10 seconds on worst leg</div>' : ''}
+    ${balScore === 100 && !balHarder && balInfo.harder ? '<div style="margin-top:14px; padding:14px 18px; background:rgba(201,168,76,0.12); border-left:3px solid var(--gold); font-size:14px; line-height:1.7; color:var(--ink);"><strong style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:5px;">Ready for the next challenge</strong>You held 30 seconds at your age-appropriate test (' + balInfo.label + '). You were not yet able to complete the harder bracket (' + balInfo.harder + '). That is your next target.</div>' : ''}
+    ${balHarder ? '<div style="margin-top:14px; padding:14px 18px; background:rgba(74,140,92,0.12); border-left:3px solid var(--green); font-size:14px; line-height:1.7; color:var(--ink);"><strong style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--green);display:block;margin-bottom:5px;">Functional Age Younger Than Chronological</strong>You also completed 30 seconds at the harder bracket (' + (balInfo.harder || 'next level') + '). Your balance is performing ahead of your age group.</div>' : ''}
+    ${delta(balScore, balPrev)}
+    <div style="margin-top:20px; padding:16px 20px; background:var(--warm); border-left:3px solid ${scoreColor(balScore)}; font-size:14px; line-height:1.8; color:var(--ink);">
+      <strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Recommendation</strong>
+      ${balanceRec}
+    </div>
+    ${balNotes ? '<div style="margin-top:12px; padding:16px 20px; background:var(--warm); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + balNotes + '</div>' : ''}
+  </div>
+</div>
+<div class="section warm">
+  <div class="section-number">Station 04 · Grip Strength</div>
+  <div class="section-title">Opening jars,<br><em>carrying bags</em></div>
+  <div class="simple-result-card">
+    <div class="result-card-header">
+      <div>
+        <div class="result-station">Your Result</div>
+        <div class="result-value">Dominant: ${gripRight} kg · Other: ${gripLeft} kg</div>
+        <div style="font-size:13px; color:var(--muted); margin-top:3px;">Best of 2 attempts each · Norm: Normal = ${gripNorm.weak}–${gripNorm.strong} kg</div>
+      </div>
+      <div class="score-badge">
+        <div class="score-badge-label">Score</div>
+        <div class="score-badge-val" style="color:${scoreColor(gripScore)}">${gripScore}</div>
+        <div class="score-badge-unit">out of 100</div>
+      </div>
+    </div>
+    <div class="timeline-bar-wrap">
+      <div class="timeline-bar-track">
+        <div class="timeline-bar-fill" style="width:${scoreBar(gripScore)}%; background:${scoreColor(gripScore)};"></div>
+        <div class="timeline-bar-marker" style="left:${scoreBar(gripScore)}%; background:${scoreColor(gripScore)};"></div>
+      </div>
+      <div class="timeline-labels"><span>0 — Needs work</span><span style="color:${scoreColor(gripScore)};font-weight:500">${scoreLabel(gripScore)}</span><span>100 — No decline</span></div>
+    </div>
+    ${delta(gripScore, gripPrev)}
+    <div style="margin-top:14px; font-size: 15px; color:var(--muted); line-height:1.7;">
+      Camry norms for your age &amp; gender (${gripGender}, ${gripAge}): <strong style="color:var(--rust);">Weak</strong> below ${gripNorm.weak} kg · <strong style="color:var(--ink);">Normal</strong> ${gripNorm.weak}–${gripNorm.strong} kg · <strong style="color:var(--sage);">Strong</strong> above ${gripNorm.strong} kg. Your dominant hand best: <strong style="color:${scoreColor(gripScore)};">${gripRight} kg</strong>.
+    </div>
+    ${gripAsymmetry ? '<div style="margin-top:12px; padding:13px 18px; background:rgba(196,98,45,0.08); border-left:3px solid var(--rust); font-size:14px; line-height:1.7; color:var(--ink);"><strong style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--rust);display:block;margin-bottom:5px;">⚠ Hand Asymmetry Detected</strong>Your dominant hand (' + gripRight + ' kg) and other hand (' + gripLeft + ' kg) differ by ' + gripDiffPct + '%. A gap above 15% can indicate muscular imbalance, joint issues, or nerve involvement. Consider referring for further assessment.</div>' : ''}
+    <div style="margin-top:16px; padding:16px 20px; background:rgba(26,20,16,0.06); border-left:3px solid ${scoreColor(gripScore)}; font-size:14px; line-height:1.8; color:var(--ink);">
+      <strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Recommendation</strong>
+      ${gripRec}
+    </div>
+    ${gripNotes ? '<div style="margin-top:12px; padding:16px 20px; background:rgba(26,20,16,0.06); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + gripNotes + '</div>' : ''}
+  </div>
+</div>
+
+
+<!-- STATION 5 — SIT AND REACH -->
+<div class="section">
+  <div class="section-number">Station 05 · Sit and Reach</div>
+  <div class="section-title">Wearing socks<br><em>and shoes</em></div>
+  <div class="simple-result-card">
+    <div class="result-card-header">
+      <div>
+        <div class="result-station">Your Result</div>
+        <div class="result-value">
+          ${sitLeft <= 0 && sitRight <= 0
+            ? 'Both sides: past ankle (' + (sitLeft <= sitRight ? sitLeft : sitRight) + ' cm)'
+            : 'Left: ' + (sitLeft <= 0 ? 'past ankle (' + sitLeft + ' cm)' : sitLeft + ' cm gap') + ' · Right: ' + (sitRight <= 0 ? 'past ankle (' + sitRight + ' cm)' : sitRight + ' cm gap')}
+        </div>
+      </div>
+      <div class="score-badge">
+        <div class="score-badge-label">Score</div>
+        <div class="score-badge-val" style="color:${scoreColor(sitScore)}">${sitScore}</div>
+        <div class="score-badge-unit">out of 100</div>
+      </div>
+    </div>
+    <div class="timeline-bar-wrap">
+      <div class="timeline-bar-track">
+        <div class="timeline-bar-fill" style="width:${scoreBar(sitScore)}%; background:${scoreColor(sitScore)};"></div>
+        <div class="timeline-bar-marker" style="left:${scoreBar(sitScore)}%; background:${scoreColor(sitScore)};"></div>
+      </div>
+      <div class="timeline-labels"><span>0 — Needs work</span><span style="color:${scoreColor(sitScore)};font-weight:500">${scoreLabel(sitScore)}</span><span>100 — No decline</span></div>
+    </div>
+    ${delta(sitScore, sitPrev)}
+    <div style="margin-top:16px; font-size: 15px; color:var(--muted); line-height:1.7;">
+      Negative = hands past ankle (better). Positive = gap remaining. Worst side used for scoring.<br>
+      Your benchmark (${sitGender === 'female' ? 'female' : 'male'}, age ${sitAge}):
+      <strong style="color:var(--sage);">Above Avg</strong> = below ${sitLow} cm (80–100) &nbsp;·&nbsp;
+      <strong style="color:var(--ink);">On Track</strong> = ${sitLow} to ${sitHigh} cm (60–80) &nbsp;·&nbsp;
+      <strong style="color:var(--rust);">Below Avg</strong> = above ${sitHigh} cm (0–60).<br>
+      Younger age brackets are held to stricter standards — this reflects expected flexibility decline with age.<br>
+      Your result: <strong style="color:${scoreColor(sitScore)};">${sitWorst > 0 ? '+' : ''}${sitWorst} cm</strong>
+      ${sitWorst > sitHigh + 10 ? '· <span style="color:var(--rust);">⚠ Large gap — daily tasks like putting on socks and shoes may be becoming difficult.</span>' : ''}
+    </div>
+    <div style="margin-top:16px; padding:16px 20px; background:var(--warm); border-left:3px solid ${scoreColor(sitScore)}; font-size:14px; line-height:1.8; color:var(--ink);">
+      <strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Recommendation</strong>
+      ${sitRec}
+    </div>
+    ${sitNotes ? '<div style="margin-top:12px; padding:16px 20px; background:var(--warm); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + sitNotes + '</div>' : ''}
+  </div>
+</div>
+<div class="section warm">
+  <div class="section-number">Station 06 · Shoulder Reach</div>
+  <div class="section-title">Scratch your<br><em>back</em></div>
+  <div class="simple-result-card">
+    <div class="result-card-header">
+      <div>
+        <div class="result-station">Your Result</div>
+        <div class="result-value">
+          ${'Left: ' + (reachHasLeft ? (reachLeft < 0 ? 'overlapping (' + reachLeft + ' cm)' : reachLeft === 0 ? 'touching' : '+' + reachLeft + ' cm gap') : '—')
+          + ' · Right: ' + (reachHasRight ? (reachRight < 0 ? 'overlapping (' + reachRight + ' cm)' : reachRight === 0 ? 'touching' : '+' + reachRight + ' cm gap') : '—')}
+        </div>
+        <div style="font-size:13px; color:var(--muted); margin-top:3px;">≤ 0 cm = Good · 0–${reachThr} cm = Average · > ${reachThr} cm = Needs work · Score = average of both sides</div>
+      </div>
+      <div class="score-badge">
+        <div class="score-badge-label">Score</div>
+        <div class="score-badge-val" style="color:${scoreColor(reachScore)}">${reachScore}</div>
+        <div class="score-badge-unit">out of 100</div>
+      </div>
+    </div>
+    ${(function() {
+      function sideBar(label, gap, score) {
+        if (score === null) return '';
+        var gapLabel = gap < 0 ? gap + ' cm (overlapping)' : gap === 0 ? '0 cm (touching)' : '+' + gap + ' cm gap';
+        return '<div style="margin-bottom:10px;">'
+          + '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">'
+          + '<span style="font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted);">' + label + '</span>'
+          + '<span style="font-size:13px; font-weight:500; color:' + scoreColor(score) + ';">' + gapLabel + ' · ' + score + '</span>'
+          + '</div>'
+          + '<div class="timeline-bar-track">'
+          + '<div class="timeline-bar-fill" style="width:' + scoreBar(score) + '%; background:' + scoreColor(score) + ';"></div>'
+          + '<div class="timeline-bar-marker" style="left:' + scoreBar(score) + '%; background:' + scoreColor(score) + ';"></div>'
+          + '</div>'
+          + '</div>';
+      }
+      return '<div style="margin-top:16px;">'
+        + sideBar('Left arm', reachLeft, reachLeftScore)
+        + sideBar('Right arm', reachRight, reachRightScore)
+        + '<div style="display:flex; justify-content:space-between; font-size:10px; color:var(--muted); margin-top:4px;">'
+        + '<span>0 — Needs work</span>'
+        + '<span style="color:' + scoreColor(reachScore) + '; font-weight:500;">Combined: ' + scoreLabel(reachScore) + ' (' + reachScore + ')</span>'
+        + '<span>100 — No decline</span>'
+        + '</div>'
+        + '</div>';
+    })()}
+    ${delta(reachScore, reachPrev)}
+    ${reachAsymmetry ? '<div style="margin-top:12px; padding:13px 18px; background:rgba(196,98,45,0.08); border-left:3px solid var(--rust); font-size:14px; line-height:1.7; color:var(--ink);"><strong style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--rust);display:block;margin-bottom:4px;">⚠ Side Asymmetry</strong>Left and right differ by ' + reachAsymDiff + ' cm. One shoulder is significantly tighter than the other — worth addressing in training.</div>' : ''}
+    <div style="margin-top:16px; font-size: 15px; color:var(--muted); line-height:1.7;">
+      ≤ 0 cm = Good · 0–${reachThr} cm = Average · above ${reachThr} cm = Needs work.
+      Score is the average of both sides — neither side alone tanks the result.
+      ${(reachHasLeft && reachLeft > 15) || (reachHasRight && reachRight > 15) ? '<br><span style="color:var(--rust);">⚠ Gap above 15 cm on one side — difficulty dressing independently or fastening seat belts.</span>' : ''}
+    </div>
+    <div style="margin-top:16px; padding:16px 20px; background:rgba(26,20,16,0.04); border-left:3px solid ${scoreColor(reachScore)}; font-size:14px; line-height:1.8; color:var(--ink);">
+      <strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Recommendation</strong>
+      ${reachRec}
+    </div>
+    ${reachNotes ? '<div style="margin-top:12px; padding:16px 20px; background:rgba(26,20,16,0.04); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + reachNotes + '</div>' : ''}
+  </div>
+</div>
+
+
+<!-- STATION 7 — PLANK -->
+<div class="section">
+  <div class="section-number">Station 07 · Plank</div>
+  <div class="section-title">Recover from<br><em>tripping</em></div>
+  <div class="simple-result-card">
+    <div class="result-card-header">
+      <div>
+        <div class="result-station">Your Result</div>
+        <div class="result-value">${plankSecs} seconds held</div>
+        <div style="font-size: 14px; color:var(--muted); margin-top:4px;">Age bracket ${plankInfo.label} · target ${plankInfo.target} seconds</div>
+      </div>
+      <div class="score-badge">
+        <div class="score-badge-label">Score</div>
+        <div class="score-badge-val" style="color:${scoreColor(plankScore)}">${plankScore}</div>
+        <div class="score-badge-unit">out of 100</div>
+      </div>
+    </div>
+    <div class="timeline-bar-wrap">
+      <div class="timeline-bar-track">
+        <div class="timeline-bar-fill" style="width:${scoreBar(plankScore)}%; background:${scoreColor(plankScore)};"></div>
+        <div class="timeline-bar-marker" style="left:${scoreBar(plankScore)}%; background:${scoreColor(plankScore)};"></div>
+      </div>
+      <div class="timeline-labels"><span>0 — Needs work</span><span style="color:${scoreColor(plankScore)};font-weight:500">${scoreLabel(plankScore)}</span><span>100 — No decline</span></div>
+    </div>
+    ${delta(plankScore, plankPrev)}
+    ${plankScore === 100 && !plankHarderFinal && plankInfo.harderTarget ? '<div style="margin-top:14px; padding:14px 18px; background:rgba(201,168,76,0.12); border-left:3px solid var(--gold); font-size:14px; line-height:1.7; color:var(--ink);"><strong style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:5px;">Ready for the next challenge</strong>You met your age bracket target (' + plankInfo.target + ' sec). You were not yet able to meet the younger bracket target (' + plankInfo.harderTarget + ' sec for ages ' + plankInfo.harderLabel + '). That is your next goal.</div>' : ''}
+    ${plankHarderFinal ? '<div style="margin-top:14px; padding:14px 18px; background:rgba(74,140,92,0.12); border-left:3px solid var(--green); font-size:14px; line-height:1.7; color:var(--ink);"><strong style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--green);display:block;margin-bottom:5px;">Functional Age Younger Than Chronological</strong>You met the target for the ' + plankInfo.harderLabel + ' age bracket (' + plankInfo.harderTarget + ' sec). Your core strength is performing ahead of your age group.</div>' : ''}
+    <div style="margin-top:20px; padding:16px 20px; background:var(--warm); border-left:3px solid ${scoreColor(plankScore)}; font-size:14px; line-height:1.8; color:var(--ink);">
+      <strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Recommendation</strong>
+      ${plankRec}
+    </div>
+    ${plankNotes ? '<div style="margin-top:12px; padding:16px 20px; background:var(--warm); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + plankNotes + '</div>' : ''}
+  </div>
+</div>
+<div class="section warm">
+  <div class="section-number">Station 08 · Overhead Squat</div>
+  <div class="section-title">Moving without<br><em>future pain</em></div>
+  <div class="simple-result-card">
+    <div class="result-card-header">
+      <div>
+        <div class="result-station">Your Result</div>
+        <div class="result-value">${squatDepthLabel}</div>
+        <div style="font-size: 14px; color:var(--muted); margin-top:4px;">
+          Base: ${squatDepthRaw}${squatDeduct > 0 ? ' − ' + squatDeduct + ' pts (' + squatFlags.map(function(f){return f.label;}).join(', ') + ')' : ' · no compensations'} = ${squatScore}
+        </div>
+      </div>
+      <div class="score-badge">
+        <div class="score-badge-label">Score</div>
+        <div class="score-badge-val" style="color:${scoreColor(squatScore)}">${squatScore}</div>
+        <div class="score-badge-unit">out of 100</div>
+      </div>
+    </div>
+    <div class="timeline-bar-wrap">
+      <div class="timeline-bar-track">
+        <div class="timeline-bar-fill" style="width:${scoreBar(squatScore)}%; background:${scoreColor(squatScore)};"></div>
+        <div class="timeline-bar-marker" style="left:${scoreBar(squatScore)}%; background:${scoreColor(squatScore)};"></div>
+      </div>
+      <div class="timeline-labels"><span>0 — Needs work</span><span style="color:${scoreColor(squatScore)};font-weight:500">${scoreLabel(squatScore)}</span><span>100 — No decline</span></div>
+    </div>
+    ${squatFlags.length > 0 ? '<div style="margin-top:14px; padding:14px 18px; background:rgba(181,64,32,0.07); border-left:3px solid var(--rust); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--rust); margin-bottom:6px;">Compensations Observed · −' + squatDeduct + ' pts</strong>' + squatFlags.map(function(f){ return '• ' + f; }).join('<br>') + '<br><br><span style="font-size:13px; color:var(--muted);">Each compensation indicates a restriction that forces another muscle group to overwork. Left unaddressed, these patterns typically cause joint pain during daily activity over time.</span></div>' : '<div style="margin-top:14px; padding:14px 18px; background:rgba(74,140,92,0.1); border-left:3px solid var(--green); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--green); margin-bottom:6px;">Clean Movement Pattern</strong>No compensations observed. All muscle groups are contributing correctly — this is a strong indicator of pain-free daily movement.</div>'}
+    ${delta(squatScore, squatPrev)}
+    <div style="margin-top:16px; padding:16px 20px; background:var(--warm); border-left:3px solid ${scoreColor(squatScore)}; font-size:14px; line-height:1.8; color:var(--ink);">
+      <strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Recommendation</strong>
+      ${squatRec}
+    </div>
+    ${squatNotes ? '<div style="margin-top:12px; padding:16px 20px; background:var(--warm); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + squatNotes + '</div>' : ''}
+  </div>
+</div>
+
+
+<!-- STATION 9 — WALL SQUAT -->
+<div class="section print-page-start">
+  <div class="section-number">Station 09 · Wall Squats</div>
+  <div class="section-title">Future without<br><em>knee pain</em></div>
+  <div class="simple-result-card">
+    <div class="result-card-header">
+      <div>
+        <div class="result-station">Your Result</div>
+        <div class="result-value">${wallSecs} seconds held</div>
+        <div style="font-size: 14px; color:var(--muted); margin-top:4px;">Age bracket ${wallInfo.label} · target ${wallInfo.target} seconds</div>
+      </div>
+      <div class="score-badge">
+        <div class="score-badge-label">Score</div>
+        <div class="score-badge-val" style="color:${scoreColor(wallScore)}">${wallScore}</div>
+        <div class="score-badge-unit">out of 100</div>
+      </div>
+    </div>
+    <div class="timeline-bar-wrap">
+      <div class="timeline-bar-track">
+        <div class="timeline-bar-fill" style="width:${scoreBar(wallScore)}%; background:${scoreColor(wallScore)};"></div>
+        <div class="timeline-bar-marker" style="left:${scoreBar(wallScore)}%; background:${scoreColor(wallScore)};"></div>
+      </div>
+      <div class="timeline-labels"><span>0 — Needs work</span><span style="color:${scoreColor(wallScore)};font-weight:500">${scoreLabel(wallScore)}</span><span>100 — No decline</span></div>
+    </div>
+    ${delta(wallScore, wallPrev)}
+    ${wallScore === 100 && !wallHarderAuto && wallInfo.harderTarget ? '<div style="margin-top:14px; padding:14px 18px; background:rgba(201,168,76,0.12); border-left:3px solid var(--gold); font-size:14px; line-height:1.7; color:var(--ink);"><strong style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:5px;">Ready for the next challenge</strong>You met your age bracket target (' + wallInfo.target + ' sec). The younger bracket target is ' + wallInfo.harderTarget + ' seconds (ages ' + wallInfo.harderLabel + '). That is your next goal.</div>' : ''}
+    ${wallHarderAuto ? '<div style="margin-top:14px; padding:14px 18px; background:rgba(74,140,92,0.12); border-left:3px solid var(--green); font-size:14px; line-height:1.7; color:var(--ink);"><strong style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--green);display:block;margin-bottom:5px;">Functional Age Younger Than Chronological</strong>You held ' + wallSecs + ' seconds, meeting the ' + wallInfo.harderLabel + ' bracket target (' + wallInfo.harderTarget + ' sec). Your knee endurance is ahead of your age group.</div>' : ''}
+    <div style="margin-top:20px; padding:16px 20px; background:var(--warm); border-left:3px solid ${scoreColor(wallScore)}; font-size:14px; line-height:1.8; color:var(--ink);">
+      <strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Recommendation</strong>
+      ${wallRec}
+    </div>
+    ${wallNotes ? '<div style="margin-top:12px; padding:16px 20px; background:var(--warm); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + wallNotes + '</div>' : ''}
+  </div>
+</div>
+
+<!-- SUMMARY TABLE -->
+<div class="section">
+  <div class="section-number">Summary</div>
+  <div class="section-title">Your complete<br><em>picture</em></div>
+  <div class="section-lead">Nine tests. Nine windows into your future. Here is everything together.</div>
+  <table class="score-table">
+    <thead>
+      <tr>
+        <th>Test</th>
+        <th>Your Result</th>
+        <th>Score / 100</th>
+        <th>What you risk losing</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><div class="score-test-name">Sit-to-Stand</div><div style="font-size:13px;color:var(--muted);margin-top:3px;">${chairH} cm · ${chairLower ? "lower height" : "standard"}</div></td>
+        <td>${chairReps} / 20 reps${chairLower ? " ★" : ""}</td>
+        <td><span class="age-number" style="color:${scoreColor(chairScore)}">${chairScore}</span></td>
+        <td class="life-meaning-cell">Getting up from low chairs, sofas, car seats, the floor after a fall</td>
+        <td><span class="result-pill" style="color:${scoreColor(chairScore)};border-color:${scoreColor(chairScore)}">${scoreLabel(chairScore)}</span></td>
+      </tr>
+      <tr>
+        <td><div class="score-test-name">Stair Climb</div><div style="font-size:13px;color:var(--muted);margin-top:3px;">${stairH} cm step${stairHigher ? ' ★' : ''}</div></td>
+        <td>${stairReps} / 20 reps</td>
+        <td><span class="age-number" style="color:${scoreColor(stairScore)}">${stairScore}</span></td>
+        <td class="life-meaning-cell">Access to upper floors, public stairs, independence of movement</td>
+        <td><span class="result-pill" style="color:${scoreColor(stairScore)};border-color:${scoreColor(stairScore)}">${scoreLabel(stairScore)}</span></td>
+      </tr>
+      <tr>
+        <td><div class="score-test-name">Walking in Dark</div><div style="font-size:13px;color:var(--muted);margin-top:3px;">${balInfo.label}</div></td>
+        <td>${balInfo.single ? (balWorst + ' sec worst · ' + (balWorstLeg || '—') + ' leg') : (balBoth + ' sec both legs')}</td>
+        <td><span class="age-number" style="color:${scoreColor(balScore)}">${balScore}</span></td>
+        <td class="life-meaning-cell">Not falling on wet floors, in the bath, or turning quickly at night</td>
+        <td><span class="result-pill" style="color:${scoreColor(balScore)};border-color:${scoreColor(balScore)}">${scoreLabel(balScore)}</span></td>
+      </tr>
+      <tr>
+        <td><div class="score-test-name">Grip Strength</div><div style="font-size:13px;color:var(--muted);margin-top:3px;">Dynamometer</div></td>
+        <td>${gripRight} kg dom · ${gripLeft} kg other</td>
+        <td><span class="age-number" style="color:${scoreColor(gripScore)}">${gripScore}</span></td>
+        <td class="life-meaning-cell">Opening jars, carrying shopping, turning taps and door handles</td>
+        <td><span class="result-pill" style="color:${scoreColor(gripScore)};border-color:${scoreColor(gripScore)}">${scoreLabel(gripScore)}</span></td>
+      </tr>
+      <tr>
+        <td><div class="score-test-name">Sit and Reach</div><div style="font-size:13px;color:var(--muted);margin-top:3px;">Inclined seat, both legs</div></td>
+        <td>${sitWorst < 0 ? 'Past ankle (' + sitWorst + ' cm)' : sitWorst === 0 ? 'Just touching' : '+' + sitWorst + ' cm gap'}</td>
+        <td><span class="age-number" style="color:${scoreColor(sitScore)}">${sitScore}</span></td>
+        <td class="life-meaning-cell">Putting on socks and shoes, picking things up from the floor</td>
+        <td><span class="result-pill" style="color:${scoreColor(sitScore)};border-color:${scoreColor(sitScore)}">${scoreLabel(sitScore)}</span></td>
+      </tr>
+      <tr>
+        <td><div class="score-test-name">Shoulder Reach</div><div style="font-size:13px;color:var(--muted);margin-top:3px;">Scratch your back</div></td>
+        <td>${reachHasLeft ? (reachLeft < 0 ? 'L: ' + reachLeft + ' cm' : 'L: +' + reachLeft + ' cm') : 'L: —'} · ${reachHasRight ? (reachRight < 0 ? 'R: ' + reachRight + ' cm' : 'R: +' + reachRight + ' cm') : 'R: —'}</td>
+        <td><span class="age-number" style="color:${scoreColor(reachScore)}">${reachScore}</span></td>
+        <td class="life-meaning-cell">Dressing independently, reaching behind, fastening seat belts</td>
+        <td><span class="result-pill" style="color:${scoreColor(reachScore)};border-color:${scoreColor(reachScore)}">${scoreLabel(reachScore)}</span></td>
+      </tr>
+      <tr>
+        <td><div class="score-test-name">Plank</div><div style="font-size:13px;color:var(--muted);margin-top:3px;">Ages ${plankInfo.label} · target ${plankInfo.target}s</div></td>
+        <td>${plankSecs} sec${plankHarderFinal ? ' ★' : ''}</td>
+        <td><span class="age-number" style="color:${scoreColor(plankScore)}">${plankScore}</span></td>
+        <td class="life-meaning-cell">Catching yourself when tripping, core stability for all daily movement</td>
+        <td><span class="result-pill" style="color:${scoreColor(plankScore)};border-color:${scoreColor(plankScore)}">${scoreLabel(plankScore)}</span></td>
+      </tr>
+      <tr>
+        <td><div class="score-test-name">Overhead Squat</div><div style="font-size:13px;color:var(--muted);margin-top:3px;">${squatFlags.length === 0 ? 'Clean movement' : squatFlags.length + ' flag' + (squatFlags.length > 1 ? 's' : '') + ' observed'}</div></td>
+        <td>${squatDepthLabel}${squatDeduct > 0 ? ' · −' + squatDeduct + ' pts' : ''}</td>
+        <td><span class="age-number" style="color:${scoreColor(squatScore)}">${squatScore}</span></td>
+        <td class="life-meaning-cell">Pain-free bending, lifting, and daily movement in future years</td>
+        <td><span class="result-pill" style="color:${scoreColor(squatScore)};border-color:${scoreColor(squatScore)}">${scoreLabel(squatScore)}</span></td>
+      </tr>
+      <tr>
+        <td><div class="score-test-name">Wall Squat</div><div style="font-size:13px;color:var(--muted);margin-top:3px;">Ages ${wallInfo.label} · target ${wallInfo.target}s</div></td>
+        <td>${wallSecs} sec${wallHarderAuto ? ' ★' : ''}</td>
+        <td><span class="age-number" style="color:${scoreColor(wallScore)}">${wallScore}</span></td>
+        <td class="life-meaning-cell">Knee strength for stairs, standing from chairs, walking long distances</td>
+        <td><span class="result-pill" style="color:${scoreColor(wallScore)};border-color:${scoreColor(wallScore)}">${scoreLabel(wallScore)}</span></td>
+      </tr>
+    </tbody>
+  </table>
+  ${staffNotes ? '<div style="background:var(--warm); border-left:4px solid var(--ink); padding:20px 24px; font-size:13px; line-height:1.8; margin-top:8px;"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:8px;">Staff Observations</strong>' + staffNotes + '</div>' : ''}
+</div>
+
+
+` + machineSection + `
+<!-- WHAT THIS MEANS -->
+<div class="section">
+  <div class="section-number">Before the Numbers</div>
+  <div class="section-title">What does it actually<br><em>feel like</em> to be 90?</div>
+  <div class="section-lead">Numbers are easy to ignore. Real moments are not. Based on your results today, here is a picture of what a typical Tuesday morning might look like — if nothing changes.</div>
+  <div class="story-card">
+    <div class="story-card-label">A day in your life · Projected age 90 · Based on today's results</div>
+    <div class="story-card-text">
+      ${(function() {
+        var sentences = [];
+        var closing = '';
+
+        // Morning / getting up
+        if (chairScore < 50) {
+          sentences.push('You wake up and it takes <strong>multiple attempts to get out of bed</strong> — your legs don\'t have the strength to push you upright in one motion.');
+        } else if (chairScore < 75) {
+          sentences.push('You wake up and sit on the edge of the bed for a moment, <strong>gathering strength before standing</strong>. It takes more effort than it used to.');
+        } else {
+          sentences.push('You wake up and get out of bed without difficulty — <strong>your leg strength has held up well</strong>.');
+        }
+
+        // Stairs
+        if (stairScore < 50) {
+          sentences.push('The stairs to the bathroom feel like a <strong>small mountain</strong>. You hold the railing with both hands and take them one at a time.');
+        } else if (stairScore < 75) {
+          sentences.push('You use the railing going up the stairs — <strong>not because you must, but because you don\'t quite trust your legs</strong> without it.');
+        } else {
+          sentences.push('You take the stairs without needing the railing — <strong>your stair strength is well above average for your age</strong>.');
+        }
+
+        // Grip
+        if (gripScore < 50) {
+          sentences.push('Breakfast means the jar of jam stays sealed. <strong>You cannot grip it tightly enough</strong> to twist the lid. You\'ve started keeping a rubber opener on the counter.');
+        } else if (gripScore < 75) {
+          sentences.push('Opening the jam jar takes a second attempt. <strong>Your grip gets the job done, but it\'s noticeably weaker</strong> than it once was.');
+        } else {
+          sentences.push('You open the jam jar on the first try — <strong>your grip strength is a genuine asset at your age</strong>.');
+        }
+
+        // Shoulder reach / dressing
+        if (reachScore < 50) {
+          sentences.push('Getting dressed takes longer than it should. <strong>Reaching behind your back to fasten a clasp or tuck in a shirt</strong> requires real effort and sometimes help.');
+        } else if (reachScore < 75) {
+          sentences.push('Reaching behind your back is manageable, but <strong>your shoulder reminds you it\'s there</strong> when you push the range.');
+        } else {
+          sentences.push('You dress without any shoulder discomfort — <strong>your shoulder mobility is strong</strong>.');
+        }
+
+        // Sit and reach / flexibility / floor
+        if (sitScore < 50) {
+          sentences.push('Picking something up from the floor means <strong>finding something to hold onto first</strong>. Your hamstrings and back have tightened to the point where bending freely isn\'t easy.');
+        } else if (sitScore < 75) {
+          sentences.push('Bending down to pick things up is fine, but <strong>staying bent for more than a moment is uncomfortable</strong>.');
+        } else {
+          sentences.push('You bend and reach without stiffness — <strong>your flexibility is well preserved</strong>.');
+        }
+
+        // Balance / walking in dark
+        if (balScore < 50) {
+          sentences.push('Walking to the kitchen in the dark is something you now avoid. <strong>Without visual anchors, you feel genuinely unsteady</strong> — the fear of a fall is real.');
+        } else if (balScore < 75) {
+          sentences.push('You\'re careful on uneven surfaces and in low light. <strong>Your balance is manageable but you\'ve become more cautious</strong> than you used to be.');
+        } else {
+          sentences.push('You move confidently in low light and on uneven ground — <strong>your balance has held up well</strong>.');
+        }
+
+        // Plank / core
+        if (plankScore < 50) {
+          sentences.push('A stumble in the garden ends badly. <strong>Without core stability to catch yourself</strong>, a trip becomes a fall.');
+        } else if (plankScore < 75) {
+          sentences.push('You catch yourself when you stumble, but it\'s closer than it used to be. <strong>Your core is there, but the margin is thinner</strong>.');
+        } else {
+          sentences.push('When you stumble on the garden path, <strong>your core kicks in and you catch yourself easily</strong>. That reflex is not guaranteed at 90 — you\'ve earned it.');
+        }
+
+        // Wall squat / knee
+        if (wallScore < 50) {
+          sentences.push('Getting up from a low sofa or a car seat has become something you <strong>plan for in advance</strong>. Your knees protest every time.');
+        } else if (wallScore < 75) {
+          sentences.push('You manage low chairs and car seats, but <strong>your knees make their presence known</strong> on the way up.');
+        } else {
+          sentences.push('Low chairs and car seats are not a problem — <strong>your knee endurance is genuinely strong for your age</strong>.');
+        }
+
+        // Closing line based on overall
+        if (overallScore >= 80) {
+          closing = 'This is not the average story at 90. <strong>You are building a different future</strong> — one where daily life stays on your terms.';
+        } else if (overallScore >= 55) {
+          closing = 'This is a mixed picture. <strong>Some things will hold. Others need attention now</strong> — while there is still time to change the trajectory.';
+        } else {
+          closing = 'This is not a worst-case story. <strong>This is the likely trajectory</strong> for someone with your results today — unless something changes. The good news is that something can.';
+        }
+
+        return sentences.join(' ') + '<br><br>' + closing;
+      })()}
+    </div>
+    <div class="story-card-attribution">— Generated from your 9-station assessment results</div>
+  </div>
+  <div style="background:var(--warm); border-left:4px solid var(--sage); padding:24px 28px; font-size:13px; line-height:1.8; color:var(--ink); max-width:680px;">
+    <strong style="display:block; font-family:'Syne',sans-serif; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--sage); margin-bottom:8px;">The hopeful truth</strong>
+    Every single thing described above is preventable. Muscle and balance decline are not fixed — they respond dramatically to movement, even started late. The point of this report is not to alarm you. It is to show you the fork in the road <em>while you can still choose.</em>
+  </div>
+  <div class="closing" style="padding:40px 0 0; border-top:1px solid rgba(26,20,16,0.1); margin-top:40px; display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:24px;">
+    <div class="closing-message">
+      Come back in <strong>3 months.</strong> We will retest all five stations. The goal is simple: <strong>a higher score every time</strong> you walk through that door.
+    </div>
+    <div class="closing-meta">
+      <p>${firstName} ${lastName} · Age ${age}<br>The 90s Lab · ${dateStr}<br>Assessed by: ${staff}</p>
+      <div class="footer-mark">The 90s Lab</div>
+    </div>
+  </div>
+</div>
+
+<!-- RAW DATA PAGE -->
+<div class="section print-page-start" style="background:var(--paper); font-family:DM Mono,monospace;">
+  <div class="section-number">Appendix · Raw Assessment Data</div>
+  <div class="section-title" style="font-size:28px; margin-bottom:16px;">Data<br><em>Record</em></div>
+  <div style="font-size:10px; color:var(--muted); margin-bottom:24px; line-height:1.6;">
+    All values entered during the assessment. Retained for clinical reference and future comparison.<br>
+    ${dateStr} · Staff: ${staff} · ${firstName} ${lastName}, Age ${age}, ${gripGender === 'male' ? 'Male' : 'Female'}${val('m-bw') ? ' · ' + val('m-bw') + ' kg' : ''}
+  </div>
+  ${(function() {
+    function sec(title) {
+      return '<div style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--rust);border-bottom:1px solid rgba(26,20,16,0.15);padding-bottom:4px;margin:18px 0 8px;">' + title + '</div>';
+    }
+    function row(label, value) {
+      if (value === '' || value === null || value === undefined || value === '—' && false) return '';
+      var v = (value === '' || value === null || value === undefined) ? '—' : value;
+      return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(26,20,16,0.05);font-size:13px;line-height:1.5;">'
+        + '<span style="color:var(--muted);flex:0 0 58%;">' + label + '</span>'
+        + '<span style="color:var(--ink);font-weight:500;text-align:right;">' + v + '</span>'
+        + '</div>';
+    }
+    var o = '';
+
+    o += sec('Station 01 · Sit-to-Stand');
+    o += row('Chair height', val('f-chair-height') ? val('f-chair-height') + ' cm' : '—');
+    o += row('Reps completed', val('f-chair-reps') !== '' ? val('f-chair-reps') + ' / 20' : '—');
+    o += row('Completed 20 at lower height', val('f-chair-lower') === 'yes' ? 'Yes' : 'No');
+    o += row('Easier height logged', val('f-chair-easier-height') ? val('f-chair-easier-height') + ' cm · ' + (val('f-chair-easier-reps') || '0') + ' reps' : '—');
+    o += row('Previous score', val('f-chair-prev') || '—');
+    o += row('Final score', chairScore);
+
+    o += sec('Station 02 · Stair Climb');
+    o += row('Step height', val('f-stair-height') ? val('f-stair-height') + ' cm' : '—');
+    o += row('Reps completed', val('f-stair-reps') !== '' ? val('f-stair-reps') + ' / 20' : '—');
+    o += row('Completed 20 at higher step', val('f-stair-higher') === 'yes' ? 'Yes' : 'No');
+    o += row('Easier height logged', val('f-stair-easier-height') ? val('f-stair-easier-height') + ' cm · ' + (val('f-stair-easier-reps') || '0') + ' reps' : '—');
+    o += row('Previous score', val('f-stair-prev') || '—');
+    o += row('Final score', stairScore);
+
+    o += sec('Station 03 · Walking in Dark (Balance)');
+    o += row('Test bracket', balInfo.label);
+    if (balInfo.single) {
+      o += row('Left leg hold', val('f-balance-left') !== '' ? val('f-balance-left') + ' sec' : '—');
+      o += row('Right leg hold', val('f-balance-right') !== '' ? val('f-balance-right') + ' sec' : '—');
+      o += row('Left leg score', balLeftScore !== null ? balLeftScore : '—');
+      o += row('Right leg score', balRightScore !== null ? balRightScore : '—');
+    } else {
+      o += row('Both legs hold', val('f-balance-both') !== '' ? val('f-balance-both') + ' sec' : '—');
+    }
+    o += row('Completed harder bracket', val('f-balance-harder') === 'yes' ? 'Yes' : 'No');
+    o += row('Previous score', val('f-balance-prev') || '—');
+    o += row('Final score', balScore);
+
+    o += sec('Station 04 · Grip Strength');
+    o += row('Dominant — attempt 1', val('f-grip-right-1') !== '' ? val('f-grip-right-1') + ' kg' : '—');
+    o += row('Dominant — attempt 2', val('f-grip-right-2') !== '' ? val('f-grip-right-2') + ' kg' : '—');
+    o += row('Dominant — best', gripRight > 0 ? gripRight + ' kg' : '—');
+    o += row('Other hand — attempt 1', val('f-grip-left-1') !== '' ? val('f-grip-left-1') + ' kg' : '—');
+    o += row('Other hand — attempt 2', val('f-grip-left-2') !== '' ? val('f-grip-left-2') + ' kg' : '—');
+    o += row('Other hand — best', gripLeft > 0 ? gripLeft + ' kg' : '—');
+    o += row('Norm (Normal range)', gripNorm.weak + '–' + gripNorm.strong + ' kg');
+    o += row('Asymmetry', gripAsymmetry ? gripDiffPct + '% ⚠' : 'Within range');
+    o += row('Previous score', val('f-grip-prev') || '—');
+    o += row('Final score', gripScore);
+
+    o += sec('Station 05 · Sit and Reach');
+    o += row('Left side', val('f-sit-left') !== '' ? val('f-sit-left') + ' cm' : '—');
+    o += row('Right side', val('f-sit-right') !== '' ? val('f-sit-right') + ' cm' : '—');
+    o += row('On Track range', sitLow + ' to ' + sitHigh + ' cm (' + (sitGender === 'female' ? 'F' : 'M') + ', age ' + sitAge + ')');
+    o += row('Previous score', val('f-sit-prev') || '—');
+    o += row('Final score', sitScore);
+
+    o += sec('Station 06 · Shoulder Reach');
+    o += row('Left arm gap', val('f-reach-left') !== '' ? val('f-reach-left') + ' cm' : '—');
+    o += row('Right arm gap', val('f-reach-right') !== '' ? val('f-reach-right') + ' cm' : '—');
+    o += row('Left arm score', reachLeftScore !== null ? reachLeftScore : '—');
+    o += row('Right arm score', reachRightScore !== null ? reachRightScore : '—');
+    o += row('Average band threshold', reachThr + ' cm');
+    o += row('Asymmetry flag', reachAsymmetry ? reachAsymDiff + ' cm difference ⚠' : 'None');
+    o += row('Previous score', val('f-reach-prev') || '—');
+    o += row('Final score', reachScore);
+
+    o += sec('Station 07 · Plank');
+    o += row('Hold time', val('f-plank-secs') !== '' ? val('f-plank-secs') + ' sec' : '—');
+    o += row('Target (age bracket ' + plankInfo.label + ')', plankInfo.target + ' sec');
+    o += row('Met harder bracket', plankHarderFinal ? 'Yes' : 'No');
+    o += row('Previous score', val('f-plank-prev') || '—');
+    o += row('Final score', plankScore);
+
+    o += sec('Station 08 · Overhead Squat');
+    o += row('Depth achieved', squatDepthLabel);
+    o += row('Base score', squatDepthRaw >= 0 ? squatDepthRaw : '—');
+    o += row('Arms drifted', squatArms ? 'Yes (−8)' : 'No');
+    o += row('Heels lifted', squatHeels ? 'Yes (−8)' : 'No');
+    o += row('Knees caved', squatKnees ? 'Yes (−15)' : 'No');
+    o += row('Forward lean', squatLean ? 'Yes (−8)' : 'No');
+    o += row('Asymmetry', squatAsym ? 'Yes (−15)' : 'No');
+    o += row('Total deductions', squatDeduct > 0 ? '−' + squatDeduct + ' pts' : 'None');
+    o += row('Previous score', val('f-squat-prev') || '—');
+    o += row('Final score', squatScore);
+
+    o += sec('Station 09 · Wall Squats');
+    o += row('Hold time', val('f-wall-secs') !== '' ? val('f-wall-secs') + ' sec' : '—');
+    o += row('Target (age bracket ' + wallInfo.label + ')', wallInfo.target + ' sec');
+    o += row('Met harder bracket', wallHarderAuto ? 'Yes' : 'No');
+    o += row('Previous score', val('f-wall-prev') || '—');
+    o += row('Final score', wallScore);
+
+    o += sec('Machine Strength Profile');
+    o += row('Bodyweight', val('m-bw') ? val('m-bw') + ' kg' : '—');
+    var mNames = ['Bicep Curl','Tricep Extension','Shoulder Press','Lat Pulldown','Bench Press'];
+    for (var mi = 1; mi <= 5; mi++) { o += row(mNames[mi-1], val('m'+mi+'-val') !== '' ? val('m'+mi+'-val') + ' kg' : '—'); }
+
+    o += sec('Overall');
+    o += row('Overall vitality score', overallScore);
+    o += row('Previous overall', overallPrev !== null ? overallPrev : '—');
+
+    if (val('f-notes')) { o += sec('Staff Observations'); o += '<div style="font-size:13px;line-height:1.8;color:var(--ink);padding:6px 0;">' + val('f-notes') + '</div>'; }
+
+    return o;
+  })()}
+  <div style="margin-top:28px;font-size:9px;color:var(--muted);letter-spacing:0.1em;border-top:1px solid rgba(26,20,16,0.1);padding-top:10px;">
+    The 90s Lab · ${dateStr} · Assessed by ${staff} · Raw data record — for clinical use only
+  </div>
+</div>
+`;
+
+  document.getElementById('report-output').innerHTML = html;
+
+  // Auto-populate recommendation textareas if still empty
+  var recFields = [
+    ['f-chair-rec',   recommendation('chair',   chairScore)],
+    ['f-stair-rec',   recommendation('stair',   stairScore)],
+    ['f-balance-rec', recommendation('balance', balScore)],
+    ['f-grip-rec',    recommendation('grip',    gripScore)],
+    ['f-sit-rec',     recommendation('sit',     sitScore)],
+    ['f-reach-rec',   recommendation('reach',   reachScore)],
+    ['f-plank-rec',   recommendation('plank',   plankScore)],
+    ['f-squat-rec',   recommendation('squat',   squatScore)],
+    ['f-wall-rec',    recommendation('wall',    wallScore)],
+  ];
+  recFields.forEach(function(pair) {
+    var el = document.getElementById(pair[0]);
+    if (el && el.value === '') el.value = pair[1];
+  });
+}
+
+// ── LIVE SCORE PREVIEWS ───────────────────────────────────────────
+function updateInlinePreviews() {
+  const scoreFields = [
+
+
+
+
+
+
+  ];
+
+  scoreFields.forEach(({ inputId, valId, labelId }) => {
+    const s = Math.min(100, Math.max(0, parseFloat(document.getElementById(inputId)?.value) || 0));
+    const valEl   = document.getElementById(valId);
+    const labelEl = document.getElementById(labelId);
+    if (!valEl) return;
+    valEl.textContent = s;
+    if (labelEl) labelEl.textContent = s >= 75 ? 'Strong' : s >= 55 ? 'Moderate' : s >= 38 ? 'Needs work' : 'Urgent';
+    const color = s >= 75 ? 'var(--green)' : s >= 55 ? 'var(--amber)' : s >= 38 ? 'var(--rust)' : 'var(--red)';
+    valEl.style.color = color;
+  });
+
+  // balance fall risk warn
+  const bL = parseFloat(document.getElementById('f-balance-left')?.value) || 0;
+  const bR = parseFloat(document.getElementById('f-balance-right')?.value) || 0;
+  const best = Math.max(bL, bR);
+  const warn = document.getElementById('balance-warn');
+  if (warn) warn.style.display = best > 0 && best < 10 ? 'block' : 'none';
+}
+
+// ── DEBOUNCED RENDER ─────────────────────────────────────────────
+let renderTimer;
+function chairHeightForAge(age) {
+  if (age >= 10 && age <= 45) return 20;
+  if (age >= 46 && age <= 60) return 30;
+  return 40;
+}
+
+function stairHeightForAge(age) {
+  if (age >= 10 && age <= 45) return 45;
+  if (age >= 46 && age <= 60) return 35;
+  return 30;
+}
+
+function updateChairHeight() {
+  var ageEl   = document.getElementById('f-age');
+  var chairEl = document.getElementById('f-chair-height');
+  if (!ageEl || !chairEl) return;
+  var age = parseInt(ageEl.value) || 0;
+  if (age < 10) return;
+  chairEl.value = chairHeightForAge(age);
+}
+
+function updateStairHeight() {
+  var ageEl   = document.getElementById('f-age');
+  var stairEl = document.getElementById('f-stair-height');
+  if (!ageEl || !stairEl) return;
+  var age = parseInt(ageEl.value) || 0;
+  if (age < 10) return;
+  stairEl.value = stairHeightForAge(age);
+}
+
+function selectSquatDepth(el) {
+  document.querySelectorAll('.squat-radio-card').forEach(function(c){ c.classList.remove('selected'); });
+  el.classList.add('selected');
+  document.getElementById('f-squat-depth').value = el.getAttribute('data-val');
+  scheduleRender();
+}
+
+function toggleSquatFlag(rowEl, inputId) {
+  rowEl.classList.toggle('checked');
+  var cb = document.getElementById(inputId);
+  if (cb) cb.checked = rowEl.classList.contains('checked');
+  scheduleRender();
+}
+
+function scheduleRender() {
+  updateInlinePreviews();
+  updateMachineTargets();
+  updateChairHeight();
+  updateStairHeight();
+  updateBalanceUI();
+  updateChairScorePreview();
+  updateStairScorePreview();
+  updateBalScorePreview();
+  updateGripScorePreview();
+  updateSitScorePreview();
+  updateReachScorePreview();
+  updatePlankScorePreview();
+  updateSquatScorePreview();
+  updateWallScorePreview();
+  updateProgress();
+  clearTimeout(renderTimer);
+  renderTimer = setTimeout(render, 220);
+}
+
+function balBracketFn(ag) {
+  if (ag <= 30) return { label: 'Balance board · both legs',           single: false, harder: 'Balance board · single leg' };
+  if (ag <= 45) return { label: 'Balance board · single leg',          single: true,  harder: 'No board · single leg · eyes closed' };
+  if (ag <= 60) return { label: 'No board · single leg · eyes closed', single: true,  harder: 'Single leg · eyes open · no board' };
+  return              { label: 'Single leg · eyes open · no board',    single: true,  harder: null };
+}
+
+function updateBalanceUI() {
+  var ageEl   = document.getElementById('f-age');
+  var descEl  = document.getElementById('bal-test-description');
+  var singleEl = document.getElementById('bal-single-fields');
+  var bothEl  = document.getElementById('bal-both-fields');
+  if (!ageEl) return;
+  var age = parseInt(ageEl.value) || 0;
+  if (age < 10) return;
+  var info = balBracketFn(age);
+  if (descEl) {
+    descEl.textContent = 'Test for this age group: ' + info.label
+      + (info.harder ? ' · If 30 sec achieved, also test: ' + info.harder : ' · Hardest bracket — no higher test');
+  }
+  if (singleEl) singleEl.style.display = info.single ? '' : 'none';
+  if (bothEl)   bothEl.style.display   = info.single ? 'none' : '';
+}
+
+function updateBalScorePreview() {
+  var ageEl   = document.getElementById('f-age');
+  var valDisp = document.getElementById('balance-score-val-display');
+  var lblDisp = document.getElementById('balance-score-label-display');
+  if (!valDisp || !lblDisp || !ageEl) return;
+  var age  = parseInt(ageEl.value) || 0;
+  var info = balBracketFn(age);
+  var secs;
+  if (info.single) {
+    var lEl = document.getElementById('f-balance-left');
+    var rEl = document.getElementById('f-balance-right');
+    var hasL = lEl && lEl.value !== '';
+    var hasR = rEl && rEl.value !== '';
+    if (!hasL && !hasR) { valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)'; lblDisp.textContent = '—'; return; }
+    secs = Math.min(hasL ? parseFloat(lEl.value) : 999, hasR ? parseFloat(rEl.value) : 999);
+  } else {
+    var bEl = document.getElementById('f-balance-both');
+    if (!bEl || bEl.value === '') { valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)'; lblDisp.textContent = '—'; return; }
+    secs = parseFloat(bEl.value);
+  }
+  var score = Math.min(100, Math.round((secs / 30) * 100));
+  var color = score >= 75 ? 'var(--green)' : score >= 55 ? 'var(--amber)' : score >= 38 ? 'var(--rust)' : 'var(--red)';
+  var label = score >= 75 ? 'Strong' : score >= 55 ? 'Moderate' : score >= 38 ? 'Needs work' : 'Urgent';
+  valDisp.textContent = score; valDisp.style.color = color;
+  lblDisp.textContent = label;
+}
+
+function updateWallScorePreview() {
+  var secsEl  = document.getElementById('f-wall-secs');
+  var ageEl   = document.getElementById('f-age');
+  var valDisp = document.getElementById('wall-score-val-display');
+  var lblDisp = document.getElementById('wall-score-label-display');
+  if (!valDisp || !lblDisp) return;
+  if (!secsEl || secsEl.value === '') {
+    valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)';
+    lblDisp.textContent = '—'; return;
+  }
+  var secs = parseFloat(secsEl.value);
+  var age  = parseInt(ageEl ? ageEl.value : '') || 30;
+  var tgt  = age <= 30 ? 90 : age <= 45 ? 70 : age <= 60 ? 45 : age <= 75 ? 30 : 15;
+  var score = Math.min(100, Math.round((secs / tgt) * 100));
+  var color = score >= 75 ? 'var(--green)' : score >= 55 ? 'var(--amber)' : score >= 38 ? 'var(--rust)' : 'var(--red)';
+  var label = score >= 75 ? 'Strong' : score >= 55 ? 'Moderate' : score >= 38 ? 'Needs work' : 'Urgent';
+  valDisp.textContent = score; valDisp.style.color = color;
+  lblDisp.textContent = label;
+}
+
+function updateSquatScorePreview() {
+  var depthEl = document.getElementById('f-squat-depth');
+  var valDisp = document.getElementById('squat-score-val-display');
+  var lblDisp = document.getElementById('squat-score-label-display');
+  if (!valDisp || !lblDisp || !depthEl || depthEl.value === '-1') {
+    if (valDisp) { valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)'; }
+    if (lblDisp) lblDisp.textContent = '—';
+    return;
+  }
+  var depth  = parseInt(depthEl.value);
+  var deduct = 0;
+  if (document.getElementById('f-squat-arms')  && document.getElementById('f-squat-arms').checked)  deduct += 8;
+  if (document.getElementById('f-squat-heels') && document.getElementById('f-squat-heels').checked) deduct += 8;
+  if (document.getElementById('f-squat-knees') && document.getElementById('f-squat-knees').checked) deduct += 15;
+  if (document.getElementById('f-squat-lean')  && document.getElementById('f-squat-lean').checked)  deduct += 8;
+  if (document.getElementById('f-squat-asym')  && document.getElementById('f-squat-asym').checked)  deduct += 15;
+  var score = Math.max(0, depth - deduct);
+  var color = score >= 75 ? 'var(--green)' : score >= 55 ? 'var(--amber)' : score >= 38 ? 'var(--rust)' : 'var(--red)';
+  var label = score >= 75 ? 'Strong' : score >= 55 ? 'Moderate' : score >= 38 ? 'Needs work' : 'Urgent';
+  valDisp.textContent = score; valDisp.style.color = color;
+  lblDisp.textContent = label;
+}
+
+function updatePlankScorePreview() {
+  var secsEl  = document.getElementById('f-plank-secs');
+  var ageEl   = document.getElementById('f-age');
+  var valDisp = document.getElementById('plank-score-val-display');
+  var lblDisp = document.getElementById('plank-score-label-display');
+  if (!valDisp || !lblDisp) return;
+  if (!secsEl || secsEl.value === '') {
+    valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)';
+    lblDisp.textContent = '—'; return;
+  }
+  var secs = parseFloat(secsEl.value);
+  var age  = parseInt(ageEl ? ageEl.value : '') || 30;
+  var tgt  = age <= 30 ? 120 : age <= 45 ? 90 : age <= 60 ? 60 : age <= 75 ? 40 : 20;
+  var score = Math.min(100, Math.round((secs / tgt) * 100));
+  var color = score >= 75 ? 'var(--green)' : score >= 55 ? 'var(--amber)' : score >= 38 ? 'var(--rust)' : 'var(--red)';
+  var label = score >= 75 ? 'Strong' : score >= 55 ? 'Moderate' : score >= 38 ? 'Needs work' : 'Urgent';
+  valDisp.textContent = score; valDisp.style.color = color;
+  lblDisp.textContent = label;
+}
+
+function updateReachScorePreview() {
+  var leftEl   = document.getElementById('f-reach-left');
+  var rightEl  = document.getElementById('f-reach-right');
+  var ageEl    = document.getElementById('f-age');
+  var genderEl = document.getElementById('f-gender');
+  var valDisp  = document.getElementById('reach-score-val-display');
+  var lblDisp  = document.getElementById('reach-score-label-display');
+  if (!valDisp || !lblDisp) return;
+  var hasLeft  = leftEl  && leftEl.value  !== '';
+  var hasRight = rightEl && rightEl.value !== '';
+  if (!hasLeft && !hasRight) {
+    valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)';
+    lblDisp.textContent = '—'; return;
+  }
+  var age    = parseInt(ageEl    ? ageEl.value    : '') || 30;
+  var gender = genderEl ? genderEl.value.toLowerCase() : 'male';
+  var thr = (gender === 'female') ? (age < 60 ? 3 : 5) : (age < 60 ? 5 : 7);
+  function calcOne(gap) {
+    if (gap <= 0)    return 100;
+    if (gap <= thr)  return Math.round(100 - (gap / thr) * 40);
+    return Math.max(0, Math.round(60 - ((gap - thr) / thr) * 60));
+  }
+  var scores = [];
+  if (hasLeft)  scores.push(calcOne(parseFloat(leftEl.value)));
+  if (hasRight) scores.push(calcOne(parseFloat(rightEl.value)));
+  var score = Math.round(scores.reduce(function(a,b){return a+b;},0) / scores.length);
+  var color = score >= 75 ? 'var(--green)' : score >= 55 ? 'var(--amber)' : score >= 38 ? 'var(--rust)' : 'var(--red)';
+  var label = score >= 75 ? 'Strong' : score >= 55 ? 'Moderate' : score >= 38 ? 'Needs work' : 'Urgent';
+  valDisp.textContent = score; valDisp.style.color = color;
+  lblDisp.textContent = label;
+}
+
+function updateSitScorePreview() {
+  var leftEl   = document.getElementById('f-sit-left');
+  var rightEl  = document.getElementById('f-sit-right');
+  var ageEl    = document.getElementById('f-age');
+  var genderEl = document.getElementById('f-gender');
+  var valDisp  = document.getElementById('sit-score-val-display');
+  var lblDisp  = document.getElementById('sit-score-label-display');
+  if (!valDisp || !lblDisp) return;
+  var hasLeft  = leftEl  && leftEl.value  !== '';
+  var hasRight = rightEl && rightEl.value !== '';
+  if (!hasLeft && !hasRight) {
+    valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)';
+    lblDisp.textContent = '—'; return;
+  }
+  var left   = hasLeft  ? parseFloat(leftEl.value)  : -999;
+  var right  = hasRight ? parseFloat(rightEl.value) : -999;
+  var worst  = Math.max(hasLeft ? left : -999, hasRight ? right : -999);
+  var age    = parseInt(ageEl    ? ageEl.value    : '') || 30;
+  var gender = genderEl ? genderEl.value.toLowerCase() : 'male';
+  var bounds, lo, hi, range;
+  if (gender === 'female') {
+    bounds = age <= 45 ? [-5,2] : age <= 60 ? [-3,4] : age <= 75 ? [-1,6] : [0,8];
+  } else {
+    bounds = age <= 45 ? [-7,-1] : age <= 60 ? [-4,2] : age <= 75 ? [-1,5] : [1,8];
+  }
+  lo = bounds[0]; hi = bounds[1]; range = hi - lo;
+  var score;
+  if (worst < lo) {
+    var aboveRange = Math.abs(lo) + 10;
+    score = Math.min(100, Math.round(80 + ((lo - worst) / aboveRange) * 20));
+  } else if (worst <= hi) {
+    score = Math.round(80 - ((worst - lo) / range) * 20);
+  } else {
+    score = Math.max(0, Math.round(60 - ((worst - hi) / (range * 2)) * 60));
+  }
+  var color = score >= 75 ? 'var(--green)' : score >= 55 ? 'var(--amber)' : score >= 38 ? 'var(--rust)' : 'var(--red)';
+  var label = score >= 75 ? 'Strong' : score >= 55 ? 'Moderate' : score >= 38 ? 'Needs work' : 'Urgent';
+  valDisp.textContent = score; valDisp.style.color = color;
+  lblDisp.textContent = label;
+}
+
+function updateGripScorePreview() {
+  var r1El    = document.getElementById('f-grip-right-1');
+  var r2El    = document.getElementById('f-grip-right-2');
+  var ageEl   = document.getElementById('f-age');
+  var genEl   = document.getElementById('f-gender');
+  var valDisp = document.getElementById('grip-score-val-display');
+  var lblDisp = document.getElementById('grip-score-label-display');
+  if (!valDisp || !lblDisp) return;
+  var v1 = r1El && r1El.value !== '' ? parseFloat(r1El.value) : 0;
+  var v2 = r2El && r2El.value !== '' ? parseFloat(r2El.value) : 0;
+  var kg = Math.max(v1, v2);
+  if (kg <= 0) {
+    valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)';
+    lblDisp.textContent = '—'; return;
+  }
+  var age = parseInt(ageEl ? ageEl.value : '') || 30;
+  var gen = genEl ? genEl.value.toLowerCase() : 'female';
+  var mNorms = [[10,11,12.6,22.4],[12,13,19.4,31.2],[14,15,28.5,44.3],[16,17,32.6,52.4],[18,19,35.7,55.5],[20,24,36.8,56.6],[25,29,37.7,57.5],[30,34,36.0,55.8],[35,39,35.8,55.6],[40,44,35.5,55.3],[45,49,34.7,54.5],[50,54,32.9,50.7],[55,59,30.7,48.5],[60,64,30.2,48.0],[65,69,28.2,44.0],[70,99,21.3,35.1]];
+  var fNorms = [[10,11,11.8,21.6],[12,13,14.6,24.4],[14,15,15.5,27.3],[16,17,17.2,29.0],[18,19,19.2,31.0],[20,24,21.5,35.3],[25,29,25.6,41.4],[30,34,21.5,35.3],[35,39,20.3,34.1],[40,44,18.9,32.7],[45,49,18.6,32.4],[50,54,18.1,31.9],[55,59,17.7,31.5],[60,64,17.2,31.0],[65,69,15.4,27.2],[70,99,14.7,24.5]];
+  var table = gen === 'male' ? mNorms : fNorms;
+  var weak = 14.7, strong = 24.5;
+  for (var i = 0; i < table.length; i++) { if (age >= table[i][0] && age <= table[i][1]) { weak = table[i][2]; strong = table[i][3]; break; } }
+  var score;
+  if (kg < weak)        score = Math.max(0,  Math.round((kg / weak) * 49));
+  else if (kg <= strong) score = Math.round(50 + ((kg - weak) / (strong - weak)) * 30);
+  else                   score = Math.min(100, Math.round(80 + ((kg - strong) / strong) * 20));
+  var color = score >= 75 ? 'var(--green)' : score >= 55 ? 'var(--amber)' : score >= 38 ? 'var(--rust)' : 'var(--red)';
+  var label = score >= 75 ? 'Strong' : score >= 55 ? 'Moderate' : score >= 38 ? 'Needs work' : 'Urgent';
+  valDisp.textContent = score; valDisp.style.color = color;
+  lblDisp.textContent = label;
+}
+
+function updateStairScorePreview() {
+  var repsEl  = document.getElementById('f-stair-reps');
+  var valDisp = document.getElementById('stair-score-val-display');
+  var lblDisp = document.getElementById('stair-score-label-display');
+  if (!repsEl || !valDisp || !lblDisp) return;
+  var reps = parseInt(repsEl.value);
+  if (isNaN(reps) || repsEl.value === '') {
+    valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)';
+    lblDisp.textContent = '—'; return;
+  }
+  var score = Math.round(Math.min(100, (reps / 20) * 100));
+  var color = score >= 75 ? 'var(--green)' : score >= 55 ? 'var(--amber)' : score >= 38 ? 'var(--rust)' : 'var(--red)';
+  var label = score >= 75 ? 'Strong' : score >= 55 ? 'Moderate' : score >= 38 ? 'Needs work' : 'Urgent';
+  valDisp.textContent = score; valDisp.style.color = color;
+  lblDisp.textContent = label;
+}
+
+function updateChairScorePreview() {
+  var repsEl  = document.getElementById('f-chair-reps');
+  var valDisp = document.getElementById('chair-score-val-display');
+  var lblDisp = document.getElementById('chair-score-label-display');
+  if (!repsEl || !valDisp || !lblDisp) return;
+  var reps = parseInt(repsEl.value);
+  if (isNaN(reps) || repsEl.value === '') {
+    valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)';
+    lblDisp.textContent = '—'; return;
+  }
+  var score = Math.round(Math.min(100, (reps / 20) * 100));
+  var color = score >= 75 ? 'var(--green)' : score >= 55 ? 'var(--amber)' : score >= 38 ? 'var(--rust)' : 'var(--red)';
+  var label = score >= 75 ? 'Strong' : score >= 55 ? 'Moderate' : score >= 38 ? 'Needs work' : 'Urgent';
+  valDisp.textContent = score; valDisp.style.color = color;
+  lblDisp.textContent = label;
+}
+
+// ── BIND ALL INPUTS ──────────────────────────────────────────────
+document.querySelectorAll('input, select, textarea').forEach(el => {
+  el.addEventListener('input', scheduleRender);
+  el.addEventListener('change', scheduleRender);
+});
+
+
+// ── RESET ────────────────────────────────────────────────────────
+function resetForm() {
+  if (!confirm('Start a new client? This will clear the current form.')) return;
+  document.querySelectorAll('input, textarea').forEach(el => el.value = '');
+  document.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
+    try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
+  showStatus('Ready for new client');
+  render();
+}
+
+// ── SAVE / LOAD ──────────────────────────────────────────────────
+const SAVE_KEY = '90slab_form';
+const FIELDS = [
+  'f-firstname','f-lastname','f-age','f-gender','f-date','f-staff',
+  'f-chair-height','f-chair-reps','f-chair-lower','f-chair-easier-height','f-chair-easier-reps','f-chair-prev','f-chair-notes',
+  'f-stair-height','f-stair-reps','f-stair-higher','f-stair-easier-height','f-stair-easier-reps','f-stair-prev','f-stair-notes',
+  'f-balance-left','f-balance-right','f-balance-both','f-balance-harder','f-balance-prev','f-balance-notes',
+  'f-grip-right-1','f-grip-right-2','f-grip-left-1','f-grip-left-2','f-grip-prev','f-grip-notes',
+  'f-sit-left','f-sit-right','f-sit-prev','f-sit-notes',
+  'f-reach-left','f-reach-right','f-reach-prev','f-reach-notes',
+  'f-plank-secs','f-plank-prev','f-plank-notes',
+  'f-squat-depth','f-squat-prev','f-squat-notes',
+  'f-wall-secs','f-wall-prev','f-wall-notes',
+  'f-chair-rec','f-stair-rec','f-balance-rec','f-grip-rec',
+  'f-sit-rec','f-reach-rec','f-plank-rec','f-squat-rec','f-wall-rec',
+  'f-notes',
+  'm-bw',
+  'm1-val','m2-val','m3-val','m4-val','m5-val'
+];
+
+function saveForm() {
+  const data = {};
+  FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) data[id] = el.value;
+  });
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    showStatus('Saved ✓');
+  } catch(e) {
+    showStatus('Save failed');
+  }
+}
+
+function loadForm() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) { showStatus('No saved data found'); return; }
+    const data = JSON.parse(raw);
+    FIELDS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && data[id] !== undefined) el.value = data[id];
+    });
+    showStatus('Loaded ✓');
+    scheduleRender();
+  } catch(e) {
+    showStatus('Load failed');
+  }
+}
+
+// Required fields per station — at least one must be filled to count as "started"
+var stationRequiredFields = {
+  'section-client': ['f-firstname', 'f-lastname', 'f-age'],
+  'section-s01':    ['f-chair-reps'],
+  'section-s02':    ['f-stair-reps'],
+  'section-s03':    ['f-balance-left', 'f-balance-right', 'f-balance-both'],
+  'section-s04':    ['f-grip-right-1', 'f-grip-right-2'],
+  'section-s05':    ['f-sit-left', 'f-sit-right'],
+  'section-s06':    ['f-reach-left', 'f-reach-right'],
+  'section-s07':    ['f-plank-secs'],
+  'section-s08':    ['f-squat-depth'],
+  'section-s09':    ['f-wall-secs'],
+  'section-machine':['m1-val', 'm2-val', 'm3-val'],
+  'section-notes':  []
+};
+
+// Station sections (excluding client and notes for progress count)
+var stationSections = ['section-s01','section-s02','section-s03','section-s04',
+                       'section-s05','section-s06','section-s07','section-s08','section-s09'];
+
+function isSectionFilled(sectionId) {
+  var fields = stationRequiredFields[sectionId];
+  if (!fields || fields.length === 0) return false;
+  // For s08 squat — check depth hidden input is not -1
+  if (sectionId === 'section-s08') {
+    var depthEl = document.getElementById('f-squat-depth');
+    return depthEl && depthEl.value !== '-1' && depthEl.value !== '';
+  }
+  // For s03 balance — any one leg field filled
+  if (sectionId === 'section-s03') {
+    return fields.some(function(id) {
+      var el = document.getElementById(id);
+      return el && el.value !== '';
+    });
+  }
+  return fields.every(function(id) {
+    var el = document.getElementById(id);
+    return el && el.value !== '';
+  });
+}
+
+function isSectionStarted(sectionId) {
+  var fields = stationRequiredFields[sectionId];
+  if (!fields || fields.length === 0) return true;
+  if (sectionId === 'section-s08') {
+    var depthEl = document.getElementById('f-squat-depth');
+    return depthEl && depthEl.value !== '-1' && depthEl.value !== '';
+  }
+  return fields.some(function(id) {
+    var el = document.getElementById(id);
+    return el && el.value !== '';
+  });
+}
+
+function updateProgress() {
+  var filled = stationSections.filter(function(s) { return isSectionFilled(s); }).length;
+  var total = stationSections.length;
+  var pct = Math.round((filled / total) * 100);
+
+  var labelEl = document.getElementById('progress-label');
+  var fillEl  = document.getElementById('progress-fill');
+  var pctEl   = document.getElementById('progress-pct');
+  if (labelEl) labelEl.textContent = filled + ' / ' + total + ' stations';
+  if (fillEl)  fillEl.style.width = pct + '%';
+  if (pctEl)   pctEl.textContent = pct + '%';
+
+  // Update dots on tabs
+  var tabs = document.querySelectorAll('.sidebar-nav-tab');
+  var allSections = ['section-client','section-s01','section-s02','section-s03','section-s04',
+                     'section-s05','section-s06','section-s07','section-s08','section-s09',
+                     'section-machine','section-notes'];
+  tabs.forEach(function(tab, i) {
+    var sId = allSections[i];
+    if (!sId) return;
+    var required = stationRequiredFields[sId];
+    // Show dot if section has required fields and is NOT yet filled
+    if (required && required.length > 0 && stationSections.indexOf(sId) !== -1) {
+      if (!isSectionFilled(sId)) {
+        tab.classList.add('has-dot');
+      } else {
+        tab.classList.remove('has-dot');
+      }
+    }
+  });
+}
+
+function fixNavTop() {
+  var header = document.querySelector('.sidebar-header');
+  var nav    = document.getElementById('sidebar-nav');
+  if (header && nav) {
+    nav.style.top = header.offsetHeight + 'px';
+  }
+}
+
+function scrollToSection(id, tabEl) {
+  var el = document.getElementById(id);
+  var sidebar = document.querySelector('.sidebar');
+  if (!el || !sidebar) return;
+  document.querySelectorAll('.sidebar-nav-tab').forEach(function(t) { t.classList.remove('active'); });
+  if (tabEl) tabEl.classList.add('active');
+  var navHeight = document.getElementById('sidebar-nav') ? document.getElementById('sidebar-nav').offsetHeight : 0;
+  var headerHeight = document.querySelector('.sidebar-header') ? document.querySelector('.sidebar-header').offsetHeight : 0;
+  var offset = el.offsetTop - headerHeight - navHeight - 8;
+  sidebar.scrollTo({ top: offset, behavior: 'smooth' });
+}
+
+// Highlight active tab on scroll
+(function() {
+  var sidebar = document.querySelector('.sidebar');
+  if (!sidebar) return;
+  var sections = ['section-client','section-s01','section-s02','section-s03','section-s04',
+                  'section-s05','section-s06','section-s07','section-s08','section-s09',
+                  'section-machine','section-notes'];
+  sidebar.addEventListener('scroll', function() {
+    var navHeight = document.getElementById('sidebar-nav') ? document.getElementById('sidebar-nav').offsetHeight : 0;
+    var headerHeight = document.querySelector('.sidebar-header') ? document.querySelector('.sidebar-header').offsetHeight : 0;
+    var offset = headerHeight + navHeight + 20;
+    var current = sections[0];
+    sections.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el && el.offsetTop - sidebar.scrollTop <= offset) current = id;
+    });
+    var idx = sections.indexOf(current);
+    document.querySelectorAll('.sidebar-nav-tab').forEach(function(t, i) {
+      t.classList.toggle('active', i === idx);
+    });
+  });
+})();
+
+function showStatus(msg) {
+  const el = document.getElementById('save-status');
+  if (!el) return;
+  el.textContent = msg;
+  setTimeout(() => el.textContent = '', 2500);
+}
+
+// Auto-save on every change
+document.querySelectorAll('input, select, textarea').forEach(el => {
+  el.addEventListener('change', saveForm);
+});
+
+// Auto-load on page open
+window.addEventListener('load', () => {
+  const raw = localStorage.getItem(SAVE_KEY);
+  if (raw) {
+    try {
+      const data = JSON.parse(raw);
+      const name = (data['f-firstname'] || '') + ' ' + (data['f-lastname'] || '');
+      showRestoreBanner(name.trim());
+    } catch(e) {}
+  }
+});
+
+function showRestoreBanner(clientName) {
+  var existing = document.getElementById('restore-banner');
+  if (existing) existing.remove();
+  var banner = document.createElement('div');
+  banner.id = 'restore-banner';
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#1a1410;color:#f5f0e8;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;font-family:Nunito,sans-serif;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,0.3);';
+  var msg = clientName
+    ? '<span>📋 You have unsaved data from a previous session' + (clientName !== ' ' ? ' — <strong>' + clientName + '</strong>' : '') + '. Continue or start fresh?</span>'
+    : '<span>📋 You have unsaved data from a previous session. Continue or start fresh?</span>';
+  banner.innerHTML = msg
+    + '<div style="display:flex;gap:10px;flex-shrink:0;">'
+    + '<button onclick="restoreSession()" style="background:var(--rust);color:#fff;border:none;padding:9px 18px;font-family:Nunito,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.06em;border-radius:5px;cursor:pointer;">Continue Session</button>'
+    + '<button onclick="clearAndStart()" style="background:transparent;color:rgba(245,240,232,0.7);border:1.5px solid rgba(245,240,232,0.3);padding:9px 18px;font-family:Nunito,sans-serif;font-size:12px;font-weight:600;border-radius:5px;cursor:pointer;">New Client</button>'
+    + '</div>';
+  document.body.prepend(banner);
+}
+
+function restoreSession() {
+  var banner = document.getElementById('restore-banner');
+  if (banner) banner.remove();
+  const raw = localStorage.getItem(SAVE_KEY);
+  if (!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    FIELDS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && data[id] !== undefined) el.value = data[id];
+    });
+    showStatus('Session restored ✓');
+    render();
+  } catch(e) {}
+}
+
+function clearAndStart() {
+  var banner = document.getElementById('restore-banner');
+  if (banner) banner.remove();
+  try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
+  showStatus('Ready for new client');
+  render();
+}
+const dateInput = document.getElementById('f-date');
+if (dateInput) {
+  const now = new Date();
+  dateInput.value = now.toISOString().split('T')[0];
+}
+
+// ── INITIAL RENDER ───────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
