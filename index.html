@@ -1614,7 +1614,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.027</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.028</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -2812,7 +2812,7 @@ function render() {
   const balPrev     = val('f-balance-prev') !== '' ? Math.min(100, Math.max(0, num('f-balance-prev'))) : null;
   const balNotes    = val('f-balance-notes') || '';
   const balHighRisk = balWorst > 0 && balWorst < 10;
-  const balHasHarderOption = balBracketIdx < 3;
+  const balHasHarderOption = balBracketIdx > 0; // harder = younger age = lower index
 
   // Challenge data
   const balChallengeBracketIdx = parseInt(val('f-balance-challenge-bracket'));
@@ -4339,9 +4339,10 @@ function balBracketIndex(age) {
   return 3;
 }
 function balBracketFn(ag) {
+  // Lower index = younger age = harder test. Challenge goes DOWN, easier goes UP.
   var b = ALL_BAL_BRACKETS[balBracketIndex(ag)];
-  var nextIdx = b.idx + 1;
-  return { label: b.label, single: b.single, harder: nextIdx < 4 ? ALL_BAL_BRACKETS[nextIdx].label : null };
+  var harderIdx = b.idx - 1;
+  return { label: b.label, single: b.single, harder: harderIdx >= 0 ? ALL_BAL_BRACKETS[harderIdx].label : null };
 }
 
 function onBalanceBracketChange(prefix) {
@@ -4392,24 +4393,24 @@ function updateBalanceUI() {
   if (singleEl) singleEl.style.display = info.single ? '' : 'none';
   if (bothEl)   bothEl.style.display   = info.single ? 'none' : '';
 
-  // Populate challenge dropdown (brackets harder than current)
+  // Populate challenge dropdown (harder = younger age group = LOWER index)
   var challengeSel = document.getElementById('f-balance-challenge-bracket');
   if (challengeSel) {
     var curCVal = challengeSel.value;
     challengeSel.innerHTML = '';
-    for (var i = bracketIdx + 1; i < 4; i++) {
+    for (var i = bracketIdx - 1; i >= 0; i--) {
       challengeSel.innerHTML += '<option value="' + i + '">' + ALL_BAL_BRACKETS[i].label + ' (ages ' + ALL_BAL_BRACKETS[i].ageRange + ')</option>';
     }
     if (curCVal && challengeSel.querySelector('option[value="' + curCVal + '"]')) challengeSel.value = curCVal;
     onBalanceBracketChange('challenge');
   }
 
-  // Populate easier dropdown (brackets easier than current)
+  // Populate easier dropdown (easier = older age group = HIGHER index)
   var easierSel = document.getElementById('f-balance-easier-bracket');
   if (easierSel) {
     var curEVal = easierSel.value;
     easierSel.innerHTML = '';
-    for (var j = bracketIdx - 1; j >= 0; j--) {
+    for (var j = bracketIdx + 1; j < 4; j++) {
       easierSel.innerHTML += '<option value="' + j + '">' + ALL_BAL_BRACKETS[j].label + ' (ages ' + ALL_BAL_BRACKETS[j].ageRange + ')</option>';
     }
     if (curEVal && easierSel.querySelector('option[value="' + curEVal + '"]')) easierSel.value = curEVal;
@@ -4456,8 +4457,8 @@ function updateBalanceFlow() {
     isZero = bEl2 && bEl2.value !== '' && parseInt(bEl2.value) === 0;
   }
 
-  var hasHarderOption = bracketIdx < 3;
-  var hasEasierOption = bracketIdx > 0;
+  var hasHarderOption = bracketIdx > 0;  // harder = younger age = lower index
+  var hasEasierOption = bracketIdx < 3;  // easier = older age = higher index
 
   var challengeCard = document.getElementById('bal-challenge-card');
   var easierLink = document.getElementById('bal-easier-link');
