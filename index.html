@@ -1611,7 +1611,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.017</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.018</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -2157,83 +2157,51 @@ body {
       <div class="field-hint" style="margin-bottom:12px;">Select depth and any compensations observed. Final score is auto-calculated.</div>
 
       <style>
-        .squat-radio-card { display:flex; align-items:center; gap:10px; padding:10px 14px; background:#faf8f5; border:1.5px solid #d4c9b4; border-radius:6px; cursor:pointer; margin-bottom:6px; transition:border-color 0.15s, background 0.15s; color:#1a1410; }
-        .squat-radio-card:hover { border-color:var(--rust); background:rgba(196,98,45,0.04); }
-        .squat-radio-card.selected { border-color:var(--rust); background:rgba(196,98,45,0.08); }
-        .squat-radio-dot { width:14px; height:14px; border-radius:50%; border:2px solid #c4b8a4; flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:border-color 0.15s; }
-        .squat-radio-card.selected .squat-radio-dot { border-color:var(--rust); }
-        .squat-radio-dot-inner { width:6px; height:6px; border-radius:50%; background:var(--rust); display:none; }
-        .squat-radio-card.selected .squat-radio-dot-inner { display:block; }
-        .squat-radio-pts { font-family:'Nunito',sans-serif; font-size:11px; font-weight:700; color:#8a7968; margin-left:auto; flex-shrink:0; }
+        .squat-depth-grid { display:flex; flex-wrap:wrap; gap:6px; }
+        .squat-depth-pill { padding:8px 0; flex:1; min-width:calc(33% - 4px); text-align:center; background:#faf8f5; border:1.5px solid #d4c9b4; border-radius:6px; cursor:pointer; transition:border-color 0.15s, background 0.15s, color 0.15s; font-family:'Nunito',sans-serif; font-size:12px; font-weight:600; color:#4a3f32; }
+        .squat-depth-pill:hover { border-color:var(--rust); background:rgba(196,98,45,0.04); }
+        .squat-depth-pill.selected { border-color:var(--rust); background:var(--rust); color:#fff; }
+        .squat-depth-pill .pill-pts { display:block; font-size:10px; font-weight:400; opacity:0.7; margin-top:1px; }
+        .squat-depth-pill.selected .pill-pts { opacity:0.85; }
 
-        .squat-check-row { display:flex; align-items:flex-start; gap:0; padding:9px 14px; background:#faf8f5; border:1.5px solid #d4c9b4; border-radius:6px; cursor:pointer; margin-bottom:5px; transition:border-color 0.15s, background 0.15s; color:#1a1410; }
-        .squat-check-row:hover { border-color:var(--rust); background:rgba(196,98,45,0.04); }
-        .squat-check-row.checked { border-color:var(--rust); background:rgba(196,98,45,0.08); }
-        .squat-check-box { width:17px; height:17px; border:2px solid #c4b8a4; border-radius:4px; flex-shrink:0; margin-right:10px; margin-top:1px; display:flex; align-items:center; justify-content:center; transition:border-color 0.15s, background 0.15s; }
-        .squat-check-row.checked .squat-check-box { border-color:var(--rust); background:var(--rust); }
-        .squat-check-tick { color:#fff; font-size:11px; line-height:1; display:none; }
-        .squat-check-row.checked .squat-check-tick { display:block; }
-        .squat-check-label { font-family:'Nunito',sans-serif; font-size:13px; font-weight:500; line-height:1.4; color:#1a1410; }
-        .squat-check-sub { font-family:'Nunito',sans-serif; font-size:11px; color:#8a7968; margin-top:2px; }
-        .squat-check-pts { font-family:'Nunito',sans-serif; font-size:11px; font-weight:700; color:#8a7968; margin-left:auto; flex-shrink:0; padding-left:8px; margin-top:2px; }
+        .squat-comp-grid { display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+        .squat-comp-chip { display:flex; align-items:center; gap:6px; padding:7px 10px; background:#faf8f5; border:1.5px solid #d4c9b4; border-radius:6px; cursor:pointer; transition:border-color 0.15s, background 0.15s; font-family:'Nunito',sans-serif; font-size:11px; font-weight:500; color:#4a3f32; }
+        .squat-comp-chip:hover { border-color:var(--rust); background:rgba(196,98,45,0.04); }
+        .squat-comp-chip.checked { border-color:var(--rust); background:rgba(196,98,45,0.08); color:var(--rust); }
+        .squat-comp-dot { width:14px; height:14px; border:2px solid #c4b8a4; border-radius:3px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:10px; color:#fff; transition:background 0.15s, border-color 0.15s; }
+        .squat-comp-chip.checked .squat-comp-dot { background:var(--rust); border-color:var(--rust); }
       </style>
 
       <div class="field">
         <label style="margin-bottom:8px; display:block;">Depth achieved</label>
         <input type="hidden" id="f-squat-depth" value="-1">
-        <div class="squat-radio-card" data-val="100" onclick="selectSquatDepth(this)">
-          <div class="squat-radio-dot"><div class="squat-radio-dot-inner"></div></div>
-          <div><div style="font-family:Nunito,sans-serif;font-size:13px;font-weight:500;color:#1a1410;">Full depth</div><div style="font-family:Nunito,sans-serif;font-size:11px;color:#8a7968;margin-top:1px;">Hips below parallel</div></div>
-          <span class="squat-radio-pts">100</span>
-        </div>
-        <div class="squat-radio-card" data-val="80" onclick="selectSquatDepth(this)">
-          <div class="squat-radio-dot"><div class="squat-radio-dot-inner"></div></div>
-          <div><div style="font-family:Nunito,sans-serif;font-size:13px;font-weight:500;color:#1a1410;">Parallel</div><div style="font-family:Nunito,sans-serif;font-size:11px;color:#8a7968;margin-top:1px;">Hips at knee level</div></div>
-          <span class="squat-radio-pts">80</span>
-        </div>
-        <div class="squat-radio-card" data-val="60" onclick="selectSquatDepth(this)">
-          <div class="squat-radio-dot"><div class="squat-radio-dot-inner"></div></div>
-          <div><div style="font-family:Nunito,sans-serif;font-size:13px;font-weight:500;color:#1a1410;">Quarter squat</div><div style="font-family:Nunito,sans-serif;font-size:11px;color:#8a7968;margin-top:1px;">Hips above knees</div></div>
-          <span class="squat-radio-pts">60</span>
-        </div>
-        <div class="squat-radio-card" data-val="40" onclick="selectSquatDepth(this)">
-          <div class="squat-radio-dot"><div class="squat-radio-dot-inner"></div></div>
-          <div><div style="font-family:Nunito,sans-serif;font-size:13px;font-weight:500;color:#1a1410;">Assisted / partial</div><div style="font-family:Nunito,sans-serif;font-size:11px;color:#8a7968;margin-top:1px;">With support or very limited range</div></div>
-          <span class="squat-radio-pts">40</span>
-        </div>
-        <div class="squat-radio-card" data-val="0" onclick="selectSquatDepth(this)">
-          <div class="squat-radio-dot"><div class="squat-radio-dot-inner"></div></div>
-          <div><div style="font-family:Nunito,sans-serif;font-size:13px;font-weight:500;color:#1a1410;">Cannot squat</div><div style="font-family:Nunito,sans-serif;font-size:11px;color:#8a7968;margin-top:1px;">No meaningful movement</div></div>
-          <span class="squat-radio-pts">0</span>
+        <div class="squat-depth-grid">
+          <div class="squat-depth-pill" data-val="100" onclick="selectSquatDepth(this)">Full<span class="pill-pts">100</span></div>
+          <div class="squat-depth-pill" data-val="80" onclick="selectSquatDepth(this)">Parallel<span class="pill-pts">80</span></div>
+          <div class="squat-depth-pill" data-val="60" onclick="selectSquatDepth(this)">Quarter<span class="pill-pts">60</span></div>
+          <div class="squat-depth-pill" data-val="40" onclick="selectSquatDepth(this)">Assisted<span class="pill-pts">40</span></div>
+          <div class="squat-depth-pill" data-val="0" onclick="selectSquatDepth(this)">Cannot<span class="pill-pts">0</span></div>
         </div>
       </div>
 
-      <div class="field" style="margin-top:14px;">
-        <label style="margin-bottom:8px; display:block;">Compensation flags <span style="font-weight:400; opacity:0.6;">(select all that apply)</span></label>
-        <div class="squat-check-row" id="squat-row-arms" onclick="toggleSquatFlag(this,'f-squat-arms')">
-          <div class="squat-check-box"><span class="squat-check-tick">✓</span></div>
-          <div class="squat-check-label">Arms drifted forward<div class="squat-check-sub">Shoulder / thoracic restriction</div></div>
-          <span class="squat-check-pts">minor</span>
-        </div>
-        <div class="squat-check-row" id="squat-row-heels" onclick="toggleSquatFlag(this,'f-squat-heels')">
-          <div class="squat-check-box"><span class="squat-check-tick">✓</span></div>
-          <div class="squat-check-label">Heels lifted<div class="squat-check-sub">Ankle / calf tightness</div></div>
-          <span class="squat-check-pts">−8</span>
-        </div>
-        <div class="squat-check-row" id="squat-row-knees" onclick="toggleSquatFlag(this,'f-squat-knees')">
-          <div class="squat-check-box"><span class="squat-check-tick">✓</span></div>
-          <div class="squat-check-label">Knees caved inward<div class="squat-check-sub">Hip weakness · future knee pain</div></div>
-          <span class="squat-check-pts">−15</span>
-        </div>
-        <div class="squat-check-row" id="squat-row-lean" onclick="toggleSquatFlag(this,'f-squat-lean')">
-          <div class="squat-check-box"><span class="squat-check-tick">✓</span></div>
-          <div class="squat-check-label">Excessive forward trunk lean<div class="squat-check-sub">Hip flexor or ankle restriction</div></div>
-          <span class="squat-check-pts">−8</span>
-        </div>
-        <div class="squat-check-row" id="squat-row-asym" onclick="toggleSquatFlag(this,'f-squat-asym')">
-          <div class="squat-check-box"><span class="squat-check-tick">✓</span></div>
-          <div class="squat-check-label">Left / right asymmetry<div class="squat-check-sub">One side overcompensating</div></div>
-          <span class="squat-check-pts">−15</span>
+      <div class="field" style="margin-top:10px;">
+        <label style="margin-bottom:6px; display:block;">Compensations <span style="font-weight:400; opacity:0.6; font-size:10px;">(tap to toggle)</span></label>
+        <div class="squat-comp-grid">
+          <div class="squat-comp-chip" id="squat-row-arms" onclick="toggleSquatFlag(this,'f-squat-arms')">
+            <div class="squat-comp-dot">✓</div>Arms forward
+          </div>
+          <div class="squat-comp-chip" id="squat-row-heels" onclick="toggleSquatFlag(this,'f-squat-heels')">
+            <div class="squat-comp-dot">✓</div>Heels lifted
+          </div>
+          <div class="squat-comp-chip" id="squat-row-knees" onclick="toggleSquatFlag(this,'f-squat-knees')">
+            <div class="squat-comp-dot">✓</div>Knees cave in
+          </div>
+          <div class="squat-comp-chip" id="squat-row-lean" onclick="toggleSquatFlag(this,'f-squat-lean')">
+            <div class="squat-comp-dot">✓</div>Forward lean
+          </div>
+          <div class="squat-comp-chip" id="squat-row-asym" onclick="toggleSquatFlag(this,'f-squat-asym')">
+            <div class="squat-comp-dot">✓</div>Asymmetry
+          </div>
         </div>
         <!-- hidden checkboxes for JS compatibility -->
         <input type="checkbox" id="f-squat-arms"  style="display:none">
@@ -3854,7 +3822,7 @@ function updateStairHeight() {
 }
 
 function selectSquatDepth(el) {
-  document.querySelectorAll('.squat-radio-card').forEach(function(c){ c.classList.remove('selected'); });
+  document.querySelectorAll('.squat-depth-pill').forEach(function(c){ c.classList.remove('selected'); });
   el.classList.add('selected');
   document.getElementById('f-squat-depth').value = el.getAttribute('data-val');
   scheduleRender();
@@ -4259,8 +4227,8 @@ function _resetFormState() {
   document.querySelectorAll('input, textarea').forEach(el => el.value = '');
   document.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
   document.querySelectorAll('input[type="checkbox"]').forEach(el => el.checked = false);
-  document.querySelectorAll('.squat-radio-card').forEach(el => el.classList.remove('selected'));
-  document.querySelectorAll('.squat-check-row').forEach(el => el.classList.remove('checked'));
+  document.querySelectorAll('.squat-depth-pill').forEach(el => el.classList.remove('selected'));
+  document.querySelectorAll('.squat-comp-chip').forEach(el => el.classList.remove('checked'));
   document.getElementById('f-squat-depth').value = '-1';
   document.querySelectorAll('textarea[id$="-rec"]').forEach(el => delete el.dataset.touched);
   _lastAgeForChair = null;
@@ -4328,7 +4296,7 @@ function _applyFormData(data) {
   // Restore squat UI state
   var depth = data['f-squat-depth'];
   if (depth && depth !== '-1') {
-    document.querySelectorAll('.squat-radio-card').forEach(function(c) {
+    document.querySelectorAll('.squat-depth-pill').forEach(function(c) {
       c.classList.toggle('selected', c.getAttribute('data-val') === depth);
     });
   }
