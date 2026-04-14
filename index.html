@@ -1611,7 +1611,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.019</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.020</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -2571,7 +2571,7 @@ function buildMachineSection() {
   });
   maxVal = maxVal * 1.3;
 
-  var html = '<div class="section" style="background:var(--paper);">';
+  var html = '<div class="section" id="rpt-machine" style="background:var(--paper);">';
   html += '<div class="section-number">Machine Strength</div>';
   html += '<div class="section-title">Strength<br><em>profile</em></div>';
   html += '<div class="section-lead" style="margin-bottom:40px;">Measured on resistance machines. Target ranges are normalised for your bodyweight, age, and gender using allometric scaling.</div>';
@@ -3034,7 +3034,7 @@ function render() {
 
 
 <!-- STATION 1 — CHAIR -->
-<div class="section">
+<div class="section" id="rpt-s01">
   <div class="section-number">Station 01 · Sit-to-Stand</div>
   <div class="section-title">Getting up<br>from a <em>chair</em></div>
   <div class="simple-result-card">
@@ -3081,7 +3081,7 @@ function render() {
     ${chairNotes ? '<div style="margin-top:12px; padding:16px 20px; background:var(--warm); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + chairNotes + '</div>' : ''}
   </div>
 </div>
-<div class="section warm">
+<div class="section warm" id="rpt-s02">
   <div class="section-number">Station 02 · Stair Climb</div>
   <div class="section-title">Climbing<br><em>two floors</em></div>
   <div class="simple-result-card">
@@ -3130,7 +3130,7 @@ function render() {
 
 
 <!-- STATION 3 — BALANCE -->
-<div class="section">
+<div class="section" id="rpt-s03">
   <div class="section-number">Station 03 · Walking in Dark</div>
   <div class="section-title">Walking in<br><em>the dark</em></div>
   <div class="simple-result-card" style="${balHighRisk ? 'border-color:rgba(181,64,32,0.35);' : ''}">
@@ -3196,7 +3196,7 @@ function render() {
     ${balNotes ? '<div style="margin-top:12px; padding:16px 20px; background:var(--warm); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + balNotes + '</div>' : ''}
   </div>
 </div>
-<div class="section warm">
+<div class="section warm" id="rpt-s04">
   <div class="section-number">Station 04 · Grip Strength</div>
   <div class="section-title">Opening jars,<br><em>carrying bags</em></div>
   <div class="simple-result-card">
@@ -3234,7 +3234,7 @@ function render() {
 
 
 <!-- STATION 5 — SIT AND REACH -->
-<div class="section">
+<div class="section" id="rpt-s05">
   <div class="section-number">Station 05 · Sit and Reach</div>
   <div class="section-title">Wearing socks<br><em>and shoes</em></div>
   <div class="simple-result-card">
@@ -3278,7 +3278,7 @@ function render() {
     ${sitNotes ? '<div style="margin-top:12px; padding:16px 20px; background:var(--warm); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + sitNotes + '</div>' : ''}
   </div>
 </div>
-<div class="section warm">
+<div class="section warm" id="rpt-s06">
   <div class="section-number">Station 06 · Shoulder Reach</div>
   <div class="section-title">Scratch your<br><em>back</em></div>
   <div class="simple-result-card">
@@ -3339,7 +3339,7 @@ function render() {
 
 
 <!-- STATION 7 — PLANK -->
-<div class="section">
+<div class="section" id="rpt-s07">
   <div class="section-number">Station 07 · Plank</div>
   <div class="section-title">Recover from<br><em>tripping</em></div>
   <div class="simple-result-card">
@@ -3372,7 +3372,7 @@ function render() {
     ${plankNotes ? '<div style="margin-top:12px; padding:16px 20px; background:var(--warm); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + plankNotes + '</div>' : ''}
   </div>
 </div>
-<div class="section warm">
+<div class="section warm" id="rpt-s08">
   <div class="section-number">Station 08 · Overhead Squat</div>
   <div class="section-title">Moving without<br><em>future pain</em></div>
   <div class="simple-result-card">
@@ -3409,7 +3409,7 @@ function render() {
 
 
 <!-- STATION 9 — WALL SQUAT -->
-<div class="section print-page-start">
+<div class="section print-page-start" id="rpt-s09">
   <div class="section-number">Station 09 · Wall Squats</div>
   <div class="section-title">Future without<br><em>knee pain</em></div>
   <div class="simple-result-card">
@@ -4871,6 +4871,7 @@ function scrollToSection(id, tabEl) {
       toggleAccordion(id);
     } else {
       // Already open — just scroll to it
+      syncReportScroll(id);
       setTimeout(function() {
         var sidebar = document.querySelector('.sidebar');
         if (!sidebar) return;
@@ -5009,6 +5010,19 @@ if (dateInput) {
 // ── ACCORDION ───────────────────────────────────────────────────
 var _stationOrder = ['section-s01','section-s02','section-s03','section-s04','section-s05','section-s06','section-s07','section-s08','section-s09','section-machine','section-notes'];
 
+function syncReportScroll(sectionId) {
+  var rptId = sectionId.replace('section-', 'rpt-');
+  var rptEl = document.getElementById(rptId);
+  var pane = document.querySelector('.preview-pane');
+  if (rptEl && pane) {
+    setTimeout(function() {
+      var paneTop = pane.getBoundingClientRect().top;
+      var elTop = rptEl.getBoundingClientRect().top;
+      pane.scrollTo({ top: pane.scrollTop + (elTop - paneTop), behavior: 'smooth' });
+    }, 100);
+  }
+}
+
 function toggleAccordion(sectionId) {
   var el = document.getElementById(sectionId);
   if (!el) return;
@@ -5021,6 +5035,8 @@ function toggleAccordion(sectionId) {
       if (s) s.classList.remove('open');
     });
     el.classList.add('open');
+    // Sync report preview: scroll right pane to matching section
+    syncReportScroll(sectionId);
     // Scroll within sidebar container — wait for collapse/expand transitions
     setTimeout(function() {
       var sidebar = document.querySelector('.sidebar');
