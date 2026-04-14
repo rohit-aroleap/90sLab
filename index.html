@@ -1223,21 +1223,66 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 14px;
-  background: #f5f0e8;
-  border: 1.5px solid #d4c9b4;
+  padding: 8px 14px;
+  background: #f9f7f3;
+  border: 1.5px solid #e8e0d4;
   border-radius: 6px;
   margin-bottom: 4px;
   font-size: 12px;
   color: #8a7968;
 }
-
+.score-bar-wrap {
+  flex: 1;
+  height: 6px;
+  background: #e8e0d4;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.score-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease, background 0.3s ease;
+  width: 0%;
+}
 .score-input-preview span:nth-child(2) {
   font-family: 'Instrument Serif', serif;
-  font-size: 28px;
+  font-size: 22px;
   font-style: italic;
-  margin-left: auto;
+  margin-left: 0;
   line-height: 1;
+  min-width: 32px;
+  text-align: right;
+}
+
+/* timer button */
+.timer-btn {
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1.5px solid var(--rust);
+  border-radius: 6px;
+  padding: 7px 12px;
+  background: transparent;
+  color: var(--rust);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+  margin-bottom: 14px;
+  align-self: flex-end;
+}
+.timer-btn:hover {
+  background: rgba(196,98,45,0.08);
+}
+
+/* station completion indicator */
+.station-section.station-filled:not(.open) {
+  border-left: 3px solid var(--sage);
+  padding-left: 25px;
+}
+.station-section.station-filled .accordion-header .form-group-title::after {
+  content: ' \2713';
+  color: var(--sage);
+  font-size: 14px;
 }
 
 /* warn badge */
@@ -1566,7 +1611,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.016</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.017</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -1592,7 +1637,11 @@ body {
 
       <!-- CLIENT INFO -->
       <div class="station-section open" id="section-client">
-      <div class="form-group-title">Client Information</div>
+      <div class="accordion-header" onclick="document.getElementById('section-client').classList.toggle('open')">
+        <div class="form-group-title">Client Information</div>
+        <span class="accordion-chevron">&#9660;</span>
+      </div>
+      <div class="accordion-body">
 
       <div class="field field-row">
         <div>
@@ -1608,7 +1657,7 @@ body {
       <div class="field field-row">
         <div>
           <label>Age (years)</label>
-          <input type="number" id="f-age" min="20" max="90" placeholder="47">
+          <input type="number" inputmode="numeric" id="f-age" min="20" max="90" placeholder="47">
         </div>
         <div>
           <label>Gender</label>
@@ -1639,11 +1688,12 @@ body {
       <div class="field field-row">
         <div>
           <label>Bodyweight (kg)</label>
-          <input type="number" id="m-bw" min="30" max="200" step="0.5" placeholder="e.g. 68">
+          <input type="number" inputmode="numeric" id="m-bw" min="30" max="200" step="0.5" placeholder="e.g. 68">
         </div>
         <div></div>
       </div>
 
+      </div>
       </div>
       <!-- STATION 1 — CHAIR -->
       <div class="station-section alt open" id="section-s01">
@@ -1667,7 +1717,7 @@ body {
       <div class="field field-row">
         <div>
           <label>Reps completed (out of 20)</label>
-          <input type="number" id="f-chair-reps" min="0" max="20" value="" placeholder="0–20">
+          <input type="number" inputmode="numeric" id="f-chair-reps" min="0" max="20" value="" placeholder="0–20">
         </div>
         <div>
           <label>Completed 20 at lower height?</label>
@@ -1693,13 +1743,14 @@ body {
           </div>
           <div style="flex:1;">
             <label>Reps at easier height</label>
-            <input type="number" id="f-chair-easier-reps" min="0" max="20" placeholder="0–20">
+            <input type="number" inputmode="numeric" id="f-chair-easier-reps" min="0" max="20" placeholder="0–20">
           </div>
         </div>
         <div class="field-hint" style="margin-top:4px;">Score stays 0. Tracked as baseline for future visits.</div>
       </div>
       <div class="score-input-preview">
         <span id="chair-score-label-display">—</span>
+        <div class="score-bar-wrap"><div class="score-bar-fill" id="chair-score-bar"></div></div>
         <span id="chair-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
       </div>
       <div class="accordion-details">
@@ -1709,7 +1760,7 @@ body {
         <div class="accordion-details-content">
       <div class="field" style="margin-top:10px;">
         <label>Previous score (optional)</label>
-        <input type="number" id="f-chair-prev" min="0" max="100" placeholder="Leave blank if first visit">
+        <input type="number" inputmode="numeric" id="f-chair-prev" min="0" max="100" placeholder="Leave blank if first visit">
       </div>
       <div class="field" style="margin-top:10px;">
         <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
@@ -1747,7 +1798,7 @@ body {
       <div class="field field-row" style="margin-top:10px;">
         <div>
           <label>Reps completed (out of 20)</label>
-          <input type="number" id="f-stair-reps" min="0" max="20" placeholder="0–20">
+          <input type="number" inputmode="numeric" id="f-stair-reps" min="0" max="20" placeholder="0–20">
         </div>
         <div>
           <label>Completed 20 at higher step?</label>
@@ -1774,13 +1825,14 @@ body {
           </div>
           <div style="flex:1;">
             <label>Reps at easier height</label>
-            <input type="number" id="f-stair-easier-reps" min="0" max="20" placeholder="0–20">
+            <input type="number" inputmode="numeric" id="f-stair-easier-reps" min="0" max="20" placeholder="0–20">
           </div>
         </div>
         <div class="field-hint" style="margin-top:4px;">Score stays 0. Tracked as baseline for future visits.</div>
       </div>
       <div class="score-input-preview">
         <span id="stair-score-label-display">—</span>
+        <div class="score-bar-wrap"><div class="score-bar-fill" id="stair-score-bar"></div></div>
         <span id="stair-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
       </div>
       <div class="accordion-details">
@@ -1790,7 +1842,7 @@ body {
         <div class="accordion-details-content">
       <div class="field" style="margin-top:10px;">
         <label>Previous score (optional)</label>
-        <input type="number" id="f-stair-prev" min="0" max="100" placeholder="Leave blank if first visit">
+        <input type="number" inputmode="numeric" id="f-stair-prev" min="0" max="100" placeholder="Leave blank if first visit">
       </div>
       <div class="field" style="margin-top:10px;">
         <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
@@ -1821,19 +1873,32 @@ body {
       <div id="bal-single-fields">
         <div class="field field-row">
           <div>
-            <label>Left leg (sec)</label>
-            <input type="number" id="f-balance-left" min="0" max="30" placeholder="0–30 sec">
+            <div style="display:flex;gap:8px;align-items:flex-end;">
+              <div style="flex:1;">
+                <label>Left leg (sec)</label>
+                <input type="number" inputmode="numeric" id="f-balance-left" min="0" max="30" placeholder="0–30 sec">
+              </div>
+              <button class="timer-btn" onclick="toggleTimer(this,'f-balance-left')">&#9654; Start</button>
+            </div>
           </div>
           <div>
-            <label>Right leg (sec)</label>
-            <input type="number" id="f-balance-right" min="0" max="30" placeholder="0–30 sec">
+            <div style="display:flex;gap:8px;align-items:flex-end;">
+              <div style="flex:1;">
+                <label>Right leg (sec)</label>
+                <input type="number" inputmode="numeric" id="f-balance-right" min="0" max="30" placeholder="0–30 sec">
+              </div>
+              <button class="timer-btn" onclick="toggleTimer(this,'f-balance-right')">&#9654; Start</button>
+            </div>
           </div>
         </div>
       </div>
       <div id="bal-both-fields" style="display:none;">
-        <div class="field">
-          <label>Both legs (sec)</label>
-          <input type="number" id="f-balance-both" min="0" max="30" placeholder="0–30 sec">
+        <div style="display:flex;gap:8px;align-items:flex-end;">
+          <div class="field" style="flex:1;">
+            <label>Both legs (sec)</label>
+            <input type="number" inputmode="numeric" id="f-balance-both" min="0" max="30" placeholder="0–30 sec">
+          </div>
+          <button class="timer-btn" onclick="toggleTimer(this,'f-balance-both')">&#9654; Start</button>
         </div>
       </div>
 
@@ -1850,6 +1915,7 @@ body {
 
       <div class="score-input-preview" style="margin-top:10px;">
         <span id="balance-score-label-display">—</span>
+        <div class="score-bar-wrap"><div class="score-bar-fill" id="balance-score-bar"></div></div>
         <span id="balance-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
       </div>
       <div class="accordion-details">
@@ -1859,7 +1925,7 @@ body {
         <div class="accordion-details-content">
       <div class="field" style="margin-top:10px;">
         <label>Previous score (optional)</label>
-        <input type="number" id="f-balance-prev" min="0" max="100" placeholder="Leave blank if first visit">
+        <input type="number" inputmode="numeric" id="f-balance-prev" min="0" max="100" placeholder="Leave blank if first visit">
       </div>
       <div class="field" style="margin-top:10px;">
         <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
@@ -1889,11 +1955,11 @@ body {
       <div class="field field-row">
         <div>
           <label>Attempt 1</label>
-          <input type="number" id="f-grip-right-1" min="0" max="100" placeholder="kg" step="0.5">
+          <input type="number" inputmode="numeric" id="f-grip-right-1" min="0" max="100" placeholder="kg" step="0.5">
         </div>
         <div>
           <label>Attempt 2</label>
-          <input type="number" id="f-grip-right-2" min="0" max="100" placeholder="kg" step="0.5">
+          <input type="number" inputmode="numeric" id="f-grip-right-2" min="0" max="100" placeholder="kg" step="0.5">
         </div>
       </div>
 
@@ -1901,16 +1967,17 @@ body {
       <div class="field field-row">
         <div>
           <label>Attempt 1</label>
-          <input type="number" id="f-grip-left-1" min="0" max="100" placeholder="kg" step="0.5">
+          <input type="number" inputmode="numeric" id="f-grip-left-1" min="0" max="100" placeholder="kg" step="0.5">
         </div>
         <div>
           <label>Attempt 2</label>
-          <input type="number" id="f-grip-left-2" min="0" max="100" placeholder="kg" step="0.5">
+          <input type="number" inputmode="numeric" id="f-grip-left-2" min="0" max="100" placeholder="kg" step="0.5">
         </div>
       </div>
       <div class="field-hint" style="margin-top:4px; margin-bottom:8px;">Best of each hand used automatically.</div>
       <div class="score-input-preview">
         <span id="grip-score-label-display">—</span>
+        <div class="score-bar-wrap"><div class="score-bar-fill" id="grip-score-bar"></div></div>
         <span id="grip-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
       </div>
       <div class="accordion-details">
@@ -1920,7 +1987,7 @@ body {
         <div class="accordion-details-content">
       <div class="field" style="margin-top:10px;">
         <label>Previous score (optional)</label>
-        <input type="number" id="f-grip-prev" min="0" max="100" placeholder="Leave blank if first visit">
+        <input type="number" inputmode="numeric" id="f-grip-prev" min="0" max="100" placeholder="Leave blank if first visit">
       </div>
       <div class="field" style="margin-top:10px;">
         <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
@@ -1949,16 +2016,17 @@ body {
       <div class="field field-row">
         <div>
           <label>Left leg (cm)</label>
-          <input type="number" id="f-sit-left" min="-20" max="60" step="0.5" placeholder="e.g. 8 or -3">
+          <input type="number" inputmode="numeric" id="f-sit-left" min="-20" max="60" step="0.5" placeholder="e.g. 8 or -3">
         </div>
         <div>
           <label>Right leg (cm)</label>
-          <input type="number" id="f-sit-right" min="-20" max="60" step="0.5" placeholder="e.g. 8 or -3">
+          <input type="number" inputmode="numeric" id="f-sit-right" min="-20" max="60" step="0.5" placeholder="e.g. 8 or -3">
         </div>
       </div>
       <div class="field-hint" style="margin-top:-10px;margin-bottom:8px;">Scored on worst side. Age bonus applied: 51–65 → +4 cm · 66–80 → +8 cm · 81+ → +12 cm.</div>
       <div class="score-input-preview">
         <span id="sit-score-label-display">—</span>
+        <div class="score-bar-wrap"><div class="score-bar-fill" id="sit-score-bar"></div></div>
         <span id="sit-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
       </div>
       <div class="accordion-details">
@@ -1968,7 +2036,7 @@ body {
         <div class="accordion-details-content">
       <div class="field" style="margin-top:10px;">
         <label>Previous score (optional)</label>
-        <input type="number" id="f-sit-prev" min="0" max="100" placeholder="First visit?">
+        <input type="number" inputmode="numeric" id="f-sit-prev" min="0" max="100" placeholder="First visit?">
       </div>
       <div class="field" style="margin-top:10px;">
         <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
@@ -1997,16 +2065,17 @@ body {
       <div class="field field-row">
         <div>
           <label>Left side (cm)</label>
-          <input type="number" id="f-reach-left" min="-20" max="60" step="0.5" placeholder="e.g. 8 or -3">
+          <input type="number" inputmode="numeric" id="f-reach-left" min="-20" max="60" step="0.5" placeholder="e.g. 8 or -3">
         </div>
         <div>
           <label>Right side (cm)</label>
-          <input type="number" id="f-reach-right" min="-20" max="60" step="0.5" placeholder="e.g. 8 or -3">
+          <input type="number" inputmode="numeric" id="f-reach-right" min="-20" max="60" step="0.5" placeholder="e.g. 8 or -3">
         </div>
       </div>
       <div class="field-hint" style="margin-top:-10px;margin-bottom:8px;">Scored on worst side. Age bonus: 51–65 → +5 cm · 66–80 → +10 cm · 81+ → +15 cm.</div>
       <div class="score-input-preview">
         <span id="reach-score-label-display">—</span>
+        <div class="score-bar-wrap"><div class="score-bar-fill" id="reach-score-bar"></div></div>
         <span id="reach-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
       </div>
       <div class="accordion-details">
@@ -2016,7 +2085,7 @@ body {
         <div class="accordion-details-content">
       <div class="field" style="margin-top:10px;">
         <label>Previous score (optional)</label>
-        <input type="number" id="f-reach-prev" min="0" max="100" placeholder="First visit?">
+        <input type="number" inputmode="numeric" id="f-reach-prev" min="0" max="100" placeholder="First visit?">
       </div>
       <div class="field" style="margin-top:10px;">
         <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
@@ -2042,12 +2111,16 @@ body {
       <div class="accordion-body">
       <div class="field-hint" style="margin-bottom:10px;">Score is auto-calculated from hold time and age bracket. Target: 20–30→120s · 31–45→90s · 46–60→60s · 61–75→40s · 76+→20s.</div>
 
-      <div class="field">
-        <label>Hold time (seconds)</label>
-        <input type="number" id="f-plank-secs" min="0" max="300" step="1" placeholder="e.g. 45">
+      <div style="display:flex;gap:8px;align-items:flex-end;">
+        <div class="field" style="flex:1;">
+          <label>Hold time (seconds)</label>
+          <input type="number" inputmode="numeric" id="f-plank-secs" min="0" max="300" step="1" placeholder="e.g. 45">
+        </div>
+        <button class="timer-btn" onclick="toggleTimer(this,'f-plank-secs')">&#9654; Start</button>
       </div>
       <div class="score-input-preview" style="margin-top:8px;">
         <span id="plank-score-label-display">—</span>
+        <div class="score-bar-wrap"><div class="score-bar-fill" id="plank-score-bar"></div></div>
         <span id="plank-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
       </div>
       <div class="accordion-details">
@@ -2057,7 +2130,7 @@ body {
         <div class="accordion-details-content">
       <div class="field" style="margin-top:10px;">
         <label>Previous score (optional)</label>
-        <input type="number" id="f-plank-prev" min="0" max="100" placeholder="Leave blank if first visit">
+        <input type="number" inputmode="numeric" id="f-plank-prev" min="0" max="100" placeholder="Leave blank if first visit">
       </div>
       <div class="field" style="margin-top:10px;">
         <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
@@ -2172,6 +2245,7 @@ body {
 
       <div class="score-input-preview" style="margin-top:12px;">
         <span id="squat-score-label-display">—</span>
+        <div class="score-bar-wrap"><div class="score-bar-fill" id="squat-score-bar"></div></div>
         <span id="squat-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
       </div>
       <div class="accordion-details">
@@ -2181,7 +2255,7 @@ body {
         <div class="accordion-details-content">
       <div class="field" style="margin-top:10px;">
         <label>Previous score (optional)</label>
-        <input type="number" id="f-squat-prev" min="0" max="100" placeholder="Leave blank if first visit">
+        <input type="number" inputmode="numeric" id="f-squat-prev" min="0" max="100" placeholder="Leave blank if first visit">
       </div>
       <div class="field" style="margin-top:10px;">
         <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
@@ -2207,12 +2281,16 @@ body {
       <div class="accordion-body">
       <div class="field-hint" style="margin-bottom:10px;">Score is auto-calculated from hold time and age bracket. Targets: 20–30→90s · 31–45→70s · 46–60→45s · 61–75→30s · 76+→15s.</div>
 
-      <div class="field">
-        <label>Hold time (seconds)</label>
-        <input type="number" id="f-wall-secs" min="0" max="300" step="1" placeholder="e.g. 40">
+      <div style="display:flex;gap:8px;align-items:flex-end;">
+        <div class="field" style="flex:1;">
+          <label>Hold time (seconds)</label>
+          <input type="number" inputmode="numeric" id="f-wall-secs" min="0" max="300" step="1" placeholder="e.g. 40">
+        </div>
+        <button class="timer-btn" onclick="toggleTimer(this,'f-wall-secs')">&#9654; Start</button>
       </div>
       <div class="score-input-preview" style="margin-top:8px;">
         <span id="wall-score-label-display">—</span>
+        <div class="score-bar-wrap"><div class="score-bar-fill" id="wall-score-bar"></div></div>
         <span id="wall-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
       </div>
       <div class="accordion-details">
@@ -2222,7 +2300,7 @@ body {
         <div class="accordion-details-content">
       <div class="field" style="margin-top:10px;">
         <label>Previous score (optional)</label>
-        <input type="number" id="f-wall-prev" min="0" max="100" placeholder="Leave blank if first visit">
+        <input type="number" inputmode="numeric" id="f-wall-prev" min="0" max="100" placeholder="Leave blank if first visit">
       </div>
       <div class="field" style="margin-top:10px;">
         <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
@@ -2259,35 +2337,35 @@ body {
       <!-- Row 1: Bicep Curl -->
       <div style="display:grid;grid-template-columns:1fr 60px 55px 55px;gap:4px;margin-bottom:4px;">
         <span style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;display:flex;align-items:center;">Bicep Curl</span>
-        <input type="number" id="m1-val" placeholder="kg" min="0" max="300" step="0.5" style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;text-align:center;">
+        <input type="number" inputmode="numeric" id="m1-val" placeholder="kg" min="0" max="300" step="0.5" style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;text-align:center;">
         <div id="m1-min-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
         <div id="m1-max-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
       </div>
       <!-- Row 2: Tricep Extension -->
       <div style="display:grid;grid-template-columns:1fr 60px 55px 55px;gap:4px;margin-bottom:4px;">
         <span style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;display:flex;align-items:center;">Tricep Ext.</span>
-        <input type="number" id="m2-val" placeholder="kg" min="0" max="300" step="0.5" style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;text-align:center;">
+        <input type="number" inputmode="numeric" id="m2-val" placeholder="kg" min="0" max="300" step="0.5" style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;text-align:center;">
         <div id="m2-min-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
         <div id="m2-max-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
       </div>
       <!-- Row 3: Shoulder Press -->
       <div style="display:grid;grid-template-columns:1fr 60px 55px 55px;gap:4px;margin-bottom:4px;">
         <span style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;display:flex;align-items:center;">Shoulder Press</span>
-        <input type="number" id="m3-val" placeholder="kg" min="0" max="300" step="0.5" style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;text-align:center;">
+        <input type="number" inputmode="numeric" id="m3-val" placeholder="kg" min="0" max="300" step="0.5" style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;text-align:center;">
         <div id="m3-min-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
         <div id="m3-max-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
       </div>
       <!-- Row 4: Lat Pulldown -->
       <div style="display:grid;grid-template-columns:1fr 60px 55px 55px;gap:4px;margin-bottom:4px;">
         <span style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;display:flex;align-items:center;">Lat Pulldown</span>
-        <input type="number" id="m4-val" placeholder="kg" min="0" max="300" step="0.5" style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;text-align:center;">
+        <input type="number" inputmode="numeric" id="m4-val" placeholder="kg" min="0" max="300" step="0.5" style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;text-align:center;">
         <div id="m4-min-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
         <div id="m4-max-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
       </div>
       <!-- Row 5: Bench Press -->
       <div style="display:grid;grid-template-columns:1fr 60px 55px 55px;gap:4px;margin-bottom:14px;">
         <span style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;display:flex;align-items:center;">Bench Press</span>
-        <input type="number" id="m5-val" placeholder="kg" min="0" max="300" step="0.5" style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;text-align:center;">
+        <input type="number" inputmode="numeric" id="m5-val" placeholder="kg" min="0" max="300" step="0.5" style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;text-align:center;">
         <div id="m5-min-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
         <div id="m5-max-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
       </div>
@@ -3847,6 +3925,48 @@ function updateBalanceUI() {
   if (bothEl)   bothEl.style.display   = info.single ? 'none' : '';
 }
 
+// ── BUILT-IN TIMER ──────────────────────────────────────────────
+var _activeTimers = {};
+function toggleTimer(btn, fieldId) {
+  var el = document.getElementById(fieldId);
+  if (!el) return;
+  if (_activeTimers[fieldId]) {
+    // Stop
+    clearInterval(_activeTimers[fieldId]);
+    delete _activeTimers[fieldId];
+    btn.textContent = '\u25B6 Start';
+    btn.style.background = '';
+    btn.style.color = '';
+    btn.style.borderColor = '';
+    scheduleRender();
+  } else {
+    // Start from current value or 0
+    var startVal = parseInt(el.value) || 0;
+    var startTime = Date.now() - (startVal * 1000);
+    btn.textContent = '\u23F9 Stop';
+    btn.style.background = 'var(--rust)';
+    btn.style.color = '#fff';
+    btn.style.borderColor = 'var(--rust)';
+    _activeTimers[fieldId] = setInterval(function() {
+      var elapsed = Math.floor((Date.now() - startTime) / 1000);
+      el.value = elapsed;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    }, 1000);
+  }
+}
+
+// ── SCORE BAR HELPER ────────────────────────────────────────────
+function updateScoreBar(barId, score) {
+  var bar = document.getElementById(barId);
+  if (!bar) return;
+  var s = Math.max(0, Math.min(100, score));
+  bar.style.width = s + '%';
+  if (s >= 75) bar.style.background = 'var(--sage)';
+  else if (s >= 55) bar.style.background = 'var(--gold)';
+  else if (s >= 38) bar.style.background = 'var(--rust)';
+  else bar.style.background = 'var(--red)';
+}
+
 function updateBalScorePreview() {
   var ageEl   = document.getElementById('f-age');
   var valDisp = document.getElementById('balance-score-val-display');
@@ -3861,20 +3981,21 @@ function updateBalScorePreview() {
     var rEl = document.getElementById('f-balance-right');
     var hasL = lEl && lEl.value !== '';
     var hasR = rEl && rEl.value !== '';
-    if (!hasL && !hasR) { valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)'; lblDisp.textContent = '—'; return; }
+    if (!hasL && !hasR) { valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)'; lblDisp.textContent = '—'; updateScoreBar('balance-score-bar', 0); return; }
     // Match report formula: (left + right) / 60 * 100
     var leftSecs  = hasL ? parseFloat(lEl.value) : 0;
     var rightSecs = hasR ? parseFloat(rEl.value) : 0;
     score = Math.min(100, Math.round(((leftSecs + rightSecs) / 60) * 100));
   } else {
     var bEl = document.getElementById('f-balance-both');
-    if (!bEl || bEl.value === '') { valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)'; lblDisp.textContent = '—'; return; }
+    if (!bEl || bEl.value === '') { valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)'; lblDisp.textContent = '—'; updateScoreBar('balance-score-bar', 0); return; }
     score = Math.min(100, Math.round((parseFloat(bEl.value) / 30) * 100));
   }
   var color = score >= 75 ? 'var(--green)' : score >= 55 ? 'var(--amber)' : score >= 38 ? 'var(--rust)' : 'var(--red)';
   var label = score >= 75 ? 'Strong' : score >= 55 ? 'Moderate' : score >= 38 ? 'Needs work' : 'Urgent';
   valDisp.textContent = score; valDisp.style.color = color;
   lblDisp.textContent = label;
+  updateScoreBar('balance-score-bar', score);
 }
 
 function updateWallScorePreview() {
@@ -3885,7 +4006,7 @@ function updateWallScorePreview() {
   if (!valDisp || !lblDisp) return;
   if (!secsEl || secsEl.value === '') {
     valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)';
-    lblDisp.textContent = '—'; return;
+    lblDisp.textContent = '—'; updateScoreBar('wall-score-bar', 0); return;
   }
   var secs = parseFloat(secsEl.value);
   var age  = parseInt(ageEl ? ageEl.value : '') || 30;
@@ -3895,6 +4016,7 @@ function updateWallScorePreview() {
   var label = score >= 75 ? 'Strong' : score >= 55 ? 'Moderate' : score >= 38 ? 'Needs work' : 'Urgent';
   valDisp.textContent = score; valDisp.style.color = color;
   lblDisp.textContent = label;
+  updateScoreBar('wall-score-bar', score);
 }
 
 function updateSquatScorePreview() {
@@ -3904,6 +4026,7 @@ function updateSquatScorePreview() {
   if (!valDisp || !lblDisp || !depthEl || depthEl.value === '-1') {
     if (valDisp) { valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)'; }
     if (lblDisp) lblDisp.textContent = '—';
+    updateScoreBar('squat-score-bar', 0);
     return;
   }
   var depth  = parseInt(depthEl.value);
@@ -3918,6 +4041,7 @@ function updateSquatScorePreview() {
   var label = score >= 75 ? 'Strong' : score >= 55 ? 'Moderate' : score >= 38 ? 'Needs work' : 'Urgent';
   valDisp.textContent = score; valDisp.style.color = color;
   lblDisp.textContent = label;
+  updateScoreBar('squat-score-bar', score);
 }
 
 function updatePlankScorePreview() {
@@ -3928,7 +4052,7 @@ function updatePlankScorePreview() {
   if (!valDisp || !lblDisp) return;
   if (!secsEl || secsEl.value === '') {
     valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)';
-    lblDisp.textContent = '—'; return;
+    lblDisp.textContent = '—'; updateScoreBar('plank-score-bar', 0); return;
   }
   var secs = parseFloat(secsEl.value);
   var age  = parseInt(ageEl ? ageEl.value : '') || 30;
@@ -3938,6 +4062,7 @@ function updatePlankScorePreview() {
   var label = score >= 75 ? 'Strong' : score >= 55 ? 'Moderate' : score >= 38 ? 'Needs work' : 'Urgent';
   valDisp.textContent = score; valDisp.style.color = color;
   lblDisp.textContent = label;
+  updateScoreBar('plank-score-bar', score);
 }
 
 function updateReachScorePreview() {
@@ -3952,7 +4077,7 @@ function updateReachScorePreview() {
   var hasRight = rightEl && rightEl.value !== '';
   if (!hasLeft && !hasRight) {
     valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)';
-    lblDisp.textContent = '—'; return;
+    lblDisp.textContent = '—'; updateScoreBar('reach-score-bar', 0); return;
   }
   var age    = parseInt(ageEl    ? ageEl.value    : '') || 30;
   var gender = genderEl ? genderEl.value.toLowerCase() : 'male';
@@ -3970,6 +4095,7 @@ function updateReachScorePreview() {
   var label = score >= 75 ? 'Strong' : score >= 55 ? 'Moderate' : score >= 38 ? 'Needs work' : 'Urgent';
   valDisp.textContent = score; valDisp.style.color = color;
   lblDisp.textContent = label;
+  updateScoreBar('reach-score-bar', score);
 }
 
 function updateSitScorePreview() {
@@ -3984,7 +4110,7 @@ function updateSitScorePreview() {
   var hasRight = rightEl && rightEl.value !== '';
   if (!hasLeft && !hasRight) {
     valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)';
-    lblDisp.textContent = '—'; return;
+    lblDisp.textContent = '—'; updateScoreBar('sit-score-bar', 0); return;
   }
   var left   = hasLeft  ? parseFloat(leftEl.value)  : -999;
   var right  = hasRight ? parseFloat(rightEl.value) : -999;
@@ -4011,6 +4137,7 @@ function updateSitScorePreview() {
   var label = score >= 75 ? 'Strong' : score >= 55 ? 'Moderate' : score >= 38 ? 'Needs work' : 'Urgent';
   valDisp.textContent = score; valDisp.style.color = color;
   lblDisp.textContent = label;
+  updateScoreBar('sit-score-bar', score);
 }
 
 function updateGripScorePreview() {
@@ -4026,7 +4153,7 @@ function updateGripScorePreview() {
   var kg = Math.max(v1, v2);
   if (kg <= 0) {
     valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)';
-    lblDisp.textContent = '—'; return;
+    lblDisp.textContent = '—'; updateScoreBar('grip-score-bar', 0); return;
   }
   var age = parseInt(ageEl ? ageEl.value : '') || 30;
   var gen = genEl ? genEl.value.toLowerCase() : 'female';
@@ -4043,6 +4170,7 @@ function updateGripScorePreview() {
   var label = score >= 75 ? 'Strong' : score >= 55 ? 'Moderate' : score >= 38 ? 'Needs work' : 'Urgent';
   valDisp.textContent = score; valDisp.style.color = color;
   lblDisp.textContent = label;
+  updateScoreBar('grip-score-bar', score);
 }
 
 function updateStairScorePreview() {
@@ -4053,13 +4181,14 @@ function updateStairScorePreview() {
   var reps = parseInt(repsEl.value);
   if (isNaN(reps) || repsEl.value === '') {
     valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)';
-    lblDisp.textContent = '—'; return;
+    lblDisp.textContent = '—'; updateScoreBar('stair-score-bar', 0); return;
   }
   var score = Math.round(Math.min(100, (reps / 20) * 100));
   var color = score >= 75 ? 'var(--green)' : score >= 55 ? 'var(--amber)' : score >= 38 ? 'var(--rust)' : 'var(--red)';
   var label = score >= 75 ? 'Strong' : score >= 55 ? 'Moderate' : score >= 38 ? 'Needs work' : 'Urgent';
   valDisp.textContent = score; valDisp.style.color = color;
   lblDisp.textContent = label;
+  updateScoreBar('stair-score-bar', score);
 }
 
 function updateChairScorePreview() {
@@ -4070,13 +4199,14 @@ function updateChairScorePreview() {
   var reps = parseInt(repsEl.value);
   if (isNaN(reps) || repsEl.value === '') {
     valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)';
-    lblDisp.textContent = '—'; return;
+    lblDisp.textContent = '—'; updateScoreBar('chair-score-bar', 0); return;
   }
   var score = Math.round(Math.min(100, (reps / 20) * 100));
   var color = score >= 75 ? 'var(--green)' : score >= 55 ? 'var(--amber)' : score >= 38 ? 'var(--rust)' : 'var(--red)';
   var label = score >= 75 ? 'Strong' : score >= 55 ? 'Moderate' : score >= 38 ? 'Needs work' : 'Urgent';
   valDisp.textContent = score; valDisp.style.color = color;
   lblDisp.textContent = label;
+  updateScoreBar('chair-score-bar', score);
 }
 
 // ── BIND ALL INPUTS ──────────────────────────────────────────────
@@ -4957,7 +5087,54 @@ function updateAccordionBadges() {
       }
     }
   });
+  // Check station completion
+  var completionMap = {
+    'section-s01': ['f-chair-reps'],
+    'section-s02': ['f-stair-reps'],
+    'section-s03': ['f-balance-left', 'f-balance-right', 'f-balance-both'],
+    'section-s04': ['f-grip-right-1', 'f-grip-right-2'],
+    'section-s05': ['f-sit-left', 'f-sit-right'],
+    'section-s06': ['f-reach-left', 'f-reach-right'],
+    'section-s07': ['f-plank-secs'],
+    'section-s08': ['f-squat-depth'],
+    'section-s09': ['f-wall-secs']
+  };
+  Object.keys(completionMap).forEach(function(sectionId) {
+    var section = document.getElementById(sectionId);
+    if (!section) return;
+    var filled = completionMap[sectionId].some(function(fid) {
+      var el = document.getElementById(fid);
+      return el && el.value && el.value !== '' && el.value !== '-1';
+    });
+    section.classList.toggle('station-filled', filled);
+  });
 }
+
+// ── KEYBOARD NAVIGATION ─────────────────────────────────────────
+document.querySelector('.sidebar-form').addEventListener('keydown', function(e) {
+  if (e.key !== 'Enter') return;
+  var el = e.target;
+  if (el.tagName === 'TEXTAREA') return; // Allow Enter in textareas
+  e.preventDefault();
+
+  // Find all visible inputs/selects in the sidebar
+  var allFields = Array.from(document.querySelectorAll('.sidebar-form input:not([type="hidden"]):not([type="checkbox"]), .sidebar-form select'));
+  var visibleFields = allFields.filter(function(f) {
+    return f.offsetParent !== null; // visible
+  });
+
+  var idx = visibleFields.indexOf(el);
+  if (idx >= 0 && idx < visibleFields.length - 1) {
+    visibleFields[idx + 1].focus();
+  } else {
+    // Last visible field — find and click the Next Station button in the open section
+    var openSection = document.querySelector('.station-section.open');
+    if (openSection) {
+      var nextBtn = openSection.querySelector('.accordion-next-btn');
+      if (nextBtn) nextBtn.click();
+    }
+  }
+});
 
 // ── INITIAL RENDER ───────────────────────────────────────────────
 render();
