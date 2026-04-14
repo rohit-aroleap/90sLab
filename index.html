@@ -300,8 +300,6 @@ body {
 }
 
 .btn-print:hover { background: #d46e35; }
-#btn-pdf { background: #2a6b3a; }
-#btn-pdf:hover { background: #358547; }
 .btn-print:active { transform: scale(0.98); }
 
 .btn-secondary {
@@ -1258,7 +1256,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.003</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.004</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -1861,8 +1859,8 @@ body {
       </div><!-- /sidebar-form -->
 
     <div style="display:flex;gap:8px;padding:0 28px 12px;">
-      <button class="btn-print" style="flex:1;margin:0;" onclick="window.print()">🖨 Print Report</button>
-      <button class="btn-print" id="btn-pdf" style="flex:1;margin:0;background:#2a6b3a;" onclick="downloadPDF(this)">📥 Download PDF</button>
+      <button class="btn-print" style="flex:1;margin:0;" onclick="window.print()">🖨 Print</button>
+      <button class="btn-print" id="btn-pdf" style="flex:1;margin:0;" onclick="downloadPDF()">📥 Save as PDF</button>
     </div>
     <div style="display:flex;gap:8px;padding:0 32px 8px;">
       <button class="btn-secondary" style="flex:1;margin:0;" onclick="saveForm()">💾 Save</button>
@@ -1887,7 +1885,6 @@ body {
 
 </div><!-- /app-shell -->
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
 <script>
 // ── HELPERS ─────────────────────────────────────────────────────
 function val(id) {
@@ -3601,43 +3598,19 @@ document.querySelectorAll('textarea[id$="-rec"]').forEach(el => {
 
 
 // ── PDF EXPORT ──────────────────────────────────────────────────
-function downloadPDF(btn) {
-  var originalText = btn.innerHTML;
-  btn.innerHTML = '⏳ Generating…';
-  btn.disabled = true;
-
+// Sets the page title to the client name so browser's "Save as PDF"
+// suggests the right filename, then opens print dialog
+function downloadPDF() {
   var firstName = val('f-firstname') || 'Client';
   var lastName = val('f-lastname') || '';
   var clientName = (firstName + ' ' + lastName).trim();
-  var filename = (clientName + ' - 90s Lab Report.pdf').replace(/[<>:"/\\|?*]/g, '_');
+  var pdfName = clientName + ' - 90s Lab Report';
 
-  var element = document.getElementById('report-output');
-  var opt = {
-    margin: 0,
-    filename: filename,
-    image: { type: 'jpeg', quality: 0.95 },
-    html2canvas: {
-      scale: 2,
-      useCORS: true,
-      scrollY: 0,
-      windowWidth: element.scrollWidth
-    },
-    jsPDF: {
-      unit: 'mm',
-      format: 'a4',
-      orientation: 'portrait'
-    },
-    pagebreak: { mode: ['css', 'legacy'], before: '.print-page-start' }
-  };
-
-  html2pdf().set(opt).from(element).save().then(function() {
-    btn.innerHTML = originalText;
-    btn.disabled = false;
-  }).catch(function() {
-    btn.innerHTML = originalText;
-    btn.disabled = false;
-    alert('PDF generation failed. Try Print instead.');
-  });
+  var originalTitle = document.title;
+  document.title = pdfName;
+  window.print();
+  // Restore title after print dialog closes
+  setTimeout(function() { document.title = originalTitle; }, 1000);
 }
 
 // ── RESET ────────────────────────────────────────────────────────
