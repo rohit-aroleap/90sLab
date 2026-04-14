@@ -1368,11 +1368,6 @@ body {
   color: #8a7968;
 }
 
-.client-modal-footer {
-  padding: 12px 24px;
-  border-top: 1px solid #e8e0d4;
-  text-align: right;
-}
 .client-modal-close {
   font-family: 'Nunito', sans-serif;
   font-size: 12px;
@@ -1386,6 +1381,63 @@ body {
   transition: border-color 0.15s, color 0.15s;
 }
 .client-modal-close:hover { border-color: var(--rust); color: var(--rust); }
+
+.client-card-delete {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #c4a882;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.client-card-delete:hover { background: #b54020; color: #fff; }
+
+.client-modal-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 24px 4px;
+}
+.client-sort-btn {
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border: 1.5px solid #e0d8cc;
+  border-radius: 4px;
+  background: #fff;
+  color: #8a7968;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.client-sort-btn:hover { border-color: var(--rust); color: var(--rust); }
+.client-sort-btn.active { background: var(--rust); color: #fff; border-color: var(--rust); }
+
+.client-modal-footer {
+  padding: 12px 24px;
+  border-top: 1px solid #e8e0d4;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.field-error input, .field-error select, .field-error textarea {
+  border-color: #b54020 !important;
+  box-shadow: 0 0 0 2px rgba(181,64,32,0.15);
+}
+.field-error-msg {
+  font-family: 'Nunito', sans-serif;
+  font-size: 10px;
+  color: #b54020;
+  margin-top: 2px;
+}
 </style>
 </head>
 <body>
@@ -1398,7 +1450,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.007</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.008</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -1459,7 +1511,12 @@ body {
         </div>
         <div>
           <label>Staff Name</label>
-          <input type="text" id="f-staff" placeholder="Staff name">
+          <select id="f-staff">
+            <option value="">Select staff</option>
+            <option value="Ashima">Ashima</option>
+            <option value="Anjani">Anjani</option>
+            <option value="Others">Others</option>
+          </select>
         </div>
       </div>
 
@@ -2009,6 +2066,9 @@ body {
       <button class="btn-secondary" style="flex:1;margin:0;" onclick="saveToCloud()">💾 Save</button>
       <button class="btn-secondary" style="flex:1;margin:0;" onclick="openClientModal()">📂 Load Client</button>
       <button class="btn-secondary" style="flex:1;margin:0;border-color:var(--rust);color:var(--rust);" onclick="resetForm()">✕ New Client</button>
+    </div>
+    <div style="display:flex;gap:8px;padding:0 32px 8px;">
+      <button class="btn-secondary" style="flex:1;margin:0;" onclick="exportCSV()">📊 Export All (CSV)</button>
     </div>
     <div id="save-status" style="text-align:center;font-size:10px;color:#8a7968;padding:0 32px 24px;letter-spacing:0.1em;"></div>
 
@@ -3897,12 +3957,9 @@ function _applyFormData(data) {
 }
 
 function saveToCloud() {
+  if (!validateBeforeSave()) return;
   var firstName = val('f-firstname').trim();
   var lastName = val('f-lastname').trim();
-  if (!firstName && !lastName) {
-    showStatus('Enter client name first');
-    return;
-  }
 
   var data = _getFormData();
   var clientName = (firstName + ' ' + lastName).trim();
@@ -3977,6 +4034,8 @@ function closeClientModal() {
   setTimeout(function() { overlay.style.display = 'none'; }, 200);
 }
 
+var _currentSort = 'date';
+
 function loadClientList() {
   var listEl = document.getElementById('client-modal-list');
   listEl.innerHTML = '<div class="client-modal-empty">Loading…</div>';
@@ -3997,12 +4056,7 @@ function loadClientList() {
           fields: d.fields || {}
         });
       });
-      // Sort by date descending, then name
-      _clientCache.sort(function(a, b) {
-        if (b.date !== a.date) return b.date > a.date ? 1 : -1;
-        return a.name.localeCompare(b.name);
-      });
-      renderClientList(_clientCache);
+      applySortAndRender();
     })
     .catch(function(err) {
       console.error('Firebase list error:', err);
@@ -4010,8 +4064,41 @@ function loadClientList() {
     });
 }
 
+function applySortAndRender() {
+  var sorted = _clientCache.slice();
+  if (_currentSort === 'date') {
+    sorted.sort(function(a, b) {
+      if (b.date !== a.date) return b.date > a.date ? 1 : -1;
+      return a.name.localeCompare(b.name);
+    });
+  } else if (_currentSort === 'name') {
+    sorted.sort(function(a, b) { return a.name.localeCompare(b.name); });
+  } else if (_currentSort === 'staff') {
+    sorted.sort(function(a, b) {
+      if (a.staff !== b.staff) return a.staff.localeCompare(b.staff);
+      return a.name.localeCompare(b.name);
+    });
+  }
+  // Apply search filter if active
+  var q = (document.getElementById('client-search').value || '').toLowerCase().trim();
+  if (q) {
+    sorted = sorted.filter(function(c) { return c.name.toLowerCase().indexOf(q) !== -1; });
+  }
+  renderClientList(sorted);
+}
+
+function sortClientList(sortBy) {
+  _currentSort = sortBy;
+  document.querySelectorAll('.client-sort-btn').forEach(function(btn) {
+    btn.classList.toggle('active', btn.getAttribute('data-sort') === sortBy);
+  });
+  applySortAndRender();
+}
+
 function renderClientList(clients) {
   var listEl = document.getElementById('client-modal-list');
+  var countEl = document.getElementById('client-count');
+  if (countEl) countEl.textContent = clients.length + ' client' + (clients.length !== 1 ? 's' : '');
   if (clients.length === 0) {
     listEl.innerHTML = '<div class="client-modal-empty">No saved clients found</div>';
     return;
@@ -4019,36 +4106,134 @@ function renderClientList(clients) {
   var html = '';
   clients.forEach(function(c) {
     var initials = ((c.name || '?').split(' ').map(function(w) { return w.charAt(0); }).join('').substring(0, 2)).toUpperCase();
-    // Calculate overall score if fields exist
-    var scoreHtml = '';
-    if (c.fields && c.fields['f-chair-reps']) {
-      scoreHtml = '<div class="client-card-score" style="color:var(--rust);">→</div>';
-    }
     var meta = [];
     if (c.date) meta.push(c.date);
     if (c.age) meta.push('Age ' + c.age);
     if (c.gender) meta.push(c.gender === 'male' ? 'M' : c.gender === 'female' ? 'F' : c.gender);
     if (c.staff) meta.push(c.staff);
 
-    html += '<div class="client-card" onclick="loadFromCloud(\'' + c.id + '\')">'
-      + '<div class="client-card-avatar">' + initials + '</div>'
-      + '<div class="client-card-info">'
+    html += '<div class="client-card">'
+      + '<div class="client-card-avatar" onclick="loadFromCloud(\'' + c.id + '\')">' + initials + '</div>'
+      + '<div class="client-card-info" onclick="loadFromCloud(\'' + c.id + '\')">'
       + '<div class="client-card-name">' + c.name + '</div>'
       + '<div class="client-card-meta">' + meta.join(' · ') + '</div>'
       + '</div>'
-      + scoreHtml
+      + '<button class="client-card-delete" onclick="event.stopPropagation();deleteClient(\'' + c.id + '\',\'' + c.name.replace(/'/g, "\\'") + '\')" title="Delete">🗑</button>'
       + '</div>';
   });
   listEl.innerHTML = html;
 }
 
 function filterClientList(query) {
-  var q = query.toLowerCase().trim();
-  if (!q) { renderClientList(_clientCache); return; }
-  var filtered = _clientCache.filter(function(c) {
-    return c.name.toLowerCase().indexOf(q) !== -1;
+  applySortAndRender();
+}
+
+function deleteClient(docId, clientName) {
+  if (!confirm('Delete "' + clientName + '"?\n\nThis cannot be undone.')) return;
+  showStatus('Deleting…');
+  db.collection('assessments').doc(docId).delete()
+    .then(function() {
+      _clientCache = _clientCache.filter(function(c) { return c.id !== docId; });
+      applySortAndRender();
+      showStatus('Deleted ✓');
+    })
+    .catch(function(err) {
+      console.error('Firebase delete error:', err);
+      showStatus('Delete failed');
+    });
+}
+
+// ── FORM VALIDATION ─────────────────────────────────────────────
+function validateBeforeSave() {
+  // Clear previous errors
+  document.querySelectorAll('.field-error').forEach(function(el) { el.classList.remove('field-error'); });
+  document.querySelectorAll('.field-error-msg').forEach(function(el) { el.remove(); });
+
+  var errors = [];
+  var requiredFields = [
+    { id: 'f-firstname', label: 'First Name' },
+    { id: 'f-lastname', label: 'Last Name' },
+    { id: 'f-age', label: 'Age' },
+    { id: 'f-date', label: 'Date' },
+    { id: 'f-staff', label: 'Staff' }
+  ];
+
+  requiredFields.forEach(function(f) {
+    var el = document.getElementById(f.id);
+    if (!el || !el.value.trim()) {
+      errors.push(f.label);
+      if (el) {
+        var wrapper = el.closest('.field') || el.parentElement;
+        wrapper.classList.add('field-error');
+        var msg = document.createElement('div');
+        msg.className = 'field-error-msg';
+        msg.textContent = f.label + ' is required';
+        el.parentElement.appendChild(msg);
+      }
+    }
   });
-  renderClientList(filtered);
+
+  if (errors.length > 0) {
+    showStatus('Missing: ' + errors.join(', '));
+    // Scroll to first error
+    var firstErr = document.querySelector('.field-error');
+    if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return false;
+  }
+  return true;
+}
+
+// ── CSV EXPORT ──────────────────────────────────────────────────
+function exportCSV() {
+  showStatus('Exporting…');
+  db.collection('assessments').get()
+    .then(function(snapshot) {
+      if (snapshot.empty) { showStatus('No data to export'); return; }
+
+      // Gather all field keys across all docs
+      var allKeys = ['name', 'date', 'age', 'gender', 'staff'];
+      var rows = [];
+      snapshot.forEach(function(doc) {
+        var d = doc.data();
+        var row = {
+          name: d.name || '',
+          date: d.date || '',
+          age: d.age || '',
+          gender: d.gender || '',
+          staff: d.staff || ''
+        };
+        if (d.fields) {
+          Object.keys(d.fields).forEach(function(k) {
+            if (allKeys.indexOf(k) === -1) allKeys.push(k);
+            row[k] = d.fields[k];
+          });
+        }
+        rows.push(row);
+      });
+
+      // Build CSV
+      var csvContent = allKeys.map(function(k) { return '"' + k.replace(/"/g, '""') + '"'; }).join(',') + '\n';
+      rows.forEach(function(row) {
+        var line = allKeys.map(function(k) {
+          var v = (row[k] || '').toString().replace(/"/g, '""');
+          return '"' + v + '"';
+        }).join(',');
+        csvContent += line + '\n';
+      });
+
+      // Download
+      var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      var link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = '90s Lab Assessments - ' + new Date().toISOString().split('T')[0] + '.csv';
+      link.click();
+      URL.revokeObjectURL(link.href);
+      showStatus('CSV exported ✓ (' + rows.length + ' clients)');
+    })
+    .catch(function(err) {
+      console.error('CSV export error:', err);
+      showStatus('Export failed');
+    });
 }
 
 // Required fields per station — at least one must be filled to count as "started"
@@ -4268,6 +4453,13 @@ if (dateInput) {
 
 // ── INITIAL RENDER ───────────────────────────────────────────────
 render();
+
+// ── SERVICE WORKER ──────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(function() {
+    // SW registration may fail on file:// or localhost — that's fine
+  });
+}
 </script>
 
 <!-- ══════════════════════ CLIENT MODAL ══════════════════════ -->
@@ -4277,10 +4469,18 @@ render();
       <h2>Saved Clients</h2>
       <input type="text" class="client-search" id="client-search" placeholder="Search by name…" oninput="filterClientList(this.value)">
     </div>
+    <div class="client-modal-toolbar">
+      <span style="font-family:'Nunito',sans-serif;font-size:11px;color:#8a7968;">Sort:</span>
+      <button class="client-sort-btn active" data-sort="date" onclick="sortClientList('date')">Date ↓</button>
+      <button class="client-sort-btn" data-sort="name" onclick="sortClientList('name')">Name</button>
+      <button class="client-sort-btn" data-sort="staff" onclick="sortClientList('staff')">Staff</button>
+      <span id="client-count" style="margin-left:auto;font-family:'Nunito',sans-serif;font-size:11px;color:#8a7968;"></span>
+    </div>
     <div class="client-modal-list" id="client-modal-list">
       <div class="client-modal-empty">Loading…</div>
     </div>
     <div class="client-modal-footer">
+      <button class="client-modal-close" onclick="exportCSV()" style="color:var(--rust);border-color:var(--rust);">📊 Export CSV</button>
       <button class="client-modal-close" onclick="closeClientModal()">Close</button>
     </div>
   </div>
