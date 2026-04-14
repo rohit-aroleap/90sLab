@@ -1244,6 +1244,148 @@ body {
   color: var(--rust);
   margin-top: 8px;
 }
+
+/* ── CLIENT MODAL ─────────────────────────────────────────────── */
+.client-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(26,20,16,0.6);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.client-modal-overlay.open {
+  display: flex;
+  opacity: 1;
+}
+
+.client-modal {
+  background: #ffffff;
+  border-radius: 12px;
+  width: 520px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  transform: translateY(20px) scale(0.97);
+  transition: transform 0.25s ease;
+  overflow: hidden;
+}
+.client-modal-overlay.open .client-modal {
+  transform: translateY(0) scale(1);
+}
+
+.client-modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #e8e0d4;
+}
+.client-modal-header h2 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 22px;
+  font-weight: 400;
+  color: #1a1410;
+  margin-bottom: 12px;
+}
+
+.client-search {
+  width: 100%;
+  padding: 9px 14px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  border: 1.5px solid #d4c9b4;
+  border-radius: 6px;
+  background: #faf8f5;
+  color: #1a1410;
+  outline: none;
+}
+.client-search:focus { border-color: var(--rust); }
+
+.client-modal-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.client-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 24px;
+  cursor: pointer;
+  transition: background 0.12s;
+  border-bottom: 1px solid #f0ebe3;
+}
+.client-card:hover { background: #faf6ee; }
+
+.client-card-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--rust);
+  color: #fff;
+  font-family: 'Nunito', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.client-card-info { flex: 1; min-width: 0; }
+.client-card-name {
+  font-family: 'Nunito', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1410;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.client-card-meta {
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  color: #8a7968;
+  margin-top: 2px;
+}
+
+.client-card-score {
+  font-family: 'Instrument Serif', serif;
+  font-size: 24px;
+  font-style: italic;
+  flex-shrink: 0;
+}
+
+.client-modal-empty {
+  padding: 40px 24px;
+  text-align: center;
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  color: #8a7968;
+}
+
+.client-modal-footer {
+  padding: 12px 24px;
+  border-top: 1px solid #e8e0d4;
+  text-align: right;
+}
+.client-modal-close {
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8a7968;
+  background: none;
+  border: 1.5px solid #d4c9b4;
+  border-radius: 6px;
+  padding: 8px 20px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.client-modal-close:hover { border-color: var(--rust); color: var(--rust); }
 </style>
 </head>
 <body>
@@ -1256,7 +1398,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.006</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.007</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -1865,12 +2007,8 @@ body {
     </div>
     <div style="display:flex;gap:8px;padding:0 32px 8px;">
       <button class="btn-secondary" style="flex:1;margin:0;" onclick="saveToCloud()">💾 Save</button>
+      <button class="btn-secondary" style="flex:1;margin:0;" onclick="openClientModal()">📂 Load Client</button>
       <button class="btn-secondary" style="flex:1;margin:0;border-color:var(--rust);color:var(--rust);" onclick="resetForm()">✕ New Client</button>
-    </div>
-    <div style="padding:0 32px 8px;">
-      <select id="client-picker" style="width:100%;padding:9px 12px;font-family:'Nunito',sans-serif;font-size:12px;background:#faf8f5;border:1.5px solid #d4c9b4;border-radius:6px;color:#1a1410;cursor:pointer;" onchange="loadFromCloud(this.value)">
-        <option value="">↑ Load a saved client…</option>
-      </select>
     </div>
     <div id="save-status" style="text-align:center;font-size:10px;color:#8a7968;padding:0 32px 24px;letter-spacing:0.1em;"></div>
 
@@ -3770,9 +3908,8 @@ function saveToCloud() {
   var clientName = (firstName + ' ' + lastName).trim();
   var date = val('f-date') || new Date().toISOString().split('T')[0];
 
-  // Doc ID: "FirstName LastName" — one doc per client, overwritten each save
-  // Each save also stored in a sub-collection for history
-  var docId = clientName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  // Doc ID: name + date so same client on different dates = separate records
+  var docId = (clientName + '-' + date).toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
   var clientDoc = {
     name: clientName,
@@ -3782,16 +3919,15 @@ function saveToCloud() {
     gender: val('f-gender'),
     date: date,
     staff: val('f-staff'),
-    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     fields: data
   };
 
   showStatus('Saving…');
-  db.collection('assessments').doc(docId).set(clientDoc)
+  db.collection('assessments').doc(docId).set(clientDoc, { merge: true })
     .then(function() {
       showStatus('Saved to cloud ✓');
-      saveForm(); // also save locally
-      refreshClientPicker();
+      saveForm();
     })
     .catch(function(err) {
       console.error('Firebase save error:', err);
@@ -3809,44 +3945,111 @@ function loadFromCloud(docId) {
       var data = doc.data();
       _resetFormState();
       _applyFormData(data.fields);
-      // Clear touched flags so recommendations can auto-populate
       document.querySelectorAll('textarea[id$="-rec"]').forEach(function(el) {
         if (el.value !== '') el.dataset.touched = '1';
       });
       showStatus('Loaded: ' + data.name + ' ✓');
-      saveForm(); // sync to localStorage
+      saveForm();
+      closeClientModal();
     })
     .catch(function(err) {
       console.error('Firebase load error:', err);
       showStatus('Load failed');
     });
-
-  // Reset picker to placeholder
-  document.getElementById('client-picker').value = '';
 }
 
-function refreshClientPicker() {
-  var picker = document.getElementById('client-picker');
-  if (!picker) return;
-  db.collection('assessments').orderBy('updatedAt', 'desc').get()
+// ── CLIENT MODAL ────────────────────────────────────────────────
+var _clientCache = [];
+
+function openClientModal() {
+  var overlay = document.getElementById('client-modal');
+  var search = document.getElementById('client-search');
+  overlay.style.display = 'flex';
+  // Trigger animation on next frame
+  requestAnimationFrame(function() { overlay.classList.add('open'); });
+  if (search) { search.value = ''; search.focus(); }
+  loadClientList();
+}
+
+function closeClientModal() {
+  var overlay = document.getElementById('client-modal');
+  overlay.classList.remove('open');
+  setTimeout(function() { overlay.style.display = 'none'; }, 200);
+}
+
+function loadClientList() {
+  var listEl = document.getElementById('client-modal-list');
+  listEl.innerHTML = '<div class="client-modal-empty">Loading…</div>';
+
+  db.collection('assessments').get()
     .then(function(snapshot) {
-      // Keep the placeholder option
-      picker.innerHTML = '<option value="">↑ Load a saved client…</option>';
+      _clientCache = [];
       snapshot.forEach(function(doc) {
         var d = doc.data();
-        var opt = document.createElement('option');
-        opt.value = doc.id;
-        opt.textContent = d.name + (d.date ? ' — ' + d.date : '') + (d.staff ? ' · ' + d.staff : '');
-        picker.appendChild(opt);
+        _clientCache.push({
+          id: doc.id,
+          name: d.name || '',
+          date: d.date || '',
+          age: d.age || '',
+          gender: d.gender || '',
+          staff: d.staff || '',
+          createdAt: d.createdAt,
+          fields: d.fields || {}
+        });
       });
+      // Sort by date descending, then name
+      _clientCache.sort(function(a, b) {
+        if (b.date !== a.date) return b.date > a.date ? 1 : -1;
+        return a.name.localeCompare(b.name);
+      });
+      renderClientList(_clientCache);
     })
     .catch(function(err) {
       console.error('Firebase list error:', err);
+      listEl.innerHTML = '<div class="client-modal-empty">Failed to load clients</div>';
     });
 }
 
-// Load client list on startup
-refreshClientPicker();
+function renderClientList(clients) {
+  var listEl = document.getElementById('client-modal-list');
+  if (clients.length === 0) {
+    listEl.innerHTML = '<div class="client-modal-empty">No saved clients found</div>';
+    return;
+  }
+  var html = '';
+  clients.forEach(function(c) {
+    var initials = ((c.name || '?').split(' ').map(function(w) { return w.charAt(0); }).join('').substring(0, 2)).toUpperCase();
+    // Calculate overall score if fields exist
+    var scoreHtml = '';
+    if (c.fields && c.fields['f-chair-reps']) {
+      scoreHtml = '<div class="client-card-score" style="color:var(--rust);">→</div>';
+    }
+    var meta = [];
+    if (c.date) meta.push(c.date);
+    if (c.age) meta.push('Age ' + c.age);
+    if (c.gender) meta.push(c.gender === 'male' ? 'M' : c.gender === 'female' ? 'F' : c.gender);
+    if (c.staff) meta.push(c.staff);
+
+    html += '<div class="client-card" onclick="loadFromCloud(\'' + c.id + '\')">'
+      + '<div class="client-card-avatar">' + initials + '</div>'
+      + '<div class="client-card-info">'
+      + '<div class="client-card-name">' + c.name + '</div>'
+      + '<div class="client-card-meta">' + meta.join(' · ') + '</div>'
+      + '</div>'
+      + scoreHtml
+      + '</div>';
+  });
+  listEl.innerHTML = html;
+}
+
+function filterClientList(query) {
+  var q = query.toLowerCase().trim();
+  if (!q) { renderClientList(_clientCache); return; }
+  var filtered = _clientCache.filter(function(c) {
+    return c.name.toLowerCase().indexOf(q) !== -1;
+  });
+  renderClientList(filtered);
+}
 
 // Required fields per station — at least one must be filled to count as "started"
 var stationRequiredFields = {
@@ -4066,5 +4269,22 @@ if (dateInput) {
 // ── INITIAL RENDER ───────────────────────────────────────────────
 render();
 </script>
+
+<!-- ══════════════════════ CLIENT MODAL ══════════════════════ -->
+<div class="client-modal-overlay" id="client-modal" onclick="if(event.target===this)closeClientModal()">
+  <div class="client-modal">
+    <div class="client-modal-header">
+      <h2>Saved Clients</h2>
+      <input type="text" class="client-search" id="client-search" placeholder="Search by name…" oninput="filterClientList(this.value)">
+    </div>
+    <div class="client-modal-list" id="client-modal-list">
+      <div class="client-modal-empty">Loading…</div>
+    </div>
+    <div class="client-modal-footer">
+      <button class="client-modal-close" onclick="closeClientModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
