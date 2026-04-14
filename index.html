@@ -4385,9 +4385,12 @@ function emailReport() {
   lines.push('— The 90s Lab | Aging Gracefully');
 
   var body = lines.join('\n');
-  var mailto = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
-  window.open(mailto, '_self');
-  showStatus('Email client opened ✓');
+  // Try Gmail compose in new tab (most reliable), fall back to mailto
+  var gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1'
+    + '&su=' + encodeURIComponent(subject)
+    + '&body=' + encodeURIComponent(body);
+  window.open(gmailUrl, '_blank');
+  showStatus('Gmail opened — attach your PDF and send ✓');
 }
 
 // Required fields per station — at least one must be filled to count as "started"
