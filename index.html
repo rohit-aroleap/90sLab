@@ -1614,7 +1614,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.024</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.025</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -1735,11 +1735,14 @@ body {
       <!-- CHALLENGE LEVEL — shown when reps = 20 (lower height = harder for chair) -->
       <div id="chair-challenge-card" style="display:none; margin-top:10px; padding:10px 14px; background:rgba(74,140,92,0.08); border:1.5px solid rgba(74,140,92,0.3); border-left:3px solid var(--green); border-radius:8px;">
         <div style="font-family:'Nunito',sans-serif; font-size:9px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--green); margin-bottom:6px;">&#127942; Maxed out! Try the challenge level</div>
-        <div style="font-family:'Nunito',sans-serif; font-size:13px; font-weight:600; color:#1a1410; margin-bottom:8px;">Challenge height: <span id="chair-challenge-height-label">30</span> cm <span style="font-size:10px; font-weight:400; color:var(--muted);">(younger age group)</span></div>
-        <div class="field" style="margin-bottom:0;">
-          <label>Reps at challenge height</label>
-          <div style="display:flex; gap:8px; align-items:center;">
-            <input type="number" inputmode="numeric" id="f-chair-challenge-reps" min="0" max="20" placeholder="0–20" style="flex:1;">
+        <div style="display:flex; gap:8px; align-items:flex-end;">
+          <div style="flex:1;">
+            <label>Challenge chair height</label>
+            <select id="f-chair-challenge-height"></select>
+          </div>
+          <div style="flex:1;">
+            <label>Reps at challenge height</label>
+            <input type="number" inputmode="numeric" id="f-chair-challenge-reps" min="0" max="20" placeholder="0–20">
           </div>
         </div>
         <div class="field-hint" style="margin-top:4px;">Score stays 100. This shows you're performing above your age group.</div>
@@ -1830,11 +1833,14 @@ body {
       <!-- CHALLENGE LEVEL — shown when reps = 20 -->
       <div id="stair-challenge-card" style="display:none; margin-top:10px; padding:10px 14px; background:rgba(74,140,92,0.08); border:1.5px solid rgba(74,140,92,0.3); border-left:3px solid var(--green); border-radius:8px;">
         <div style="font-family:'Nunito',sans-serif; font-size:9px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--green); margin-bottom:6px;">&#127942; Maxed out! Try the challenge level</div>
-        <div style="font-family:'Nunito',sans-serif; font-size:13px; font-weight:600; color:#1a1410; margin-bottom:8px;">Challenge height: <span id="stair-challenge-height-label">35</span> cm <span style="font-size:10px; font-weight:400; color:var(--muted);">(younger age group)</span></div>
-        <div class="field" style="margin-bottom:0;">
-          <label>Reps at challenge height</label>
-          <div style="display:flex; gap:8px; align-items:center;">
-            <input type="number" inputmode="numeric" id="f-stair-challenge-reps" min="0" max="20" placeholder="0–20" style="flex:1;">
+        <div style="display:flex; gap:8px; align-items:flex-end;">
+          <div style="flex:1;">
+            <label>Challenge step height</label>
+            <select id="f-stair-challenge-height"></select>
+          </div>
+          <div style="flex:1;">
+            <label>Reps at challenge height</label>
+            <input type="number" inputmode="numeric" id="f-stair-challenge-reps" min="0" max="20" placeholder="0–20">
           </div>
         </div>
         <div class="field-hint" style="margin-top:4px;">Score stays 100. This shows you're performing above your age group.</div>
@@ -2675,10 +2681,11 @@ function render() {
   const chairNotes      = val('f-chair-notes') || '';
   // Functional age bracket implied by lower-height performance
   const chairHeightNum  = parseInt(chairH) || 40;
-  const chairLowerHeight = chairHeightNum === 40 ? 30 : chairHeightNum === 30 ? 20 : null;
+  const chairHasHarderOption = chairHeightNum > 20;
+  const chairChallengeHeight = parseInt(val('f-chair-challenge-height')) || null;
   const chairChallengeReps = num('f-chair-challenge-reps') || 0;
-  const chairHasChallenge = chairChallengeReps > 0 && chairLowerHeight !== null;
-  const chairChallengeLabel = chairLowerHeight === 30 ? 'ages 46–60' : chairLowerHeight === 20 ? 'ages 10–45' : '';
+  const chairHasChallenge = chairChallengeReps > 0 && chairChallengeHeight !== null;
+  const chairChallengeLabel = chairChallengeHeight === 30 ? 'ages 46–60' : chairChallengeHeight === 20 ? 'ages 10–45' : chairChallengeHeight ? chairChallengeHeight + ' cm' : '';
 
   const stairReps          = num('f-stair-reps') || 0;
   const stairEasierHeight  = val('f-stair-easier-height') || '';
@@ -2690,10 +2697,11 @@ function render() {
   const stairPrev       = val('f-stair-prev') !== '' ? Math.min(100, Math.max(0, num('f-stair-prev'))) : null;
   const stairNotes      = val('f-stair-notes') || '';
   const stairHeightNum  = parseInt(stairH) || 30;
-  const stairHigherHeight = stairHeightNum === 30 ? 35 : stairHeightNum === 35 ? 45 : null;
+  const stairHasHarderOption = stairHeightNum < 45;
+  const stairChallengeHeight = parseInt(val('f-stair-challenge-height')) || null;
   const stairChallengeReps = num('f-stair-challenge-reps') || 0;
-  const stairHasChallenge  = stairChallengeReps > 0 && stairHigherHeight !== null;
-  const stairChallengeLabel = stairHigherHeight === 35 ? 'ages 46–60' : stairHigherHeight === 45 ? 'ages 10–45' : '';
+  const stairHasChallenge  = stairChallengeReps > 0 && stairChallengeHeight !== null;
+  const stairChallengeLabel = stairChallengeHeight === 35 ? 'ages 46–60' : stairChallengeHeight === 45 ? 'ages 10–45' : stairChallengeHeight ? stairChallengeHeight + ' cm' : '';
 
   const balAge      = num('f-age') || 30;
   // Bracket order (easiest → hardest):
@@ -3138,8 +3146,8 @@ function render() {
       <div class="timeline-labels"><span>0 — Needs work</span><span style="color:${scoreColor(chairScore)};font-weight:500">${scoreLabel(chairScore)}</span><span>100 — No decline</span></div>
     </div>
     ${delta(chairScore, chairPrev)}
-    ${chairHasChallenge ? '<div style="margin-top:14px; padding:14px 18px; background:rgba(74,140,92,0.12); border-left:3px solid var(--green); font-size:14px; line-height:1.7; color:var(--ink);"><strong style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--green);display:block;margin-bottom:5px;">Above Age Group — Challenge Level</strong>Also completed <strong>' + chairChallengeReps + ' / 20 reps</strong> at <strong>' + chairLowerHeight + ' cm</strong> (' + chairChallengeLabel + '). Your legs are performing ahead of your years.<div class="timeline-bar-track" style="height:4px;margin-top:10px;"><div class="timeline-bar-fill" style="width:' + Math.round((chairChallengeReps/20)*100) + '%;background:var(--green);height:4px;"></div></div></div>' : ''}
-    ${chairScore === 100 && !chairHasChallenge && chairLowerHeight ? '<div style="margin-top:14px; padding:14px 18px; background:rgba(201,168,76,0.12); border-left:3px solid var(--gold); font-size:14px; line-height:1.7; color:var(--ink);"><strong style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:5px;">Ready for the next challenge</strong>You completed all 20 reps at your age-appropriate height (' + chairH + ' cm). Next target: complete 20 reps at ' + chairLowerHeight + ' cm.</div>' : ''}
+    ${chairHasChallenge ? '<div style="margin-top:14px; padding:14px 18px; background:rgba(74,140,92,0.12); border-left:3px solid var(--green); font-size:14px; line-height:1.7; color:var(--ink);"><strong style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--green);display:block;margin-bottom:5px;">Above Age Group — Challenge Level</strong>Also completed <strong>' + chairChallengeReps + ' / 20 reps</strong> at <strong>' + chairChallengeHeight + ' cm</strong> (' + chairChallengeLabel + '). Your legs are performing ahead of your years.<div class="timeline-bar-track" style="height:4px;margin-top:10px;"><div class="timeline-bar-fill" style="width:' + Math.round((chairChallengeReps/20)*100) + '%;background:var(--green);height:4px;"></div></div></div>' : ''}
+    ${chairScore === 100 && !chairHasChallenge && chairHasHarderOption ? '<div style="margin-top:14px; padding:14px 18px; background:rgba(201,168,76,0.12); border-left:3px solid var(--gold); font-size:14px; line-height:1.7; color:var(--ink);"><strong style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:5px;">Ready for the next challenge</strong>You completed all 20 reps at your age-appropriate height (' + chairH + ' cm). Try the challenge level to see how you compare to a younger age group!</div>' : ''}
     <div style="margin-top:20px; padding:16px 20px; background:var(--warm); border-left:3px solid ${scoreColor(chairScore)}; font-size:14px; line-height:1.8; color:var(--ink);">
       <strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Recommendation</strong>
       ${chairRec}
@@ -3196,8 +3204,8 @@ function render() {
       <div class="timeline-labels"><span>0 — Needs work</span><span style="color:${scoreColor(stairScore)};font-weight:500">${scoreLabel(stairScore)}</span><span>100 — No decline</span></div>
     </div>
     ${delta(stairScore, stairPrev)}
-    ${stairHasChallenge ? '<div style="margin-top:14px; padding:14px 18px; background:rgba(74,140,92,0.12); border-left:3px solid var(--green); font-size:14px; line-height:1.7; color:var(--ink);"><strong style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--green);display:block;margin-bottom:5px;">Above Age Group — Challenge Level</strong>Also completed <strong>' + stairChallengeReps + ' / 20 reps</strong> at <strong>' + stairHigherHeight + ' cm</strong> (' + stairChallengeLabel + '). Your legs and cardiovascular system are performing ahead of your years.<div class="timeline-bar-track" style="height:4px;margin-top:10px;"><div class="timeline-bar-fill" style="width:' + Math.round((stairChallengeReps/20)*100) + '%;background:var(--green);height:4px;"></div></div></div>' : ''}
-    ${stairScore === 100 && !stairHasChallenge && stairHigherHeight ? '<div style="margin-top:14px; padding:14px 18px; background:rgba(201,168,76,0.12); border-left:3px solid var(--gold); font-size:14px; line-height:1.7; color:var(--ink);"><strong style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:5px;">Ready for the next challenge</strong>You completed all 20 reps at your age-appropriate step (' + stairH + ' cm). Next target: complete 20 reps at ' + stairHigherHeight + ' cm.</div>' : ''}
+    ${stairHasChallenge ? '<div style="margin-top:14px; padding:14px 18px; background:rgba(74,140,92,0.12); border-left:3px solid var(--green); font-size:14px; line-height:1.7; color:var(--ink);"><strong style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--green);display:block;margin-bottom:5px;">Above Age Group — Challenge Level</strong>Also completed <strong>' + stairChallengeReps + ' / 20 reps</strong> at <strong>' + stairChallengeHeight + ' cm</strong> (' + stairChallengeLabel + '). Your legs and cardiovascular system are performing ahead of your years.<div class="timeline-bar-track" style="height:4px;margin-top:10px;"><div class="timeline-bar-fill" style="width:' + Math.round((stairChallengeReps/20)*100) + '%;background:var(--green);height:4px;"></div></div></div>' : ''}
+    ${stairScore === 100 && !stairHasChallenge && stairHasHarderOption ? '<div style="margin-top:14px; padding:14px 18px; background:rgba(201,168,76,0.12); border-left:3px solid var(--gold); font-size:14px; line-height:1.7; color:var(--ink);"><strong style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:5px;">Ready for the next challenge</strong>You completed all 20 reps at your age-appropriate step (' + stairH + ' cm). Try the challenge level to see how you compare to a younger age group!</div>' : ''}
     <div style="margin-top:20px; padding:16px 20px; background:rgba(26,20,16,0.06); border-left:3px solid ${scoreColor(stairScore)}; font-size:14px; line-height:1.8; color:var(--ink);">
       <strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Recommendation</strong>
       ${stairRec}
@@ -3996,10 +4004,18 @@ function updateChairHeight() {
   var stdH = parseInt(chairEl.value) || 40;
   var lbl = document.getElementById('chair-standard-height-label');
   if (lbl) lbl.textContent = stdH;
-  // Challenge height = one level LOWER (harder for chair): 40→30, 30→20, 20→null
-  var challengeH = stdH === 40 ? 30 : stdH === 30 ? 20 : null;
-  var chLbl = document.getElementById('chair-challenge-height-label');
-  if (chLbl) chLbl.textContent = challengeH || '';
+  // Populate challenge height options (heights BELOW standard = harder for chair)
+  var challengeSel = document.getElementById('f-chair-challenge-height');
+  if (challengeSel) {
+    var curChVal = challengeSel.value;
+    var harderHeights = [20,30,40].filter(function(h) { return h < stdH; });
+    challengeSel.innerHTML = '';
+    harderHeights.forEach(function(h) {
+      var ageLabel = h === 20 ? 'ages 10–45' : h === 30 ? 'ages 46–60' : '';
+      challengeSel.innerHTML += '<option value="' + h + '">' + h + ' cm (' + ageLabel + ')</option>';
+    });
+    if (curChVal) challengeSel.value = curChVal;
+  }
   // Populate easier height options (only heights ABOVE standard — higher = easier for chair)
   var easierSel = document.getElementById('f-chair-easier-height');
   if (easierSel) {
@@ -4019,7 +4035,7 @@ function updateChairFlow() {
   var reps = parseInt(repsEl ? repsEl.value : '') || 0;
   var hasRepsInput = repsEl && repsEl.value !== '';
   var stdH = parseInt(document.getElementById('f-chair-height').value) || 40;
-  var challengeH = stdH === 40 ? 30 : stdH === 30 ? 20 : null;
+  var challengeH = stdH > 20; // any height above 20 has a harder (lower) option
 
   var challengeCard = document.getElementById('chair-challenge-card');
   var easierLink = document.getElementById('chair-easier-link');
@@ -4075,10 +4091,18 @@ function updateStairHeight() {
   var stdH = parseInt(stairEl.value) || 30;
   var lbl = document.getElementById('stair-standard-height-label');
   if (lbl) lbl.textContent = stdH;
-  // Challenge height = next level up
-  var challengeH = stdH === 30 ? 35 : stdH === 35 ? 45 : null;
-  var chLbl = document.getElementById('stair-challenge-height-label');
-  if (chLbl) chLbl.textContent = challengeH || '';
+  // Populate challenge height options (heights ABOVE standard = harder for stair)
+  var challengeSel = document.getElementById('f-stair-challenge-height');
+  if (challengeSel) {
+    var curChVal = challengeSel.value;
+    var harderHeights = [45,35,30].filter(function(h) { return h > stdH; });
+    challengeSel.innerHTML = '';
+    harderHeights.forEach(function(h) {
+      var ageLabel = h === 45 ? 'ages 10–45' : h === 35 ? 'ages 46–60' : '';
+      challengeSel.innerHTML += '<option value="' + h + '">' + h + ' cm (' + ageLabel + ')</option>';
+    });
+    if (curChVal) challengeSel.value = curChVal;
+  }
   // Populate easier height options (only heights below standard)
   var easierSel = document.getElementById('f-stair-easier-height');
   if (easierSel) {
@@ -4098,7 +4122,7 @@ function updateStairFlow() {
   var reps = parseInt(repsEl ? repsEl.value : '') || 0;
   var hasRepsInput = repsEl && repsEl.value !== '';
   var stdH = parseInt(document.getElementById('f-stair-height').value) || 30;
-  var challengeH = stdH === 30 ? 35 : stdH === 35 ? 45 : null;
+  var challengeH = stdH < 45; // any height below 45 has a harder (higher) option
 
   var challengeCard = document.getElementById('stair-challenge-card');
   var easierLink = document.getElementById('stair-easier-link');
@@ -4581,8 +4605,8 @@ function resetForm() {
 const SAVE_KEY = '90slab_form';
 const FIELDS = [
   'f-firstname','f-lastname','f-age','f-gender','f-date','f-staff',
-  'f-chair-height','f-chair-reps','f-chair-lower','f-chair-challenge-reps','f-chair-easier-height','f-chair-easier-reps','f-chair-prev','f-chair-notes',
-  'f-stair-height','f-stair-reps','f-stair-higher','f-stair-challenge-reps','f-stair-easier-height','f-stair-easier-reps','f-stair-prev','f-stair-notes',
+  'f-chair-height','f-chair-reps','f-chair-lower','f-chair-challenge-height','f-chair-challenge-reps','f-chair-easier-height','f-chair-easier-reps','f-chair-prev','f-chair-notes',
+  'f-stair-height','f-stair-reps','f-stair-higher','f-stair-challenge-height','f-stair-challenge-reps','f-stair-easier-height','f-stair-easier-reps','f-stair-prev','f-stair-notes',
   'f-balance-left','f-balance-right','f-balance-both','f-balance-harder','f-balance-prev','f-balance-notes',
   'f-grip-right-1','f-grip-right-2','f-grip-left-1','f-grip-left-2','f-grip-prev','f-grip-notes',
   'f-sit-left','f-sit-right','f-sit-prev','f-sit-notes',
