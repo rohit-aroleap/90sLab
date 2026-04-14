@@ -300,6 +300,8 @@ body {
 }
 
 .btn-print:hover { background: #d46e35; }
+#btn-pdf { background: #2a6b3a; }
+#btn-pdf:hover { background: #358547; }
 .btn-print:active { transform: scale(0.98); }
 
 .btn-secondary {
@@ -1256,7 +1258,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.001</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.002</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -1468,7 +1470,7 @@ body {
       <div class="form-group-title">Station 03 · Walking in Dark</div>
       <div class="field-hint" style="margin-bottom:10px;">Test and input fields auto-adapt to age bracket. Score = worst leg ÷ 30 × 100.</div>
 
-      <div id="bal-test-description" style="margin-bottom:12px; padding:10px 12px; background:rgba(196,98,45,0.1); border-left:3px solid var(--rust); font-size:11px; line-height:1.6; color:var(--cream);"></div>
+      <div id="bal-test-description" style="margin-bottom:12px; padding:10px 12px; background:rgba(196,98,45,0.1); border-left:3px solid var(--rust); font-size:11px; line-height:1.6; color:#4a3f32;"></div>
 
       <div id="bal-single-fields">
         <div class="field field-row">
@@ -1858,7 +1860,10 @@ body {
     </div>
       </div><!-- /sidebar-form -->
 
-    <button class="btn-print" onclick="window.print()">🖨 Print Report</button>
+    <div style="display:flex;gap:8px;padding:0 28px 12px;">
+      <button class="btn-print" style="flex:1;margin:0;" onclick="window.print()">🖨 Print Report</button>
+      <button class="btn-print" id="btn-pdf" style="flex:1;margin:0;background:#2a6b3a;" onclick="downloadPDF(this)">📥 Download PDF</button>
+    </div>
     <div style="display:flex;gap:8px;padding:0 32px 8px;">
       <button class="btn-secondary" style="flex:1;margin:0;" onclick="saveForm()">💾 Save</button>
       <button class="btn-secondary" style="flex:1;margin:0;" onclick="loadForm()">↑ Load</button>
@@ -1882,6 +1887,7 @@ body {
 
 </div><!-- /app-shell -->
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
 <script>
 // ── HELPERS ─────────────────────────────────────────────────────
 function val(id) {
@@ -3594,22 +3600,66 @@ document.querySelectorAll('textarea[id$="-rec"]').forEach(el => {
 });
 
 
+// ── PDF EXPORT ──────────────────────────────────────────────────
+function downloadPDF(btn) {
+  var originalText = btn.innerHTML;
+  btn.innerHTML = '⏳ Generating…';
+  btn.disabled = true;
+
+  var firstName = val('f-firstname') || 'Client';
+  var lastName = val('f-lastname') || '';
+  var clientName = (firstName + ' ' + lastName).trim();
+  var filename = (clientName + ' - 90s Lab Report.pdf').replace(/[<>:"/\\|?*]/g, '_');
+
+  var element = document.getElementById('report-output');
+  var opt = {
+    margin: 0,
+    filename: filename,
+    image: { type: 'jpeg', quality: 0.95 },
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      scrollY: 0,
+      windowWidth: element.scrollWidth
+    },
+    jsPDF: {
+      unit: 'mm',
+      format: 'a4',
+      orientation: 'portrait'
+    },
+    pagebreak: { mode: ['css', 'legacy'], before: '.print-page-start' }
+  };
+
+  html2pdf().set(opt).from(element).save().then(function() {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }).catch(function() {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+    alert('PDF generation failed. Try Print instead.');
+  });
+}
+
 // ── RESET ────────────────────────────────────────────────────────
-function resetForm() {
-  if (!confirm('Start a new client? This will clear the current form.')) return;
+function _resetFormState() {
   document.querySelectorAll('input, textarea').forEach(el => el.value = '');
   document.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
-  // Reset squat checkboxes and UI state
   document.querySelectorAll('input[type="checkbox"]').forEach(el => el.checked = false);
   document.querySelectorAll('.squat-radio-card').forEach(el => el.classList.remove('selected'));
   document.querySelectorAll('.squat-check-row').forEach(el => el.classList.remove('checked'));
   document.getElementById('f-squat-depth').value = '-1';
-  // Clear touched flags so recommendations auto-populate for new client
   document.querySelectorAll('textarea[id$="-rec"]').forEach(el => delete el.dataset.touched);
-  // Reset age-tracking so height selects re-sync on next age entry
   _lastAgeForChair = null;
   _lastAgeForStair = null;
-    try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
+  // Reset date to today
+  var dateInput = document.getElementById('f-date');
+  if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+  try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
+}
+
+function resetForm() {
+  if (!confirm('Start a new client? This will clear the current form.')) return;
+  _resetFormState();
   showStatus('Ready for new client');
   render();
 }
@@ -3800,9 +3850,15 @@ function showStatus(msg) {
   setTimeout(() => el.textContent = '', 2500);
 }
 
-// Auto-save on every change
+// Auto-save on every change + debounced save while typing
+let _saveTimer = null;
+function debouncedSave() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(saveForm, 800);
+}
 document.querySelectorAll('input, select, textarea').forEach(el => {
   el.addEventListener('change', saveForm);
+  el.addEventListener('input', debouncedSave);
 });
 
 // Auto-load on page open
@@ -3853,7 +3909,7 @@ function restoreSession() {
 function clearAndStart() {
   var banner = document.getElementById('restore-banner');
   if (banner) banner.remove();
-  try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
+  _resetFormState();
   showStatus('Ready for new client');
   render();
 }
