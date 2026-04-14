@@ -4879,9 +4879,19 @@ function toggleAccordion(sectionId) {
       if (s) s.classList.remove('open');
     });
     el.classList.add('open');
-    // Scroll into view
+    // Scroll within sidebar container
     setTimeout(function() {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      var sidebar = document.querySelector('.sidebar');
+      if (sidebar) {
+        var header = el.querySelector('.accordion-header');
+        var target = header || el;
+        var sidebarRect = sidebar.getBoundingClientRect();
+        var targetRect = target.getBoundingClientRect();
+        var navBar = document.getElementById('sidebar-nav');
+        var navHeight = navBar ? navBar.offsetHeight : 0;
+        var scrollTop = sidebar.scrollTop + (targetRect.top - sidebarRect.top) - navHeight - 10;
+        sidebar.scrollTo({ top: scrollTop, behavior: 'smooth' });
+      }
     }, 50);
   }
 }
