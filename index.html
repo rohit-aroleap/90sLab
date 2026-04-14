@@ -188,13 +188,20 @@ body {
 .station-section {
   margin: 0 -28px;
   padding: 4px 28px 8px;
-  border-top: 1px solid #e0d8cc;
+  border-top: none;
+  background: #ffffff;
+  border-bottom: 1px solid #eae4da;
 }
 .station-section:first-child {
   border-top: none;
 }
 .station-section.alt {
-  background: #f5f0e8;
+  background: #ffffff;
+}
+.station-section.open {
+  background: #fdfcfa;
+  border-left: 3px solid var(--rust);
+  padding-left: 25px;
 }
 
 /* FIELD */
@@ -1559,7 +1566,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.015</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.016</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
