@@ -14,7 +14,7 @@
   --rust: #c4622d;
   --sage: #7a9e7e;
   --gold: #c9a84c;
-  --muted: #8a7968;
+  --muted: #6d5e4e;
   --paper: #faf6ee;
   --red: #b54020;
   --amber: #c9954c;
@@ -373,7 +373,7 @@ body {
   --rust: #c4622d;
   --sage: #7a9e7e;
   --gold: #c9a84c;
-  --muted: #8a7968;
+  --muted: #6d5e4e;
   --paper: #faf6ee;
   --red: #b54020;
   --amber: #c9954c;
@@ -1614,7 +1614,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.021</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.022</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -1640,7 +1640,7 @@ body {
 
       <!-- CLIENT INFO -->
       <div class="station-section open" id="section-client">
-      <div class="accordion-header" onclick="document.getElementById('section-client').classList.toggle('open')">
+      <div class="accordion-header" tabindex="0" role="button" onclick="document.getElementById('section-client').classList.toggle('open')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
         <div class="form-group-title">Client Information</div>
         <span class="accordion-chevron">&#9660;</span>
       </div>
@@ -1700,7 +1700,7 @@ body {
       </div>
       <!-- STATION 1 — CHAIR -->
       <div class="station-section alt open" id="section-s01">
-      <div class="accordion-header" onclick="toggleAccordion('section-s01')">
+      <div class="accordion-header" tabindex="0" role="button" onclick="toggleAccordion('section-s01')">
         <div class="form-group-title">Station 01 · Sit-to-Stand</div>
         <span class="accordion-score-badge" id="accordion-badge-s01"></span>
         <span class="accordion-chevron">&#9660;</span>
@@ -1781,7 +1781,7 @@ body {
       </div>
       <!-- STATION 2 — STAIRS -->
       <div class="station-section" id="section-s02">
-      <div class="accordion-header" onclick="toggleAccordion('section-s02')">
+      <div class="accordion-header" tabindex="0" role="button" onclick="toggleAccordion('section-s02')">
         <div class="form-group-title">Station 02 · Stair Climb</div>
         <span class="accordion-score-badge" id="accordion-badge-s02"></span>
         <span class="accordion-chevron">&#9660;</span>
@@ -1863,7 +1863,7 @@ body {
       </div>
       <!-- STATION 3 — BALANCE -->
       <div class="station-section alt" id="section-s03">
-      <div class="accordion-header" onclick="toggleAccordion('section-s03')">
+      <div class="accordion-header" tabindex="0" role="button" onclick="toggleAccordion('section-s03')">
         <div class="form-group-title">Station 03 · Walking in Dark</div>
         <span class="accordion-score-badge" id="accordion-badge-s03"></span>
         <span class="accordion-chevron">&#9660;</span>
@@ -1946,7 +1946,7 @@ body {
       </div>
       <!-- STATION 4 — GRIP -->
       <div class="station-section" id="section-s04">
-      <div class="accordion-header" onclick="toggleAccordion('section-s04')">
+      <div class="accordion-header" tabindex="0" role="button" onclick="toggleAccordion('section-s04')">
         <div class="form-group-title">Station 04 · Grip Strength</div>
         <span class="accordion-score-badge" id="accordion-badge-s04"></span>
         <span class="accordion-chevron">&#9660;</span>
@@ -2008,7 +2008,7 @@ body {
       </div>
       <!-- STATION 5 — SIT AND REACH -->
       <div class="station-section alt" id="section-s05">
-      <div class="accordion-header" onclick="toggleAccordion('section-s05')">
+      <div class="accordion-header" tabindex="0" role="button" onclick="toggleAccordion('section-s05')">
         <div class="form-group-title">Station 05 · Sit and Reach</div>
         <span class="accordion-score-badge" id="accordion-badge-s05"></span>
         <span class="accordion-chevron">&#9660;</span>
@@ -2057,7 +2057,7 @@ body {
       </div>
       <!-- STATION 6 — SHOULDER REACH -->
       <div class="station-section" id="section-s06">
-      <div class="accordion-header" onclick="toggleAccordion('section-s06')">
+      <div class="accordion-header" tabindex="0" role="button" onclick="toggleAccordion('section-s06')">
         <div class="form-group-title">Station 06 · Shoulder Reach</div>
         <span class="accordion-score-badge" id="accordion-badge-s06"></span>
         <span class="accordion-chevron">&#9660;</span>
@@ -2106,7 +2106,7 @@ body {
       </div>
       <!-- STATION 7 — PLANK -->
       <div class="station-section alt" id="section-s07">
-      <div class="accordion-header" onclick="toggleAccordion('section-s07')">
+      <div class="accordion-header" tabindex="0" role="button" onclick="toggleAccordion('section-s07')">
         <div class="form-group-title">Station 07 · Plank</div>
         <span class="accordion-score-badge" id="accordion-badge-s07"></span>
         <span class="accordion-chevron">&#9660;</span>
@@ -2151,7 +2151,7 @@ body {
       </div>
       <!-- STATION 8 — OVERHEAD SQUAT -->
       <div class="station-section" id="section-s08">
-      <div class="accordion-header" onclick="toggleAccordion('section-s08')">
+      <div class="accordion-header" tabindex="0" role="button" onclick="toggleAccordion('section-s08')">
         <div class="form-group-title">Station 08 · Overhead Squat</div>
         <span class="accordion-score-badge" id="accordion-badge-s08"></span>
         <span class="accordion-chevron">&#9660;</span>
@@ -2244,7 +2244,7 @@ body {
       </div>
       <!-- STATION 9 — WALL SQUAT -->
       <div class="station-section alt" id="section-s09">
-      <div class="accordion-header" onclick="toggleAccordion('section-s09')">
+      <div class="accordion-header" tabindex="0" role="button" onclick="toggleAccordion('section-s09')">
         <div class="form-group-title">Station 09 · Wall Squats</div>
         <span class="accordion-score-badge" id="accordion-badge-s09"></span>
         <span class="accordion-chevron">&#9660;</span>
@@ -2289,7 +2289,7 @@ body {
       </div>
       <!-- MACHINE STRENGTH -->
       <div class="station-section" id="section-machine">
-      <div class="accordion-header" onclick="toggleAccordion('section-machine')">
+      <div class="accordion-header" tabindex="0" role="button" onclick="toggleAccordion('section-machine')">
         <div class="form-group-title">Machine Strength Profile</div>
         <span class="accordion-score-badge" id="accordion-badge-machine"></span>
         <span class="accordion-chevron">&#9660;</span>
@@ -2364,7 +2364,7 @@ body {
       </div>
       <!-- STAFF NOTES -->
       <div class="station-section alt" id="section-notes">
-      <div class="accordion-header" onclick="toggleAccordion('section-notes')">
+      <div class="accordion-header" tabindex="0" role="button" onclick="toggleAccordion('section-notes')">
         <div class="form-group-title">Overall Notes</div>
         <span class="accordion-score-badge" id="accordion-badge-notes"></span>
         <span class="accordion-chevron">&#9660;</span>
@@ -2402,6 +2402,7 @@ body {
     <div class="preview-toolbar">
       <span class="preview-toolbar-label">Live Report Preview</span>
       <span class="preview-scale-note">Updates as you type · Print to export</span>
+      <span id="preview-updating" style="display:none; font-family:'Nunito',sans-serif; font-size:10px; color:var(--rust); letter-spacing:0.05em; opacity:0.85; margin-left:auto;">Updating…</span>
     </div>
 
     <div id="report-output">
@@ -2426,6 +2427,13 @@ firebase.initializeApp({
   measurementId: "G-J0PCMR8Z34"
 });
 var db = firebase.firestore();
+db.enablePersistence({ synchronizeTabs: true }).catch(function(err) {
+  if (err.code === 'failed-precondition') {
+    console.log('Firestore persistence unavailable: multiple tabs open');
+  } else if (err.code === 'unimplemented') {
+    console.log('Firestore persistence not supported by this browser');
+  }
+});
 </script>
 <script>
 // ── HELPERS ─────────────────────────────────────────────────────
@@ -2727,6 +2735,7 @@ function render() {
   const gripNorm  = gripNorms(gripAge, gripGender);
   function gripCalcScore(kg) {
     if (kg <= 0) return 0;
+    if (gripNorm.weak === gripNorm.strong) return 50;
     if (kg < gripNorm.weak)    return Math.max(0,  Math.round((kg / gripNorm.weak) * 49));
     if (kg <= gripNorm.strong) return Math.round(50 + ((kg - gripNorm.weak) / (gripNorm.strong - gripNorm.weak)) * 30);
     return Math.min(100, Math.round(80 + ((kg - gripNorm.strong) / gripNorm.strong) * 20));
@@ -2771,10 +2780,11 @@ function render() {
 
   // Fully continuous 0-100 — no dead zones
   function sitCalcScore(gap) {
+    if (sitRange === 0) return 70; // Guard: equal bounds
     if (gap < sitLow) {
       // Above Avg: 80 at boundary, sliding up to 100
       var aboveRange = Math.abs(sitLow) + 10; // scale over 10cm past boundary
-      return Math.min(100, Math.round(80 + ((sitLow - gap) / aboveRange) * 20));
+      return Math.min(100, Math.round(80 + ((sitLow - gap) / (aboveRange || 1)) * 20));
     }
     if (gap <= sitHigh) {
       // On Track: 80 at lower bound → 60 at upper bound
@@ -2802,8 +2812,9 @@ function render() {
   // Per-side score: Good (≤0)→100, Average (0<gap≤thr)→60-80, Needs work (>thr)→0-60
   function reachCalcScore(gap) {
     if (gap <= 0)          return 100;                                        // ≤0 cm = Good
-    if (gap <= reachThr)   return Math.round(100 - (gap / reachThr) * 40);   // 0→thr = 100→60
-    return Math.max(0, Math.round(60 - ((gap - reachThr) / reachThr) * 60)); // >thr = 60→0
+    var thr = reachThr || 1; // Guard division by zero
+    if (gap <= thr)   return Math.round(100 - (gap / thr) * 40);   // 0→thr = 100→60
+    return Math.max(0, Math.round(60 - ((gap - thr) / thr) * 60)); // >thr = 60→0
   }
 
   const reachHasLeft  = val('f-reach-left')  !== '';
@@ -2872,7 +2883,30 @@ function render() {
   const wallScore       = wallSecs > 0 ? Math.min(100, Math.round((wallSecs / wallInfo.target) * 100)) : 0;
   const wallHarderAuto  = wallInfo.harderTarget !== null && wallSecs >= wallInfo.harderTarget;
 
-  const overallScore = Math.round((chairScore + stairScore + balScore + gripScore + sitScore + reachScore + plankScore + squatScore + wallScore) / 9);
+  // Detect which stations were actually tested
+  const _chairTested  = val('f-chair-reps') !== '';
+  const _stairTested  = val('f-stair-reps') !== '';
+  const _balTested    = balInfo.single ? (val('f-balance-left') !== '' || val('f-balance-right') !== '') : val('f-balance-both') !== '';
+  const _gripTested   = val('f-grip-right-1') !== '' || val('f-grip-right-2') !== '' || val('f-grip-left-1') !== '' || val('f-grip-left-2') !== '';
+  const _sitTested    = val('f-sit-left') !== '' || val('f-sit-right') !== '';
+  const _reachTested  = reachHasLeft || reachHasRight;
+  const _plankTested  = val('f-plank-secs') !== '';
+  const _squatTested  = squatDepthRaw >= 0;
+  const _wallTested   = val('f-wall-secs') !== '';
+
+  const _allScores  = [
+    { tested: _chairTested, score: chairScore },
+    { tested: _stairTested, score: stairScore },
+    { tested: _balTested,   score: balScore },
+    { tested: _gripTested,  score: gripScore },
+    { tested: _sitTested,   score: sitScore },
+    { tested: _reachTested, score: reachScore },
+    { tested: _plankTested, score: plankScore },
+    { tested: _squatTested, score: squatScore },
+    { tested: _wallTested,  score: wallScore }
+  ];
+  const _testedScores = _allScores.filter(s => s.tested);
+  const overallScore  = _testedScores.length > 0 ? Math.round(_testedScores.reduce((a,b) => a + b.score, 0) / _testedScores.length) : 0;
   const prevScores   = [chairPrev, stairPrev, balPrev, gripPrev, sitPrev, reachPrev, plankPrev, squatPrev, wallPrev].filter(v => v !== null);
   const overallPrev  = prevScores.length === 9 ? Math.round(prevScores.reduce((a,b)=>a+b,0)/9) : null;
 
@@ -3040,7 +3074,7 @@ function render() {
 <div class="section" id="rpt-s01">
   <div class="section-number">Station 01 · Sit-to-Stand</div>
   <div class="section-title">Getting up<br>from a <em>chair</em></div>
-  <div class="simple-result-card">
+  ${_chairTested ? `<div class="simple-result-card">
     <div class="result-card-header">
       <div>
         <div class="result-station">Your Result</div>
@@ -3051,8 +3085,19 @@ function render() {
         <div class="score-badge-val" style="color:${scoreColor(chairScore)}">${chairScore}</div>
         <div class="score-badge-unit">out of 100</div>
       </div>
-    </div>
-    <div class="timeline-bar-wrap">
+    </div>` : `<div class="simple-result-card" style="opacity:0.5;">
+    <div class="result-card-header">
+      <div>
+        <div class="result-station">Your Result</div>
+        <div class="result-value" style="color:var(--muted);font-style:italic;">Not tested</div>
+      </div>
+      <div class="score-badge">
+        <div class="score-badge-label">Score</div>
+        <div class="score-badge-val" style="color:var(--muted);">—</div>
+        <div class="score-badge-unit">out of 100</div>
+      </div>
+    </div>`}
+    ${_chairTested ? `<div class="timeline-bar-wrap">
       <div class="timeline-bar-track">
         <div class="timeline-bar-fill" style="width:${scoreBar(chairScore)}%; background:${scoreColor(chairScore)};"></div>
         <div class="timeline-bar-marker" style="left:${scoreBar(chairScore)}%; background:${scoreColor(chairScore)};"></div>
@@ -3081,13 +3126,13 @@ function render() {
         + '<div style="font-size:10px; color:var(--muted); margin-top:5px;">Target: reach 20 reps here, then progress to standard height (' + chairH + ' cm)</div>'
         + '</div>';
     })() : ''}
-    ${chairNotes ? '<div style="margin-top:12px; padding:16px 20px; background:var(--warm); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + chairNotes + '</div>' : ''}
+    ${chairNotes ? '<div style="margin-top:12px; padding:16px 20px; background:var(--warm); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + chairNotes + '</div>' : ''}` : ''}
   </div>
 </div>
 <div class="section warm" id="rpt-s02">
   <div class="section-number">Station 02 · Stair Climb</div>
   <div class="section-title">Climbing<br><em>two floors</em></div>
-  <div class="simple-result-card">
+  ${_stairTested ? `<div class="simple-result-card">
     <div class="result-card-header">
       <div>
         <div class="result-station">Your Result</div>
@@ -3098,8 +3143,19 @@ function render() {
         <div class="score-badge-val" style="color:${scoreColor(stairScore)}">${stairScore}</div>
         <div class="score-badge-unit">out of 100</div>
       </div>
-    </div>
-    <div class="timeline-bar-wrap">
+    </div>` : `<div class="simple-result-card" style="opacity:0.5;">
+    <div class="result-card-header">
+      <div>
+        <div class="result-station">Your Result</div>
+        <div class="result-value" style="color:var(--muted);font-style:italic;">Not tested</div>
+      </div>
+      <div class="score-badge">
+        <div class="score-badge-label">Score</div>
+        <div class="score-badge-val" style="color:var(--muted);">—</div>
+        <div class="score-badge-unit">out of 100</div>
+      </div>
+    </div>`}
+    ${_stairTested ? `<div class="timeline-bar-wrap">
       <div class="timeline-bar-track">
         <div class="timeline-bar-fill" style="width:${scoreBar(stairScore)}%; background:${scoreColor(stairScore)};"></div>
         <div class="timeline-bar-marker" style="left:${scoreBar(stairScore)}%; background:${scoreColor(stairScore)};"></div>
@@ -3127,7 +3183,7 @@ function render() {
         + '<div style="font-size:10px; color:var(--muted); margin-top:5px;">Target: reach 20 reps here, then progress to standard height (' + stairH + ' cm)</div>'
         + '</div>';
     })() : ''}
-    ${stairNotes ? '<div style="margin-top:12px; padding:16px 20px; background:rgba(26,20,16,0.06); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + stairNotes + '</div>' : ''}
+    ${stairNotes ? '<div style="margin-top:12px; padding:16px 20px; background:rgba(26,20,16,0.06); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + stairNotes + '</div>' : ''}` : ''}
   </div>
 </div>
 
@@ -3136,7 +3192,7 @@ function render() {
 <div class="section" id="rpt-s03">
   <div class="section-number">Station 03 · Walking in Dark</div>
   <div class="section-title">Walking in<br><em>the dark</em></div>
-  <div class="simple-result-card" style="${balHighRisk ? 'border-color:rgba(181,64,32,0.35);' : ''}">
+  ${_balTested ? `<div class="simple-result-card" style="${balHighRisk ? 'border-color:rgba(181,64,32,0.35);' : ''}">
     <div class="result-card-header">
       <div>
         <div class="result-station">Your Result</div>
@@ -3150,9 +3206,19 @@ function render() {
         <div class="score-badge-val" style="color:${scoreColor(balScore)}">${balScore}</div>
         <div class="score-badge-unit">out of 100</div>
       </div>
-    </div>
-
-    ${(function() {
+    </div>` : `<div class="simple-result-card" style="opacity:0.5;">
+    <div class="result-card-header">
+      <div>
+        <div class="result-station">Your Result</div>
+        <div class="result-value" style="color:var(--muted);font-style:italic;">Not tested</div>
+      </div>
+      <div class="score-badge">
+        <div class="score-badge-label">Score</div>
+        <div class="score-badge-val" style="color:var(--muted);">—</div>
+        <div class="score-badge-unit">out of 100</div>
+      </div>
+    </div>`}
+    ${_balTested ? `${(function() {
       function legBar(secs, score) {
         return '<div class="timeline-bar-track" style="margin-top:5px;">'
           + '<div class="timeline-bar-fill" style="width:' + scoreBar(score) + '%; background:' + scoreColor(score) + ';"></div>'
@@ -3196,13 +3262,13 @@ function render() {
       <strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Recommendation</strong>
       ${balanceRec}
     </div>
-    ${balNotes ? '<div style="margin-top:12px; padding:16px 20px; background:var(--warm); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + balNotes + '</div>' : ''}
+    ${balNotes ? '<div style="margin-top:12px; padding:16px 20px; background:var(--warm); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + balNotes + '</div>' : ''}` : ''}
   </div>
 </div>
 <div class="section warm" id="rpt-s04">
   <div class="section-number">Station 04 · Grip Strength</div>
   <div class="section-title">Opening jars,<br><em>carrying bags</em></div>
-  <div class="simple-result-card">
+  ${_gripTested ? `<div class="simple-result-card">
     <div class="result-card-header">
       <div>
         <div class="result-station">Your Result</div>
@@ -3214,8 +3280,19 @@ function render() {
         <div class="score-badge-val" style="color:${scoreColor(gripScore)}">${gripScore}</div>
         <div class="score-badge-unit">out of 100</div>
       </div>
-    </div>
-    <div class="timeline-bar-wrap">
+    </div>` : `<div class="simple-result-card" style="opacity:0.5;">
+    <div class="result-card-header">
+      <div>
+        <div class="result-station">Your Result</div>
+        <div class="result-value" style="color:var(--muted);font-style:italic;">Not tested</div>
+      </div>
+      <div class="score-badge">
+        <div class="score-badge-label">Score</div>
+        <div class="score-badge-val" style="color:var(--muted);">—</div>
+        <div class="score-badge-unit">out of 100</div>
+      </div>
+    </div>`}
+    ${_gripTested ? `<div class="timeline-bar-wrap">
       <div class="timeline-bar-track">
         <div class="timeline-bar-fill" style="width:${scoreBar(gripScore)}%; background:${scoreColor(gripScore)};"></div>
         <div class="timeline-bar-marker" style="left:${scoreBar(gripScore)}%; background:${scoreColor(gripScore)};"></div>
@@ -3231,7 +3308,7 @@ function render() {
       <strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Recommendation</strong>
       ${gripRec}
     </div>
-    ${gripNotes ? '<div style="margin-top:12px; padding:16px 20px; background:rgba(26,20,16,0.06); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + gripNotes + '</div>' : ''}
+    ${gripNotes ? '<div style="margin-top:12px; padding:16px 20px; background:rgba(26,20,16,0.06); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + gripNotes + '</div>' : ''}` : ''}
   </div>
 </div>
 
@@ -3240,7 +3317,7 @@ function render() {
 <div class="section" id="rpt-s05">
   <div class="section-number">Station 05 · Sit and Reach</div>
   <div class="section-title">Wearing socks<br><em>and shoes</em></div>
-  <div class="simple-result-card">
+  ${_sitTested ? `<div class="simple-result-card">
     <div class="result-card-header">
       <div>
         <div class="result-station">Your Result</div>
@@ -3255,8 +3332,19 @@ function render() {
         <div class="score-badge-val" style="color:${scoreColor(sitScore)}">${sitScore}</div>
         <div class="score-badge-unit">out of 100</div>
       </div>
-    </div>
-    <div class="timeline-bar-wrap">
+    </div>` : `<div class="simple-result-card" style="opacity:0.5;">
+    <div class="result-card-header">
+      <div>
+        <div class="result-station">Your Result</div>
+        <div class="result-value" style="color:var(--muted);font-style:italic;">Not tested</div>
+      </div>
+      <div class="score-badge">
+        <div class="score-badge-label">Score</div>
+        <div class="score-badge-val" style="color:var(--muted);">—</div>
+        <div class="score-badge-unit">out of 100</div>
+      </div>
+    </div>`}
+    ${_sitTested ? `<div class="timeline-bar-wrap">
       <div class="timeline-bar-track">
         <div class="timeline-bar-fill" style="width:${scoreBar(sitScore)}%; background:${scoreColor(sitScore)};"></div>
         <div class="timeline-bar-marker" style="left:${scoreBar(sitScore)}%; background:${scoreColor(sitScore)};"></div>
@@ -3278,13 +3366,13 @@ function render() {
       <strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Recommendation</strong>
       ${sitRec}
     </div>
-    ${sitNotes ? '<div style="margin-top:12px; padding:16px 20px; background:var(--warm); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + sitNotes + '</div>' : ''}
+    ${sitNotes ? '<div style="margin-top:12px; padding:16px 20px; background:var(--warm); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + sitNotes + '</div>' : ''}` : ''}
   </div>
 </div>
 <div class="section warm" id="rpt-s06">
   <div class="section-number">Station 06 · Shoulder Reach</div>
   <div class="section-title">Scratch your<br><em>back</em></div>
-  <div class="simple-result-card">
+  ${_reachTested ? `<div class="simple-result-card">
     <div class="result-card-header">
       <div>
         <div class="result-station">Your Result</div>
@@ -3299,8 +3387,19 @@ function render() {
         <div class="score-badge-val" style="color:${scoreColor(reachScore)}">${reachScore}</div>
         <div class="score-badge-unit">out of 100</div>
       </div>
-    </div>
-    ${(function() {
+    </div>` : `<div class="simple-result-card" style="opacity:0.5;">
+    <div class="result-card-header">
+      <div>
+        <div class="result-station">Your Result</div>
+        <div class="result-value" style="color:var(--muted);font-style:italic;">Not tested</div>
+      </div>
+      <div class="score-badge">
+        <div class="score-badge-label">Score</div>
+        <div class="score-badge-val" style="color:var(--muted);">—</div>
+        <div class="score-badge-unit">out of 100</div>
+      </div>
+    </div>`}
+    ${_reachTested ? `${(function() {
       function sideBar(label, gap, score) {
         if (score === null) return '';
         var gapLabel = gap < 0 ? gap + ' cm (overlapping)' : gap === 0 ? '0 cm (touching)' : '+' + gap + ' cm gap';
@@ -3336,7 +3435,7 @@ function render() {
       <strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Recommendation</strong>
       ${reachRec}
     </div>
-    ${reachNotes ? '<div style="margin-top:12px; padding:16px 20px; background:rgba(26,20,16,0.04); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + reachNotes + '</div>' : ''}
+    ${reachNotes ? '<div style="margin-top:12px; padding:16px 20px; background:rgba(26,20,16,0.04); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + reachNotes + '</div>' : ''}` : ''}
   </div>
 </div>
 
@@ -3345,7 +3444,7 @@ function render() {
 <div class="section" id="rpt-s07">
   <div class="section-number">Station 07 · Plank</div>
   <div class="section-title">Recover from<br><em>tripping</em></div>
-  <div class="simple-result-card">
+  ${_plankTested ? `<div class="simple-result-card">
     <div class="result-card-header">
       <div>
         <div class="result-station">Your Result</div>
@@ -3357,8 +3456,19 @@ function render() {
         <div class="score-badge-val" style="color:${scoreColor(plankScore)}">${plankScore}</div>
         <div class="score-badge-unit">out of 100</div>
       </div>
-    </div>
-    <div class="timeline-bar-wrap">
+    </div>` : `<div class="simple-result-card" style="opacity:0.5;">
+    <div class="result-card-header">
+      <div>
+        <div class="result-station">Your Result</div>
+        <div class="result-value" style="color:var(--muted);font-style:italic;">Not tested</div>
+      </div>
+      <div class="score-badge">
+        <div class="score-badge-label">Score</div>
+        <div class="score-badge-val" style="color:var(--muted);">—</div>
+        <div class="score-badge-unit">out of 100</div>
+      </div>
+    </div>`}
+    ${_plankTested ? `<div class="timeline-bar-wrap">
       <div class="timeline-bar-track">
         <div class="timeline-bar-fill" style="width:${scoreBar(plankScore)}%; background:${scoreColor(plankScore)};"></div>
         <div class="timeline-bar-marker" style="left:${scoreBar(plankScore)}%; background:${scoreColor(plankScore)};"></div>
@@ -3372,13 +3482,13 @@ function render() {
       <strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Recommendation</strong>
       ${plankRec}
     </div>
-    ${plankNotes ? '<div style="margin-top:12px; padding:16px 20px; background:var(--warm); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + plankNotes + '</div>' : ''}
+    ${plankNotes ? '<div style="margin-top:12px; padding:16px 20px; background:var(--warm); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + plankNotes + '</div>' : ''}` : ''}
   </div>
 </div>
 <div class="section warm" id="rpt-s08">
   <div class="section-number">Station 08 · Overhead Squat</div>
   <div class="section-title">Moving without<br><em>future pain</em></div>
-  <div class="simple-result-card">
+  ${_squatTested ? `<div class="simple-result-card">
     <div class="result-card-header">
       <div>
         <div class="result-station">Your Result</div>
@@ -3392,8 +3502,19 @@ function render() {
         <div class="score-badge-val" style="color:${scoreColor(squatScore)}">${squatScore}</div>
         <div class="score-badge-unit">out of 100</div>
       </div>
-    </div>
-    <div class="timeline-bar-wrap">
+    </div>` : `<div class="simple-result-card" style="opacity:0.5;">
+    <div class="result-card-header">
+      <div>
+        <div class="result-station">Your Result</div>
+        <div class="result-value" style="color:var(--muted);font-style:italic;">Not tested</div>
+      </div>
+      <div class="score-badge">
+        <div class="score-badge-label">Score</div>
+        <div class="score-badge-val" style="color:var(--muted);">—</div>
+        <div class="score-badge-unit">out of 100</div>
+      </div>
+    </div>`}
+    ${_squatTested ? `<div class="timeline-bar-wrap">
       <div class="timeline-bar-track">
         <div class="timeline-bar-fill" style="width:${scoreBar(squatScore)}%; background:${scoreColor(squatScore)};"></div>
         <div class="timeline-bar-marker" style="left:${scoreBar(squatScore)}%; background:${scoreColor(squatScore)};"></div>
@@ -3406,7 +3527,7 @@ function render() {
       <strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Recommendation</strong>
       ${squatRec}
     </div>
-    ${squatNotes ? '<div style="margin-top:12px; padding:16px 20px; background:var(--warm); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + squatNotes + '</div>' : ''}
+    ${squatNotes ? '<div style="margin-top:12px; padding:16px 20px; background:var(--warm); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + squatNotes + '</div>' : ''}` : ''}
   </div>
 </div>
 
@@ -3415,7 +3536,7 @@ function render() {
 <div class="section print-page-start" id="rpt-s09">
   <div class="section-number">Station 09 · Wall Squats</div>
   <div class="section-title">Future without<br><em>knee pain</em></div>
-  <div class="simple-result-card">
+  ${_wallTested ? `<div class="simple-result-card">
     <div class="result-card-header">
       <div>
         <div class="result-station">Your Result</div>
@@ -3427,8 +3548,19 @@ function render() {
         <div class="score-badge-val" style="color:${scoreColor(wallScore)}">${wallScore}</div>
         <div class="score-badge-unit">out of 100</div>
       </div>
-    </div>
-    <div class="timeline-bar-wrap">
+    </div>` : `<div class="simple-result-card" style="opacity:0.5;">
+    <div class="result-card-header">
+      <div>
+        <div class="result-station">Your Result</div>
+        <div class="result-value" style="color:var(--muted);font-style:italic;">Not tested</div>
+      </div>
+      <div class="score-badge">
+        <div class="score-badge-label">Score</div>
+        <div class="score-badge-val" style="color:var(--muted);">—</div>
+        <div class="score-badge-unit">out of 100</div>
+      </div>
+    </div>`}
+    ${_wallTested ? `<div class="timeline-bar-wrap">
       <div class="timeline-bar-track">
         <div class="timeline-bar-fill" style="width:${scoreBar(wallScore)}%; background:${scoreColor(wallScore)};"></div>
         <div class="timeline-bar-marker" style="left:${scoreBar(wallScore)}%; background:${scoreColor(wallScore)};"></div>
@@ -3442,7 +3574,7 @@ function render() {
       <strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Recommendation</strong>
       ${wallRec}
     </div>
-    ${wallNotes ? '<div style="margin-top:12px; padding:16px 20px; background:var(--warm); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + wallNotes + '</div>' : ''}
+    ${wallNotes ? '<div style="margin-top:12px; padding:16px 20px; background:var(--warm); border-left:3px solid var(--ink); font-size:14px; line-height:1.8; color:var(--ink);"><strong style="display:block; font-family:Nunito,sans-serif; font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:6px;">Coach Observations</strong>' + wallNotes + '</div>' : ''}` : ''}
   </div>
 </div>
 
@@ -3873,7 +4005,12 @@ function scheduleRender() {
   updateWallScorePreview();
   updateProgress();
   clearTimeout(renderTimer);
-  renderTimer = setTimeout(render, 220);
+  var updEl = document.getElementById('preview-updating');
+  if (updEl) updEl.style.display = '';
+  renderTimer = setTimeout(function() {
+    render();
+    if (updEl) updEl.style.display = 'none';
+  }, 220);
 }
 
 function balBracketFn(ag) {
@@ -4834,6 +4971,25 @@ function updateProgress() {
   if (fillEl)  fillEl.style.width = pct + '%';
   if (pctEl)   pctEl.textContent = pct + '%';
 
+  // Lock client info fields once any station has data
+  var clientFields = ['f-firstname','f-lastname','f-date','f-staff'];
+  var anyFilled = filled > 0;
+  clientFields.forEach(function(fid) {
+    var el = document.getElementById(fid);
+    if (!el) return;
+    if (anyFilled && el.value) {
+      el.readOnly = el.tagName === 'INPUT';
+      if (el.tagName === 'SELECT') el.style.pointerEvents = 'none';
+      el.style.opacity = '0.7';
+      el.title = 'Locked — station data entered. Clear all stations to edit.';
+    } else {
+      el.readOnly = false;
+      if (el.tagName === 'SELECT') el.style.pointerEvents = '';
+      el.style.opacity = '';
+      el.title = '';
+    }
+  });
+
   // Update dots on tabs
   var tabs = document.querySelectorAll('.sidebar-nav-tab');
   var allSections = ['section-client','section-s01','section-s02','section-s03','section-s04',
@@ -5114,6 +5270,13 @@ function updateAccordionBadges() {
     section.classList.toggle('station-filled', filled);
   });
 }
+
+// ── ACCORDION KEYBOARD SUPPORT ──────────────────────────────────
+document.querySelectorAll('.accordion-header[role="button"]').forEach(function(hdr) {
+  hdr.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hdr.click(); }
+  });
+});
 
 // ── KEYBOARD NAVIGATION ─────────────────────────────────────────
 document.querySelector('.sidebar-form').addEventListener('keydown', function(e) {

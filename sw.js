@@ -1,4 +1,4 @@
-var CACHE_NAME = '90slab-v1.021';
+var CACHE_NAME = '90slab-v1.022';
 var ASSETS = [
   '/',
   '/index.html'
@@ -29,9 +29,29 @@ self.addEventListener('fetch', function(event) {
   var url = new URL(event.request.url);
 
   // Always go to network for Firebase/Firestore requests
-  if (url.hostname.indexOf('googleapis.com') !== -1 ||
-      url.hostname.indexOf('gstatic.com') !== -1 ||
-      url.hostname.indexOf('firebaseio.com') !== -1 ||
+  if (url.hostname.indexOf('firebaseio.com') !== -1 ||
+      url.hostname.indexOf('firestore.googleapis.com') !== -1) {
+    return;
+  }
+
+  // Cache-first for Google Fonts (CSS + font files)
+  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
+    event.respondWith(
+      caches.match(event.request).then(function(cached) {
+        if (cached) return cached;
+        return fetch(event.request).then(function(response) {
+          var clone = response.clone();
+          caches.open(CACHE_NAME).then(function(cache) { cache.put(event.request, clone); });
+          return response;
+        });
+      })
+    );
+    return;
+  }
+
+  // Let Firebase SDK scripts through to network (gstatic.com hosts them)
+  if (url.hostname.indexOf('gstatic.com') !== -1 ||
+      url.hostname.indexOf('googleapis.com') !== -1 ||
       url.hostname.indexOf('firebase') !== -1) {
     return;
   }
@@ -50,7 +70,7 @@ self.addEventListener('fetch', function(event) {
     return;
   }
 
-  // Cache-first for fonts, CSS, images
+  // Cache-first for other assets (CSS, images, JS)
   event.respondWith(
     caches.match(event.request).then(function(cached) {
       if (cached) return cached;
