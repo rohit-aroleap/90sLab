@@ -1256,7 +1256,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.004</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.005</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -1801,6 +1801,7 @@ body {
       <div class="station-section" id="section-machine">
       <div class="form-group-title">Machine Strength Profile</div>
       <div class="field-hint" style="margin-bottom:10px;">Target ranges are auto-calculated from bodyweight, age, and gender — entered in Client Information above.</div>
+      <div id="machine-bw-warn" style="display:none; margin-bottom:10px; padding:8px 12px; background:rgba(196,98,45,0.1); border-left:3px solid var(--rust); font-family:'Nunito',sans-serif; font-size:11px; color:#4a3f32;">⚠ Enter bodyweight in Client Information above to see target ranges.</div>
 
       <div style="display:grid;grid-template-columns:1fr 60px 55px 55px;gap:4px;margin-bottom:4px;">
         <span style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#8a7968;padding:4px 2px;font-family:'Nunito',sans-serif;font-weight:600;font-size:10px;">Exercise</span>
@@ -1859,7 +1860,7 @@ body {
       </div><!-- /sidebar-form -->
 
     <div style="display:flex;gap:8px;padding:0 28px 12px;">
-      <button class="btn-print" style="flex:1;margin:0;" onclick="window.print()">🖨 Print</button>
+      <button class="btn-print" style="flex:1;margin:0;" onclick="if(checkBeforePrint()) window.print()">🖨 Print</button>
       <button class="btn-print" id="btn-pdf" style="flex:1;margin:0;" onclick="downloadPDF()">📥 Save as PDF</button>
     </div>
     <div style="display:flex;gap:8px;padding:0 32px 8px;">
@@ -1979,6 +1980,8 @@ function calcExpectedLoad(nss, bw, age, gender) {
 
 function updateMachineTargets() {
   var bw     = parseFloat(document.getElementById('m-bw') ? document.getElementById('m-bw').value : '') || 0;
+  var bwWarn = document.getElementById('machine-bw-warn');
+  if (bwWarn) bwWarn.style.display = bw <= 0 ? '' : 'none';
   var age    = parseFloat(document.getElementById('f-age') ? document.getElementById('f-age').value : '') || 30;
   var gEl    = document.getElementById('f-gender');
   var gender = gEl ? (gEl.value === 'male' ? 'male' : 'female') : 'female';
@@ -3338,6 +3341,7 @@ function balBracketFn(ag) {
   return              { label: 'Single leg · eyes open · no board',    single: true,  harder: null };
 }
 
+var _lastBalSingle = null;
 function updateBalanceUI() {
   var ageEl   = document.getElementById('f-age');
   var descEl  = document.getElementById('bal-test-description');
@@ -3351,6 +3355,19 @@ function updateBalanceUI() {
     descEl.textContent = 'Test for this age group: ' + info.label
       + (info.harder ? ' · If 30 sec achieved, also test: ' + info.harder : ' · Hardest bracket — no higher test');
   }
+  // Clear hidden fields when test type changes (single-leg ↔ both-legs)
+  if (_lastBalSingle !== null && _lastBalSingle !== info.single) {
+    if (info.single) {
+      var bEl = document.getElementById('f-balance-both');
+      if (bEl) bEl.value = '';
+    } else {
+      var lEl = document.getElementById('f-balance-left');
+      var rEl = document.getElementById('f-balance-right');
+      if (lEl) lEl.value = '';
+      if (rEl) rEl.value = '';
+    }
+  }
+  _lastBalSingle = info.single;
   if (singleEl) singleEl.style.display = info.single ? '' : 'none';
   if (bothEl)   bothEl.style.display   = info.single ? 'none' : '';
 }
@@ -3363,19 +3380,22 @@ function updateBalScorePreview() {
   var age  = parseInt(ageEl.value) || 0;
   var info = balBracketFn(age);
   var secs;
+  var score;
   if (info.single) {
     var lEl = document.getElementById('f-balance-left');
     var rEl = document.getElementById('f-balance-right');
     var hasL = lEl && lEl.value !== '';
     var hasR = rEl && rEl.value !== '';
     if (!hasL && !hasR) { valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)'; lblDisp.textContent = '—'; return; }
-    secs = Math.min(hasL ? parseFloat(lEl.value) : 999, hasR ? parseFloat(rEl.value) : 999);
+    // Match report formula: (left + right) / 60 * 100
+    var leftSecs  = hasL ? parseFloat(lEl.value) : 0;
+    var rightSecs = hasR ? parseFloat(rEl.value) : 0;
+    score = Math.min(100, Math.round(((leftSecs + rightSecs) / 60) * 100));
   } else {
     var bEl = document.getElementById('f-balance-both');
     if (!bEl || bEl.value === '') { valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)'; lblDisp.textContent = '—'; return; }
-    secs = parseFloat(bEl.value);
+    score = Math.min(100, Math.round((parseFloat(bEl.value) / 30) * 100));
   }
-  var score = Math.min(100, Math.round((secs / 30) * 100));
   var color = score >= 75 ? 'var(--green)' : score >= 55 ? 'var(--amber)' : score >= 38 ? 'var(--rust)' : 'var(--red)';
   var label = score >= 75 ? 'Strong' : score >= 55 ? 'Moderate' : score >= 38 ? 'Needs work' : 'Urgent';
   valDisp.textContent = score; valDisp.style.color = color;
@@ -3597,10 +3617,26 @@ document.querySelectorAll('textarea[id$="-rec"]').forEach(el => {
 });
 
 
+// ── PRINT WARNING ───────────────────────────────────────────────
+function checkBeforePrint() {
+  var empty = stationSections.filter(function(s) { return !isSectionFilled(s); });
+  if (empty.length === 0) return true;
+  var names = {
+    'section-s01': 'Sit-to-Stand', 'section-s02': 'Stair Climb',
+    'section-s03': 'Walk in Dark', 'section-s04': 'Grip Strength',
+    'section-s05': 'Sit & Reach',  'section-s06': 'Scratch Back',
+    'section-s07': 'Plank',        'section-s08': 'Overhead Squat',
+    'section-s09': 'Wall Squat'
+  };
+  var list = empty.map(function(s) { return names[s] || s; }).join(', ');
+  return confirm('These stations have no data: ' + list + '\n\nPrint anyway?');
+}
+
 // ── PDF EXPORT ──────────────────────────────────────────────────
 // Sets the page title to the client name so browser's "Save as PDF"
 // suggests the right filename, then opens print dialog
 function downloadPDF() {
+  if (!checkBeforePrint()) return;
   var firstName = val('f-firstname') || 'Client';
   var lastName = val('f-lastname') || '';
   var clientName = (firstName + ' ' + lastName).trim();
@@ -3624,6 +3660,7 @@ function _resetFormState() {
   document.querySelectorAll('textarea[id$="-rec"]').forEach(el => delete el.dataset.touched);
   _lastAgeForChair = null;
   _lastAgeForStair = null;
+  _lastBalSingle = null;
   // Reset date to today
   var dateInput = document.getElementById('f-date');
   if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
