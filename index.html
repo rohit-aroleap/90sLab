@@ -1222,7 +1222,7 @@ body {
   border-radius: 6px;
   margin-bottom: 4px;
   font-size: 12px;
-  color: rgba(245,240,232,0.4);
+  color: #8a7968;
 }
 
 .score-input-preview span:nth-child(2) {
@@ -1256,6 +1256,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.001</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -3225,7 +3226,7 @@ function render() {
 
   document.getElementById('report-output').innerHTML = html;
 
-  // Auto-populate recommendation textareas if still empty
+  // Auto-populate recommendation textareas only if user has never touched them
   var recFields = [
     ['f-chair-rec',   recommendation('chair',   chairScore)],
     ['f-stair-rec',   recommendation('stair',   stairScore)],
@@ -3239,32 +3240,12 @@ function render() {
   ];
   recFields.forEach(function(pair) {
     var el = document.getElementById(pair[0]);
-    if (el && el.value === '') el.value = pair[1];
+    if (el && el.value === '' && !el.dataset.touched) el.value = pair[1];
   });
 }
 
 // ── LIVE SCORE PREVIEWS ───────────────────────────────────────────
 function updateInlinePreviews() {
-  const scoreFields = [
-
-
-
-
-
-
-  ];
-
-  scoreFields.forEach(({ inputId, valId, labelId }) => {
-    const s = Math.min(100, Math.max(0, parseFloat(document.getElementById(inputId)?.value) || 0));
-    const valEl   = document.getElementById(valId);
-    const labelEl = document.getElementById(labelId);
-    if (!valEl) return;
-    valEl.textContent = s;
-    if (labelEl) labelEl.textContent = s >= 75 ? 'Strong' : s >= 55 ? 'Moderate' : s >= 38 ? 'Needs work' : 'Urgent';
-    const color = s >= 75 ? 'var(--green)' : s >= 55 ? 'var(--amber)' : s >= 38 ? 'var(--rust)' : 'var(--red)';
-    valEl.style.color = color;
-  });
-
   // balance fall risk warn
   const bL = parseFloat(document.getElementById('f-balance-left')?.value) || 0;
   const bR = parseFloat(document.getElementById('f-balance-right')?.value) || 0;
@@ -3287,21 +3268,29 @@ function stairHeightForAge(age) {
   return 30;
 }
 
+var _lastAgeForChair = null;
 function updateChairHeight() {
   var ageEl   = document.getElementById('f-age');
   var chairEl = document.getElementById('f-chair-height');
   if (!ageEl || !chairEl) return;
   var age = parseInt(ageEl.value) || 0;
   if (age < 10) return;
+  // Only auto-set when age actually changes, not on every keystroke
+  if (_lastAgeForChair === age) return;
+  _lastAgeForChair = age;
   chairEl.value = chairHeightForAge(age);
 }
 
+var _lastAgeForStair = null;
 function updateStairHeight() {
   var ageEl   = document.getElementById('f-age');
   var stairEl = document.getElementById('f-stair-height');
   if (!ageEl || !stairEl) return;
   var age = parseInt(ageEl.value) || 0;
   if (age < 10) return;
+  // Only auto-set when age actually changes, not on every keystroke
+  if (_lastAgeForStair === age) return;
+  _lastAgeForStair = age;
   stairEl.value = stairHeightForAge(age);
 }
 
@@ -3598,12 +3587,28 @@ document.querySelectorAll('input, select, textarea').forEach(el => {
   el.addEventListener('change', scheduleRender);
 });
 
+// Mark recommendation textareas as touched on first user interaction
+// so auto-populate doesn't overwrite cleared fields
+document.querySelectorAll('textarea[id$="-rec"]').forEach(el => {
+  el.addEventListener('input', function() { this.dataset.touched = '1'; });
+});
+
 
 // ── RESET ────────────────────────────────────────────────────────
 function resetForm() {
   if (!confirm('Start a new client? This will clear the current form.')) return;
   document.querySelectorAll('input, textarea').forEach(el => el.value = '');
   document.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
+  // Reset squat checkboxes and UI state
+  document.querySelectorAll('input[type="checkbox"]').forEach(el => el.checked = false);
+  document.querySelectorAll('.squat-radio-card').forEach(el => el.classList.remove('selected'));
+  document.querySelectorAll('.squat-check-row').forEach(el => el.classList.remove('checked'));
+  document.getElementById('f-squat-depth').value = '-1';
+  // Clear touched flags so recommendations auto-populate for new client
+  document.querySelectorAll('textarea[id$="-rec"]').forEach(el => delete el.dataset.touched);
+  // Reset age-tracking so height selects re-sync on next age entry
+  _lastAgeForChair = null;
+  _lastAgeForStair = null;
     try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
   showStatus('Ready for new client');
   render();
