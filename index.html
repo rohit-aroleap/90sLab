@@ -1614,7 +1614,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.026</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.027</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -4367,7 +4367,10 @@ function updateBalanceUI() {
   var bothEl  = document.getElementById('bal-both-fields');
   if (!ageEl) return;
   var age = parseInt(ageEl.value) || 0;
-  if (age < 10) return;
+  if (age < 10) {
+    if (descEl) descEl.innerHTML = '<span style="color:var(--muted);font-style:italic;">Enter client age in Client Info to see the test bracket</span>';
+    return;
+  }
   var bracketIdx = balBracketIndex(age);
   var info = ALL_BAL_BRACKETS[bracketIdx];
   if (descEl) {
