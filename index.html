@@ -1559,7 +1559,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.013</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.014</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -4885,14 +4885,14 @@ function toggleAccordion(sectionId) {
       if (!sidebar) return;
       var header = el.querySelector('.accordion-header');
       var target = header || el;
-      var sidebarTop = sidebar.getBoundingClientRect().top;
+      // Find the bottom edge of the sticky nav — that's where visible content starts
       var navBar = document.getElementById('sidebar-nav');
-      var navHeight = navBar ? navBar.offsetHeight : 0;
-      var headerTop = document.querySelector('.sidebar-header');
-      var headerHeight = headerTop ? headerTop.offsetHeight : 0;
-      var offset = navHeight + headerHeight + 10;
+      var visibleTop = navBar ? navBar.getBoundingClientRect().bottom : sidebar.getBoundingClientRect().top;
       var targetTop = target.getBoundingClientRect().top;
-      sidebar.scrollTo({ top: sidebar.scrollTop + (targetTop - sidebarTop) - offset, behavior: 'smooth' });
+      var diff = targetTop - visibleTop;
+      if (Math.abs(diff) > 5) {
+        sidebar.scrollTo({ top: sidebar.scrollTop + diff - 4, behavior: 'smooth' });
+      }
     }, 400);
   }
 }
