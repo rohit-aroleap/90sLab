@@ -1256,7 +1256,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.005</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.006</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -1864,11 +1864,15 @@ body {
       <button class="btn-print" id="btn-pdf" style="flex:1;margin:0;" onclick="downloadPDF()">📥 Save as PDF</button>
     </div>
     <div style="display:flex;gap:8px;padding:0 32px 8px;">
-      <button class="btn-secondary" style="flex:1;margin:0;" onclick="saveForm()">💾 Save</button>
-      <button class="btn-secondary" style="flex:1;margin:0;" onclick="loadForm()">↑ Load</button>
+      <button class="btn-secondary" style="flex:1;margin:0;" onclick="saveToCloud()">💾 Save</button>
       <button class="btn-secondary" style="flex:1;margin:0;border-color:var(--rust);color:var(--rust);" onclick="resetForm()">✕ New Client</button>
     </div>
-    <div id="save-status" style="text-align:center;font-size:10px;color:rgba(245,240,232,0.3);padding:0 32px 24px;letter-spacing:0.1em;"></div>
+    <div style="padding:0 32px 8px;">
+      <select id="client-picker" style="width:100%;padding:9px 12px;font-family:'Nunito',sans-serif;font-size:12px;background:#faf8f5;border:1.5px solid #d4c9b4;border-radius:6px;color:#1a1410;cursor:pointer;" onchange="loadFromCloud(this.value)">
+        <option value="">↑ Load a saved client…</option>
+      </select>
+    </div>
+    <div id="save-status" style="text-align:center;font-size:10px;color:#8a7968;padding:0 32px 24px;letter-spacing:0.1em;"></div>
 
   </aside>
 
@@ -1886,6 +1890,22 @@ body {
 
 </div><!-- /app-shell -->
 
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+// ── FIREBASE INIT ───────────────────────────────────────────────
+firebase.initializeApp({
+  apiKey: "AIzaSyCJK3F3YzXyX_Zx743AcLie2GLEY_0LOEE",
+  authDomain: "my-first-prroject.firebaseapp.com",
+  databaseURL: "https://my-first-prroject.firebaseio.com",
+  projectId: "my-first-prroject",
+  storageBucket: "my-first-prroject.firebasestorage.app",
+  messagingSenderId: "432410624820",
+  appId: "1:432410624820:web:82198bae0867803ad21b61",
+  measurementId: "G-J0PCMR8Z34"
+});
+var db = firebase.firestore();
+</script>
 <script>
 // ── HELPERS ─────────────────────────────────────────────────────
 function val(id) {
@@ -3702,27 +3722,131 @@ function saveForm() {
   });
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
-    showStatus('Saved ✓');
-  } catch(e) {
-    showStatus('Save failed');
-  }
+  } catch(e) {}
 }
 
-function loadForm() {
-  try {
-    const raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) { showStatus('No saved data found'); return; }
-    const data = JSON.parse(raw);
-    FIELDS.forEach(id => {
-      const el = document.getElementById(id);
-      if (el && data[id] !== undefined) el.value = data[id];
-    });
-    showStatus('Loaded ✓');
-    scheduleRender();
-  } catch(e) {
-    showStatus('Load failed');
-  }
+// ── FIREBASE SAVE / LOAD ────────────────────────────────────────
+function _getFormData() {
+  const data = {};
+  FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) data[id] = el.value;
+  });
+  return data;
 }
+
+function _applyFormData(data) {
+  FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && data[id] !== undefined) el.value = data[id];
+  });
+  // Restore squat UI state
+  var depth = data['f-squat-depth'];
+  if (depth && depth !== '-1') {
+    document.querySelectorAll('.squat-radio-card').forEach(function(c) {
+      c.classList.toggle('selected', c.getAttribute('data-val') === depth);
+    });
+  }
+  // Restore squat checkbox UI
+  ['f-squat-arms','f-squat-heels','f-squat-knees','f-squat-lean','f-squat-asym'].forEach(function(id) {
+    var cb = document.getElementById(id);
+    if (cb && cb.checked) {
+      var row = document.getElementById(id.replace('f-squat-','squat-row-'));
+      if (row) row.classList.add('checked');
+    }
+  });
+  scheduleRender();
+}
+
+function saveToCloud() {
+  var firstName = val('f-firstname').trim();
+  var lastName = val('f-lastname').trim();
+  if (!firstName && !lastName) {
+    showStatus('Enter client name first');
+    return;
+  }
+
+  var data = _getFormData();
+  var clientName = (firstName + ' ' + lastName).trim();
+  var date = val('f-date') || new Date().toISOString().split('T')[0];
+
+  // Doc ID: "FirstName LastName" — one doc per client, overwritten each save
+  // Each save also stored in a sub-collection for history
+  var docId = clientName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+  var clientDoc = {
+    name: clientName,
+    firstName: firstName,
+    lastName: lastName,
+    age: val('f-age'),
+    gender: val('f-gender'),
+    date: date,
+    staff: val('f-staff'),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    fields: data
+  };
+
+  showStatus('Saving…');
+  db.collection('assessments').doc(docId).set(clientDoc)
+    .then(function() {
+      showStatus('Saved to cloud ✓');
+      saveForm(); // also save locally
+      refreshClientPicker();
+    })
+    .catch(function(err) {
+      console.error('Firebase save error:', err);
+      showStatus('Cloud save failed — saved locally');
+      saveForm();
+    });
+}
+
+function loadFromCloud(docId) {
+  if (!docId) return;
+  showStatus('Loading…');
+  db.collection('assessments').doc(docId).get()
+    .then(function(doc) {
+      if (!doc.exists) { showStatus('Client not found'); return; }
+      var data = doc.data();
+      _resetFormState();
+      _applyFormData(data.fields);
+      // Clear touched flags so recommendations can auto-populate
+      document.querySelectorAll('textarea[id$="-rec"]').forEach(function(el) {
+        if (el.value !== '') el.dataset.touched = '1';
+      });
+      showStatus('Loaded: ' + data.name + ' ✓');
+      saveForm(); // sync to localStorage
+    })
+    .catch(function(err) {
+      console.error('Firebase load error:', err);
+      showStatus('Load failed');
+    });
+
+  // Reset picker to placeholder
+  document.getElementById('client-picker').value = '';
+}
+
+function refreshClientPicker() {
+  var picker = document.getElementById('client-picker');
+  if (!picker) return;
+  db.collection('assessments').orderBy('updatedAt', 'desc').get()
+    .then(function(snapshot) {
+      // Keep the placeholder option
+      picker.innerHTML = '<option value="">↑ Load a saved client…</option>';
+      snapshot.forEach(function(doc) {
+        var d = doc.data();
+        var opt = document.createElement('option');
+        opt.value = doc.id;
+        opt.textContent = d.name + (d.date ? ' — ' + d.date : '') + (d.staff ? ' · ' + d.staff : '');
+        picker.appendChild(opt);
+      });
+    })
+    .catch(function(err) {
+      console.error('Firebase list error:', err);
+    });
+}
+
+// Load client list on startup
+refreshClientPicker();
 
 // Required fields per station — at least one must be filled to count as "started"
 var stationRequiredFields = {
