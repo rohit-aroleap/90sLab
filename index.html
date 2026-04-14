@@ -1611,7 +1611,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.018</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.019</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -2295,47 +2295,65 @@ body {
       <div class="field-hint" style="margin-bottom:10px;">Target ranges are auto-calculated from bodyweight, age, and gender — entered in Client Information above.</div>
       <div id="machine-bw-warn" style="display:none; margin-bottom:10px; padding:8px 12px; background:rgba(196,98,45,0.1); border-left:3px solid var(--rust); font-family:'Nunito',sans-serif; font-size:11px; color:#4a3f32;">⚠ Enter bodyweight in Client Information above to see target ranges.</div>
 
-      <div style="display:grid;grid-template-columns:1fr 60px 55px 55px;gap:4px;margin-bottom:4px;">
-        <span style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#8a7968;padding:4px 2px;font-family:'Nunito',sans-serif;font-weight:600;font-size:10px;">Exercise</span>
-        <span style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#8a7968;padding:4px 2px;text-align:center;font-family:'Nunito',sans-serif;font-weight:600;font-size:10px;">kg</span>
-        <span style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#8a7968;padding:4px 2px;text-align:center;font-family:'Nunito',sans-serif;font-weight:600;font-size:10px;">Min ↓</span>
-        <span style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#8a7968;padding:4px 2px;text-align:center;font-family:'Nunito',sans-serif;font-weight:600;font-size:10px;">Max ↑</span>
-      </div>
+      <style>
+        .machine-row { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background:#faf8f5; border:1.5px solid #e8e0d4; border-radius:8px; transition:border-color 0.15s; }
+        .machine-row:hover { border-color:#c4b8a4; }
+        .machine-label { font-family:'Nunito',sans-serif; font-size:13px; font-weight:600; color:#4a3f32; flex-shrink:0; }
+        .machine-input-wrap { display:flex; align-items:center; gap:10px; }
+        .machine-input-wrap input[type="number"] { width:64px; padding:6px 8px; border:1.5px solid #d4c9b4; border-radius:6px; background:#fff; font-family:'Nunito',sans-serif; font-size:13px; font-weight:600; color:#1a1410; text-align:center; outline:none; transition:border-color 0.15s; -moz-appearance:textfield; }
+        .machine-input-wrap input[type="number"]::-webkit-outer-spin-button,
+        .machine-input-wrap input[type="number"]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+        .machine-input-wrap input[type="number"]:focus { border-color:var(--rust); }
+        .machine-range { font-family:'DM Mono',monospace; font-size:11px; color:#8a7e6b; white-space:nowrap; min-width:70px; text-align:right; }
+      </style>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
 
       <!-- Row 1: Bicep Curl -->
-      <div style="display:grid;grid-template-columns:1fr 60px 55px 55px;gap:4px;margin-bottom:4px;">
-        <span style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;display:flex;align-items:center;">Bicep Curl</span>
-        <input type="number" inputmode="numeric" id="m1-val" placeholder="kg" min="0" max="300" step="0.5" style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;text-align:center;">
-        <div id="m1-min-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
-        <div id="m1-max-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
+      <div class="machine-row">
+        <div class="machine-label">Bicep Curl</div>
+        <div class="machine-input-wrap">
+          <input type="number" inputmode="numeric" id="m1-val" placeholder="kg" min="0" max="300" step="0.5">
+          <div class="machine-range"><span id="m1-min-display">—</span> – <span id="m1-max-display">—</span></div>
+        </div>
       </div>
+
       <!-- Row 2: Tricep Extension -->
-      <div style="display:grid;grid-template-columns:1fr 60px 55px 55px;gap:4px;margin-bottom:4px;">
-        <span style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;display:flex;align-items:center;">Tricep Ext.</span>
-        <input type="number" inputmode="numeric" id="m2-val" placeholder="kg" min="0" max="300" step="0.5" style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;text-align:center;">
-        <div id="m2-min-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
-        <div id="m2-max-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
+      <div class="machine-row">
+        <div class="machine-label">Tricep Ext.</div>
+        <div class="machine-input-wrap">
+          <input type="number" inputmode="numeric" id="m2-val" placeholder="kg" min="0" max="300" step="0.5">
+          <div class="machine-range"><span id="m2-min-display">—</span> – <span id="m2-max-display">—</span></div>
+        </div>
       </div>
+
       <!-- Row 3: Shoulder Press -->
-      <div style="display:grid;grid-template-columns:1fr 60px 55px 55px;gap:4px;margin-bottom:4px;">
-        <span style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;display:flex;align-items:center;">Shoulder Press</span>
-        <input type="number" inputmode="numeric" id="m3-val" placeholder="kg" min="0" max="300" step="0.5" style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;text-align:center;">
-        <div id="m3-min-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
-        <div id="m3-max-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
+      <div class="machine-row">
+        <div class="machine-label">Shoulder Press</div>
+        <div class="machine-input-wrap">
+          <input type="number" inputmode="numeric" id="m3-val" placeholder="kg" min="0" max="300" step="0.5">
+          <div class="machine-range"><span id="m3-min-display">—</span> – <span id="m3-max-display">—</span></div>
+        </div>
       </div>
+
       <!-- Row 4: Lat Pulldown -->
-      <div style="display:grid;grid-template-columns:1fr 60px 55px 55px;gap:4px;margin-bottom:4px;">
-        <span style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;display:flex;align-items:center;">Lat Pulldown</span>
-        <input type="number" inputmode="numeric" id="m4-val" placeholder="kg" min="0" max="300" step="0.5" style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;text-align:center;">
-        <div id="m4-min-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
-        <div id="m4-max-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
+      <div class="machine-row">
+        <div class="machine-label">Lat Pulldown</div>
+        <div class="machine-input-wrap">
+          <input type="number" inputmode="numeric" id="m4-val" placeholder="kg" min="0" max="300" step="0.5">
+          <div class="machine-range"><span id="m4-min-display">—</span> – <span id="m4-max-display">—</span></div>
+        </div>
       </div>
+
       <!-- Row 5: Bench Press -->
-      <div style="display:grid;grid-template-columns:1fr 60px 55px 55px;gap:4px;margin-bottom:14px;">
-        <span style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;display:flex;align-items:center;">Bench Press</span>
-        <input type="number" inputmode="numeric" id="m5-val" placeholder="kg" min="0" max="300" step="0.5" style="background:var(--input-bg);border:1px solid var(--input-border);color:var(--cream);font-family:DM Mono,monospace;font-size:11px;padding:7px 8px;outline:none;width:100%;text-align:center;">
-        <div id="m5-min-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
-        <div id="m5-max-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
+      <div class="machine-row">
+        <div class="machine-label">Bench Press</div>
+        <div class="machine-input-wrap">
+          <input type="number" inputmode="numeric" id="m5-val" placeholder="kg" min="0" max="300" step="0.5">
+          <div class="machine-range"><span id="m5-min-display">—</span> – <span id="m5-max-display">—</span></div>
+        </div>
+      </div>
+
       </div>
       <button class="accordion-next-btn" onclick="openNextStation('section-machine')">Next Station &#8594;</button>
 
