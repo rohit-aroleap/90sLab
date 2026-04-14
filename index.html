@@ -1614,7 +1614,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.023</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.024</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -4015,10 +4015,10 @@ function updateChairHeight() {
 }
 
 function updateChairFlow() {
-  var reps = parseInt(document.getElementById('f-chair-reps') ? document.getElementById('f-chair-reps').value : '') || 0;
-  var hasRepsInput = document.getElementById('f-chair-reps') && document.getElementById('f-chair-reps').value !== '';
+  var repsEl = document.getElementById('f-chair-reps');
+  var reps = parseInt(repsEl ? repsEl.value : '') || 0;
+  var hasRepsInput = repsEl && repsEl.value !== '';
   var stdH = parseInt(document.getElementById('f-chair-height').value) || 40;
-  // Challenge = lower height (harder for chair): 40→30, 30→20, 20→null
   var challengeH = stdH === 40 ? 30 : stdH === 30 ? 20 : null;
 
   var challengeCard = document.getElementById('chair-challenge-card');
@@ -4026,25 +4026,34 @@ function updateChairFlow() {
   var easierCard = document.getElementById('chair-easier-card');
   var lowerSel = document.getElementById('f-chair-lower');
 
-  if (challengeCard) {
-    // Show challenge card when reps = 20 AND there's a lower (harder) level available
-    challengeCard.style.display = (hasRepsInput && reps >= 20 && challengeH) ? '' : 'none';
-  }
-  if (easierLink) {
-    // Show "too hard?" link when reps = 0 and easier card isn't already open
-    var easierVisible = easierCard && easierCard.style.display !== 'none';
-    easierLink.style.display = (hasRepsInput && reps === 0 && !easierVisible) ? '' : 'none';
-  }
-  // Auto-show easier card if easier data already exists (loaded from save)
-  if (easierCard) {
+  var showChallenge = hasRepsInput && reps >= 20 && challengeH;
+  var showEasier = hasRepsInput && reps === 0;
+
+  if (challengeCard) challengeCard.style.display = showChallenge ? '' : 'none';
+
+  if (easierCard && !showEasier) {
     var easierH = document.getElementById('f-chair-easier-height');
     var easierR = document.getElementById('f-chair-easier-reps');
-    if ((easierH && easierH.value) || (easierR && easierR.value)) {
+    var hasSavedEasier = (easierH && easierH.value) || (easierR && easierR.value && easierR.value !== '0');
+    if (!hasSavedEasier) {
+      easierCard.style.display = 'none';
+      if (easierLink) easierLink.style.display = 'none';
+    }
+  }
+  if (easierLink && showEasier) {
+    var easierVisible = easierCard && easierCard.style.display !== 'none';
+    easierLink.style.display = easierVisible ? 'none' : '';
+  }
+
+  if (easierCard) {
+    var easierH2 = document.getElementById('f-chair-easier-height');
+    var easierR2 = document.getElementById('f-chair-easier-reps');
+    if ((easierH2 && easierH2.value) || (easierR2 && easierR2.value && easierR2.value !== '0')) {
       easierCard.style.display = '';
       if (easierLink) easierLink.style.display = 'none';
     }
   }
-  // Sync hidden "lower" select based on challenge reps
+
   if (lowerSel) {
     var challengeReps = parseInt(document.getElementById('f-chair-challenge-reps') ? document.getElementById('f-chair-challenge-reps').value : '') || 0;
     lowerSel.value = (challengeReps > 0) ? 'yes' : 'no';
@@ -4085,8 +4094,9 @@ function updateStairHeight() {
 }
 
 function updateStairFlow() {
-  var reps = parseInt(document.getElementById('f-stair-reps') ? document.getElementById('f-stair-reps').value : '') || 0;
-  var hasRepsInput = document.getElementById('f-stair-reps') && document.getElementById('f-stair-reps').value !== '';
+  var repsEl = document.getElementById('f-stair-reps');
+  var reps = parseInt(repsEl ? repsEl.value : '') || 0;
+  var hasRepsInput = repsEl && repsEl.value !== '';
   var stdH = parseInt(document.getElementById('f-stair-height').value) || 30;
   var challengeH = stdH === 30 ? 35 : stdH === 35 ? 45 : null;
 
@@ -4095,24 +4105,38 @@ function updateStairFlow() {
   var easierCard = document.getElementById('stair-easier-card');
   var higherSel = document.getElementById('f-stair-higher');
 
-  if (challengeCard) {
-    // Show challenge card when reps = 20 AND there's a higher level available
-    challengeCard.style.display = (hasRepsInput && reps >= 20 && challengeH) ? '' : 'none';
-  }
-  if (easierLink) {
-    // Show "too hard?" link when reps = 0 and easier card isn't already open
-    var easierVisible = easierCard && easierCard.style.display !== 'none';
-    easierLink.style.display = (hasRepsInput && reps === 0 && !easierVisible) ? '' : 'none';
-  }
-  // Auto-show easier card if easier data already exists (loaded from save)
-  if (easierCard) {
+  var showChallenge = hasRepsInput && reps >= 20 && challengeH;
+  var showEasier = hasRepsInput && reps === 0;
+
+  // Show/hide challenge card
+  if (challengeCard) challengeCard.style.display = showChallenge ? '' : 'none';
+
+  // Show/hide easier section — hide completely when reps > 0
+  if (easierCard && !showEasier) {
+    // Only hide if no saved easier data exists
     var easierH = document.getElementById('f-stair-easier-height');
     var easierR = document.getElementById('f-stair-easier-reps');
-    if ((easierH && easierH.value) || (easierR && easierR.value)) {
+    var hasSavedEasier = (easierH && easierH.value) || (easierR && easierR.value && easierR.value !== '0');
+    if (!hasSavedEasier) {
+      easierCard.style.display = 'none';
+      if (easierLink) easierLink.style.display = 'none';
+    }
+  }
+  if (easierLink && showEasier) {
+    var easierVisible = easierCard && easierCard.style.display !== 'none';
+    easierLink.style.display = easierVisible ? 'none' : '';
+  }
+
+  // Auto-show easier card if saved data exists (loaded from save)
+  if (easierCard) {
+    var easierH2 = document.getElementById('f-stair-easier-height');
+    var easierR2 = document.getElementById('f-stair-easier-reps');
+    if ((easierH2 && easierH2.value) || (easierR2 && easierR2.value && easierR2.value !== '0')) {
       easierCard.style.display = '';
       if (easierLink) easierLink.style.display = 'none';
     }
   }
+
   // Sync hidden "higher" select based on challenge reps
   if (higherSel) {
     var challengeReps = parseInt(document.getElementById('f-stair-challenge-reps') ? document.getElementById('f-stair-challenge-reps').value : '') || 0;
