@@ -1614,7 +1614,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.028</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.029</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -4464,37 +4464,37 @@ function updateBalanceFlow() {
   var easierLink = document.getElementById('bal-easier-link');
   var easierCard = document.getElementById('bal-easier-card');
 
-  // Check for saved challenge data
-  var hasSavedChallenge = false;
+  // Challenge: show only when perfect AND harder options exist
+  var showChallenge = hasInput && isPerfect && hasHarderOption;
   if (challengeCard) {
-    var cL = document.getElementById('f-balance-challenge-left');
-    var cR = document.getElementById('f-balance-challenge-right');
-    var cB = document.getElementById('f-balance-challenge-both');
-    hasSavedChallenge = (cL && cL.value !== '') || (cR && cR.value !== '') || (cB && cB.value !== '');
+    challengeCard.style.display = showChallenge ? '' : 'none';
+    // Clear challenge data when card is hidden (conditions no longer met)
+    if (!showChallenge) {
+      var cFields = ['f-balance-challenge-left','f-balance-challenge-right','f-balance-challenge-both'];
+      cFields.forEach(function(id) { var el = document.getElementById(id); if (el && el.value !== '') el.value = ''; });
+    }
   }
 
-  // Check for saved easier data
-  var hasSavedEasier = false;
+  // Easier: show link when zero AND easier options exist, show card if link was clicked or has data
+  var showEasierLink = hasInput && isZero && hasEasierOption;
+  var easierHasData = false;
   if (easierCard) {
     var eL = document.getElementById('f-balance-easier-left');
     var eR = document.getElementById('f-balance-easier-right');
     var eB = document.getElementById('f-balance-easier-both');
-    hasSavedEasier = (eL && eL.value !== '') || (eR && eR.value !== '') || (eB && eB.value !== '');
+    easierHasData = (eL && eL.value !== '') || (eR && eR.value !== '') || (eB && eB.value !== '');
   }
-
-  // Show challenge card when perfect AND harder brackets exist (or saved data)
-  var showChallenge = (hasInput && isPerfect && hasHarderOption) || hasSavedChallenge;
-  if (challengeCard) challengeCard.style.display = showChallenge ? '' : 'none';
-
-  // Show easier link/card when zero AND easier brackets exist (or saved data)
-  var showEasierLink = hasInput && isZero && hasEasierOption && !hasSavedEasier;
-  var showEasierCard = hasSavedEasier || false;
-  if (easierLink) easierLink.style.display = showEasierLink ? '' : 'none';
-  if (easierCard && !hasSavedEasier) {
-    // Only hide if no saved data and conditions not met
-    if (!isZero || !hasEasierOption) easierCard.style.display = 'none';
+  var easierCardVisible = easierCard && easierCard.style.display !== 'none';
+  if (easierLink) easierLink.style.display = (showEasierLink && !easierCardVisible && !easierHasData) ? '' : 'none';
+  if (easierCard) {
+    // Keep card visible if it has data and conditions still allow it, or if user clicked the link
+    if (!isZero || !hasEasierOption) {
+      easierCard.style.display = 'none';
+      // Clear easier data when conditions no longer met
+      var eFields = ['f-balance-easier-left','f-balance-easier-right','f-balance-easier-both'];
+      eFields.forEach(function(id) { var el = document.getElementById(id); if (el && el.value !== '') el.value = ''; });
+    }
   }
-  if (easierCard && hasSavedEasier) easierCard.style.display = '';
 
   // Auto-sync hidden f-balance-harder for backward compat
   var harderSel = document.getElementById('f-balance-harder');
