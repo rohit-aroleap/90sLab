@@ -1438,6 +1438,115 @@ body {
   color: #b54020;
   margin-top: 2px;
 }
+
+/* ── ACCORDION ────────────────────────────────────────────────── */
+.accordion-header {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  padding: 16px 0 12px;
+  border-bottom: 1px solid #e8e0d4;
+  margin-bottom: 0;
+  transition: margin-bottom 0.2s;
+}
+.station-section.open .accordion-header {
+  margin-bottom: 16px;
+}
+.accordion-header .form-group-title {
+  padding: 0;
+  border-bottom: none;
+  margin-bottom: 0;
+  flex: 1;
+  padding-top: 0;
+}
+.accordion-chevron {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #8a7968;
+  transition: transform 0.25s ease;
+  flex-shrink: 0;
+}
+.station-section.open .accordion-chevron {
+  transform: rotate(180deg);
+}
+.accordion-score-badge {
+  font-family: 'Instrument Serif', serif;
+  font-size: 18px;
+  font-style: italic;
+  color: var(--muted);
+  margin-right: 8px;
+  flex-shrink: 0;
+  min-width: 36px;
+  text-align: right;
+}
+.accordion-score-badge.has-score { color: var(--rust); }
+.accordion-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease;
+}
+.station-section.open .accordion-body {
+  max-height: 3000px;
+}
+.accordion-details {
+  margin-top: 8px;
+  border-top: 1px dashed #e0d8cc;
+  padding-top: 10px;
+}
+.accordion-details-toggle {
+  font-family: 'Nunito', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: #8a7968;
+  cursor: pointer;
+  padding: 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.accordion-details-toggle:hover { color: var(--rust); }
+.accordion-details-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+.accordion-details.open .accordion-details-content {
+  max-height: 600px;
+}
+.accordion-details.open .accordion-details-arrow {
+  transform: rotate(180deg);
+}
+.accordion-details-arrow {
+  font-size: 10px;
+  transition: transform 0.2s;
+}
+.accordion-next-btn {
+  display: block;
+  width: 100%;
+  padding: 11px;
+  margin-top: 14px;
+  margin-bottom: 4px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--rust);
+  background: rgba(196,98,45,0.06);
+  border: 1.5px solid rgba(196,98,45,0.25);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.accordion-next-btn:hover {
+  background: rgba(196,98,45,0.12);
+  border-color: var(--rust);
+}
 </style>
 </head>
 <body>
@@ -1450,7 +1559,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.010</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.011</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -1475,7 +1584,7 @@ body {
     <div class="sidebar-form">
 
       <!-- CLIENT INFO -->
-      <div class="station-section" id="section-client">
+      <div class="station-section open" id="section-client">
       <div class="form-group-title">Client Information</div>
 
       <div class="field field-row">
@@ -1530,8 +1639,13 @@ body {
 
       </div>
       <!-- STATION 1 — CHAIR -->
-      <div class="station-section alt" id="section-s01">
-      <div class="form-group-title">Station 01 · Sit-to-Stand</div>
+      <div class="station-section alt open" id="section-s01">
+      <div class="accordion-header" onclick="toggleAccordion('section-s01')">
+        <div class="form-group-title">Station 01 · Sit-to-Stand</div>
+        <span class="accordion-score-badge" id="accordion-badge-s01"></span>
+        <span class="accordion-chevron">&#9660;</span>
+      </div>
+      <div class="accordion-body">
 
       <div class="field">
         <label>Chair Height (cm)</label>
@@ -1581,6 +1695,11 @@ body {
         <span id="chair-score-label-display">—</span>
         <span id="chair-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
       </div>
+      <div class="accordion-details">
+        <div class="accordion-details-toggle" onclick="event.stopPropagation();this.parentElement.classList.toggle('open')">
+          <span class="accordion-details-arrow">&#9660;</span> Previous score, recommendation &amp; notes
+        </div>
+        <div class="accordion-details-content">
       <div class="field" style="margin-top:10px;">
         <label>Previous score (optional)</label>
         <input type="number" id="f-chair-prev" min="0" max="100" placeholder="Leave blank if first visit">
@@ -1593,11 +1712,20 @@ body {
         <textarea id="f-chair-notes" rows="3" placeholder="e.g. Form was shaky on last 3 reps, used armrests slightly..." style="resize:vertical;"></textarea>
         </div>
       </div>
+        </div>
+      </div>
+      <button class="accordion-next-btn" onclick="openNextStation('section-s01')">Next Station &#8594;</button>
 
+      </div>
       </div>
       <!-- STATION 2 — STAIRS -->
       <div class="station-section" id="section-s02">
-      <div class="form-group-title">Station 02 · Stair Climb</div>
+      <div class="accordion-header" onclick="toggleAccordion('section-s02')">
+        <div class="form-group-title">Station 02 · Stair Climb</div>
+        <span class="accordion-score-badge" id="accordion-badge-s02"></span>
+        <span class="accordion-chevron">&#9660;</span>
+      </div>
+      <div class="accordion-body">
 
       <div class="field">
         <label>Step Height (cm)</label>
@@ -1648,6 +1776,11 @@ body {
         <span id="stair-score-label-display">—</span>
         <span id="stair-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
       </div>
+      <div class="accordion-details">
+        <div class="accordion-details-toggle" onclick="event.stopPropagation();this.parentElement.classList.toggle('open')">
+          <span class="accordion-details-arrow">&#9660;</span> Previous score, recommendation &amp; notes
+        </div>
+        <div class="accordion-details-content">
       <div class="field" style="margin-top:10px;">
         <label>Previous score (optional)</label>
         <input type="number" id="f-stair-prev" min="0" max="100" placeholder="Leave blank if first visit">
@@ -1660,11 +1793,20 @@ body {
         <textarea id="f-stair-notes" rows="3" placeholder="e.g. Held railing on final 4 reps, breathing laboured..." style="resize:vertical;"></textarea>
         </div>
       </div>
+        </div>
+      </div>
+      <button class="accordion-next-btn" onclick="openNextStation('section-s02')">Next Station &#8594;</button>
 
+      </div>
       </div>
       <!-- STATION 3 — BALANCE -->
       <div class="station-section alt" id="section-s03">
-      <div class="form-group-title">Station 03 · Walking in Dark</div>
+      <div class="accordion-header" onclick="toggleAccordion('section-s03')">
+        <div class="form-group-title">Station 03 · Walking in Dark</div>
+        <span class="accordion-score-badge" id="accordion-badge-s03"></span>
+        <span class="accordion-chevron">&#9660;</span>
+      </div>
+      <div class="accordion-body">
       <div class="field-hint" style="margin-bottom:10px;">Test and input fields auto-adapt to age bracket. Score = worst leg ÷ 30 × 100.</div>
 
       <div id="bal-test-description" style="margin-bottom:12px; padding:10px 12px; background:rgba(196,98,45,0.1); border-left:3px solid var(--rust); font-size:11px; line-height:1.6; color:#4a3f32;"></div>
@@ -1703,6 +1845,11 @@ body {
         <span id="balance-score-label-display">—</span>
         <span id="balance-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
       </div>
+      <div class="accordion-details">
+        <div class="accordion-details-toggle" onclick="event.stopPropagation();this.parentElement.classList.toggle('open')">
+          <span class="accordion-details-arrow">&#9660;</span> Previous score, recommendation &amp; notes
+        </div>
+        <div class="accordion-details-content">
       <div class="field" style="margin-top:10px;">
         <label>Previous score (optional)</label>
         <input type="number" id="f-balance-prev" min="0" max="100" placeholder="Leave blank if first visit">
@@ -1715,11 +1862,20 @@ body {
         <textarea id="f-balance-notes" rows="3" placeholder="e.g. Visible tremor on left leg, arms used for balance..." style="resize:vertical;"></textarea>
         </div>
       </div>
+        </div>
+      </div>
+      <button class="accordion-next-btn" onclick="openNextStation('section-s03')">Next Station &#8594;</button>
 
+      </div>
       </div>
       <!-- STATION 4 — GRIP -->
       <div class="station-section" id="section-s04">
-      <div class="form-group-title">Station 04 · Grip Strength</div>
+      <div class="accordion-header" onclick="toggleAccordion('section-s04')">
+        <div class="form-group-title">Station 04 · Grip Strength</div>
+        <span class="accordion-score-badge" id="accordion-badge-s04"></span>
+        <span class="accordion-chevron">&#9660;</span>
+      </div>
+      <div class="accordion-body">
       <div class="field-hint" style="margin-bottom:10px;">Two attempts per hand. Best of each is used. Score from Camry norms by age &amp; gender.</div>
 
       <div style="font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:#6b5d4f; margin-bottom:6px;">Dominant hand (kg)</div>
@@ -1750,6 +1906,11 @@ body {
         <span id="grip-score-label-display">—</span>
         <span id="grip-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
       </div>
+      <div class="accordion-details">
+        <div class="accordion-details-toggle" onclick="event.stopPropagation();this.parentElement.classList.toggle('open')">
+          <span class="accordion-details-arrow">&#9660;</span> Previous score, recommendation &amp; notes
+        </div>
+        <div class="accordion-details-content">
       <div class="field" style="margin-top:10px;">
         <label>Previous score (optional)</label>
         <input type="number" id="f-grip-prev" min="0" max="100" placeholder="Leave blank if first visit">
@@ -1762,11 +1923,20 @@ body {
         <textarea id="f-grip-notes" rows="3" placeholder="e.g. Dominant hand noticeably weaker than expected..." style="resize:vertical;"></textarea>
         </div>
       </div>
+        </div>
+      </div>
+      <button class="accordion-next-btn" onclick="openNextStation('section-s04')">Next Station &#8594;</button>
 
+      </div>
       </div>
       <!-- STATION 5 — SIT AND REACH -->
       <div class="station-section alt" id="section-s05">
-      <div class="form-group-title">Station 05 · Sit and Reach</div>
+      <div class="accordion-header" onclick="toggleAccordion('section-s05')">
+        <div class="form-group-title">Station 05 · Sit and Reach</div>
+        <span class="accordion-score-badge" id="accordion-badge-s05"></span>
+        <span class="accordion-chevron">&#9660;</span>
+      </div>
+      <div class="accordion-body">
       <div class="field-hint" style="margin-bottom:10px;">Score is auto-calculated from the cm reading and age. Negative = past ankle (great). 0 = touching. Positive = gap in cm (worse).</div>
 
       <div class="field field-row">
@@ -1784,6 +1954,11 @@ body {
         <span id="sit-score-label-display">—</span>
         <span id="sit-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
       </div>
+      <div class="accordion-details">
+        <div class="accordion-details-toggle" onclick="event.stopPropagation();this.parentElement.classList.toggle('open')">
+          <span class="accordion-details-arrow">&#9660;</span> Previous score, recommendation &amp; notes
+        </div>
+        <div class="accordion-details-content">
       <div class="field" style="margin-top:10px;">
         <label>Previous score (optional)</label>
         <input type="number" id="f-sit-prev" min="0" max="100" placeholder="First visit?">
@@ -1796,11 +1971,20 @@ body {
         <textarea id="f-sit-notes" rows="3" placeholder="e.g. Visibly struggled on left side, hip tightness noted..." style="resize:vertical;"></textarea>
         </div>
       </div>
+        </div>
+      </div>
+      <button class="accordion-next-btn" onclick="openNextStation('section-s05')">Next Station &#8594;</button>
 
+      </div>
       </div>
       <!-- STATION 6 — SHOULDER REACH -->
       <div class="station-section" id="section-s06">
-      <div class="form-group-title">Station 06 · Shoulder Reach</div>
+      <div class="accordion-header" onclick="toggleAccordion('section-s06')">
+        <div class="form-group-title">Station 06 · Shoulder Reach</div>
+        <span class="accordion-score-badge" id="accordion-badge-s06"></span>
+        <span class="accordion-chevron">&#9660;</span>
+      </div>
+      <div class="accordion-body">
       <div class="field-hint" style="margin-bottom:10px;">Score is auto-calculated from the cm reading and age. Negative = hands overlapping (great). 0 = touching. Positive = gap in cm (worse).</div>
 
       <div class="field field-row">
@@ -1818,6 +2002,11 @@ body {
         <span id="reach-score-label-display">—</span>
         <span id="reach-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
       </div>
+      <div class="accordion-details">
+        <div class="accordion-details-toggle" onclick="event.stopPropagation();this.parentElement.classList.toggle('open')">
+          <span class="accordion-details-arrow">&#9660;</span> Previous score, recommendation &amp; notes
+        </div>
+        <div class="accordion-details-content">
       <div class="field" style="margin-top:10px;">
         <label>Previous score (optional)</label>
         <input type="number" id="f-reach-prev" min="0" max="100" placeholder="First visit?">
@@ -1830,11 +2019,20 @@ body {
         <textarea id="f-reach-notes" rows="3" placeholder="e.g. Right shoulder significantly tighter than left..." style="resize:vertical;"></textarea>
         </div>
       </div>
+        </div>
+      </div>
+      <button class="accordion-next-btn" onclick="openNextStation('section-s06')">Next Station &#8594;</button>
 
+      </div>
       </div>
       <!-- STATION 7 — PLANK -->
       <div class="station-section alt" id="section-s07">
-      <div class="form-group-title">Station 07 · Plank</div>
+      <div class="accordion-header" onclick="toggleAccordion('section-s07')">
+        <div class="form-group-title">Station 07 · Plank</div>
+        <span class="accordion-score-badge" id="accordion-badge-s07"></span>
+        <span class="accordion-chevron">&#9660;</span>
+      </div>
+      <div class="accordion-body">
       <div class="field-hint" style="margin-bottom:10px;">Score is auto-calculated from hold time and age bracket. Target: 20–30→120s · 31–45→90s · 46–60→60s · 61–75→40s · 76+→20s.</div>
 
       <div class="field">
@@ -1845,6 +2043,11 @@ body {
         <span id="plank-score-label-display">—</span>
         <span id="plank-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
       </div>
+      <div class="accordion-details">
+        <div class="accordion-details-toggle" onclick="event.stopPropagation();this.parentElement.classList.toggle('open')">
+          <span class="accordion-details-arrow">&#9660;</span> Previous score, recommendation &amp; notes
+        </div>
+        <div class="accordion-details-content">
       <div class="field" style="margin-top:10px;">
         <label>Previous score (optional)</label>
         <input type="number" id="f-plank-prev" min="0" max="100" placeholder="Leave blank if first visit">
@@ -1857,11 +2060,20 @@ body {
         <textarea id="f-plank-notes" rows="3" placeholder="e.g. Hips dropped at 35 sec, form broke down..." style="resize:vertical;"></textarea>
         </div>
       </div>
+        </div>
+      </div>
+      <button class="accordion-next-btn" onclick="openNextStation('section-s07')">Next Station &#8594;</button>
 
+      </div>
       </div>
       <!-- STATION 8 — OVERHEAD SQUAT -->
       <div class="station-section" id="section-s08">
-      <div class="form-group-title">Station 08 · Overhead Squat</div>
+      <div class="accordion-header" onclick="toggleAccordion('section-s08')">
+        <div class="form-group-title">Station 08 · Overhead Squat</div>
+        <span class="accordion-score-badge" id="accordion-badge-s08"></span>
+        <span class="accordion-chevron">&#9660;</span>
+      </div>
+      <div class="accordion-body">
       <div class="field-hint" style="margin-bottom:12px;">Select depth and any compensations observed. Final score is auto-calculated.</div>
 
       <style>
@@ -1955,6 +2167,11 @@ body {
         <span id="squat-score-label-display">—</span>
         <span id="squat-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
       </div>
+      <div class="accordion-details">
+        <div class="accordion-details-toggle" onclick="event.stopPropagation();this.parentElement.classList.toggle('open')">
+          <span class="accordion-details-arrow">&#9660;</span> Previous score, recommendation &amp; notes
+        </div>
+        <div class="accordion-details-content">
       <div class="field" style="margin-top:10px;">
         <label>Previous score (optional)</label>
         <input type="number" id="f-squat-prev" min="0" max="100" placeholder="Leave blank if first visit">
@@ -1967,11 +2184,20 @@ body {
         <textarea id="f-squat-notes" rows="3" placeholder="e.g. Right knee collapsed at bottom, significant forward lean noted..." style="resize:vertical;"></textarea>
         </div>
       </div>
+        </div>
+      </div>
+      <button class="accordion-next-btn" onclick="openNextStation('section-s08')">Next Station &#8594;</button>
 
+      </div>
       </div>
       <!-- STATION 9 — WALL SQUAT -->
       <div class="station-section alt" id="section-s09">
-      <div class="form-group-title">Station 09 · Wall Squats</div>
+      <div class="accordion-header" onclick="toggleAccordion('section-s09')">
+        <div class="form-group-title">Station 09 · Wall Squats</div>
+        <span class="accordion-score-badge" id="accordion-badge-s09"></span>
+        <span class="accordion-chevron">&#9660;</span>
+      </div>
+      <div class="accordion-body">
       <div class="field-hint" style="margin-bottom:10px;">Score is auto-calculated from hold time and age bracket. Targets: 20–30→90s · 31–45→70s · 46–60→45s · 61–75→30s · 76+→15s.</div>
 
       <div class="field">
@@ -1982,6 +2208,11 @@ body {
         <span id="wall-score-label-display">—</span>
         <span id="wall-score-val-display" style="color:var(--muted)">—</span><span style="font-size:10px;opacity:0.5">/100</span>
       </div>
+      <div class="accordion-details">
+        <div class="accordion-details-toggle" onclick="event.stopPropagation();this.parentElement.classList.toggle('open')">
+          <span class="accordion-details-arrow">&#9660;</span> Previous score, recommendation &amp; notes
+        </div>
+        <div class="accordion-details-content">
       <div class="field" style="margin-top:10px;">
         <label>Previous score (optional)</label>
         <input type="number" id="f-wall-prev" min="0" max="100" placeholder="Leave blank if first visit">
@@ -1994,11 +2225,20 @@ body {
         <textarea id="f-wall-notes" rows="3" placeholder="e.g. Knees shaking at 25 sec, right knee tracking inward..." style="resize:vertical;"></textarea>
         </div>
       </div>
+        </div>
+      </div>
+      <button class="accordion-next-btn" onclick="openNextStation('section-s09')">Next Station &#8594;</button>
 
+      </div>
       </div>
       <!-- MACHINE STRENGTH -->
       <div class="station-section" id="section-machine">
-      <div class="form-group-title">Machine Strength Profile</div>
+      <div class="accordion-header" onclick="toggleAccordion('section-machine')">
+        <div class="form-group-title">Machine Strength Profile</div>
+        <span class="accordion-score-badge" id="accordion-badge-machine"></span>
+        <span class="accordion-chevron">&#9660;</span>
+      </div>
+      <div class="accordion-body">
       <div class="field-hint" style="margin-bottom:10px;">Target ranges are auto-calculated from bodyweight, age, and gender — entered in Client Information above.</div>
       <div id="machine-bw-warn" style="display:none; margin-bottom:10px; padding:8px 12px; background:rgba(196,98,45,0.1); border-left:3px solid var(--rust); font-family:'Nunito',sans-serif; font-size:11px; color:#4a3f32;">⚠ Enter bodyweight in Client Information above to see target ranges.</div>
 
@@ -2044,17 +2284,25 @@ body {
         <div id="m5-min-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
         <div id="m5-max-display" style="background:var(--input-bg);border:1px dashed rgba(245,240,232,0.15);color:rgba(245,240,232,0.35);font-family:DM Mono,monospace;font-size:11px;padding:7px 6px;width:100%;text-align:center;cursor:default;">—</div>
       </div>
+      <button class="accordion-next-btn" onclick="openNextStation('section-machine')">Next Station &#8594;</button>
 
+      </div>
       </div>
       <!-- STAFF NOTES -->
       <div class="station-section alt" id="section-notes">
-      <div class="form-group-title">Overall Notes</div>
+      <div class="accordion-header" onclick="toggleAccordion('section-notes')">
+        <div class="form-group-title">Overall Notes</div>
+        <span class="accordion-score-badge" id="accordion-badge-notes"></span>
+        <span class="accordion-chevron">&#9660;</span>
+      </div>
+      <div class="accordion-body">
 
       <div class="field">
         <label>Staff observations (shown on report)</label>
         <textarea id="f-notes" rows="3" style="resize:vertical;" placeholder="Any additional clinical observations for the client…"></textarea>
       </div>
 
+      </div>
     </div>
       </div><!-- /sidebar-form -->
 
@@ -3467,6 +3715,7 @@ function render() {
     var el = document.getElementById(pair[0]);
     if (el && el.value === '' && !el.dataset.touched) el.value = pair[1];
   });
+  updateAccordionBadges();
 }
 
 // ── LIVE SCORE PREVIEWS ───────────────────────────────────────────
@@ -4493,6 +4742,13 @@ function scrollToSection(id, tabEl) {
   if (!el || !sidebar) return;
   document.querySelectorAll('.sidebar-nav-tab').forEach(function(t) { t.classList.remove('active'); });
   if (tabEl) tabEl.classList.add('active');
+  // Open accordion if it's a station
+  if (_stationOrder.indexOf(id) !== -1) {
+    _stationOrder.forEach(function(sid) {
+      var s = document.getElementById(sid);
+      if (s) s.classList.toggle('open', sid === id);
+    });
+  }
   var navHeight = document.getElementById('sidebar-nav') ? document.getElementById('sidebar-nav').offsetHeight : 0;
   var headerHeight = document.querySelector('.sidebar-header') ? document.querySelector('.sidebar-header').offsetHeight : 0;
   var offset = el.offsetTop - headerHeight - navHeight - 8;
@@ -4606,6 +4862,64 @@ const dateInput = document.getElementById('f-date');
 if (dateInput) {
   const now = new Date();
   dateInput.value = now.toISOString().split('T')[0];
+}
+
+// ── ACCORDION ───────────────────────────────────────────────────
+var _stationOrder = ['section-s01','section-s02','section-s03','section-s04','section-s05','section-s06','section-s07','section-s08','section-s09','section-machine','section-notes'];
+
+function toggleAccordion(sectionId) {
+  var el = document.getElementById(sectionId);
+  if (!el) return;
+  if (el.classList.contains('open')) {
+    el.classList.remove('open');
+  } else {
+    // Close all others
+    _stationOrder.forEach(function(id) {
+      var s = document.getElementById(id);
+      if (s) s.classList.remove('open');
+    });
+    el.classList.add('open');
+    // Scroll into view
+    setTimeout(function() {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  }
+}
+
+function openNextStation(currentId) {
+  var idx = _stationOrder.indexOf(currentId);
+  if (idx >= 0 && idx < _stationOrder.length - 1) {
+    var nextId = _stationOrder[idx + 1];
+    toggleAccordion(nextId);
+  }
+}
+
+function updateAccordionBadges() {
+  var badges = {
+    's01': document.getElementById('chair-score-val-display'),
+    's02': document.getElementById('stair-score-val-display'),
+    's03': document.getElementById('balance-score-val-display'),
+    's04': document.getElementById('grip-score-val-display'),
+    's05': document.getElementById('sit-score-val-display'),
+    's06': document.getElementById('reach-score-val-display'),
+    's07': document.getElementById('plank-score-val-display'),
+    's08': document.getElementById('squat-score-val-display'),
+    's09': document.getElementById('wall-score-val-display')
+  };
+  Object.keys(badges).forEach(function(key) {
+    var badge = document.getElementById('accordion-badge-' + key);
+    var scoreEl = badges[key];
+    if (badge && scoreEl) {
+      var val = scoreEl.textContent;
+      if (val && val !== '—' && val !== '0') {
+        badge.textContent = val;
+        badge.classList.add('has-score');
+      } else {
+        badge.textContent = '';
+        badge.classList.remove('has-score');
+      }
+    }
+  });
 }
 
 // ── INITIAL RENDER ───────────────────────────────────────────────
