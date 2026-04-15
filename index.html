@@ -1627,7 +1627,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.038</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.039</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -2701,7 +2701,7 @@ function getMachineRows() {
 
 function buildMachineSection() {
   var rows = getMachineRows().filter(function(r) { return r.name && r.val > 0; });
-  if (rows.length === 0) return '';
+  if (rows.length === 0) return '<div class="section" id="rpt-machine" style="display:none;"></div>';
 
   var maxVal = 0;
   rows.forEach(function(r) {
@@ -5546,14 +5546,20 @@ var _stationOrder = ['section-s01','section-s02','section-s03','section-s04','se
 
 function syncReportScroll(sectionId) {
   var rptId = sectionId.replace('section-', 'rpt-');
-  var rptEl = document.getElementById(rptId);
   var pane = document.querySelector('.preview-pane');
-  if (rptEl && pane) {
+  if (!pane) return;
+
+  // Force an immediate render so the report section exists before scrolling
+  clearTimeout(renderTimer);
+  try { render(); } catch(e) { console.error('Render error:', e); }
+
+  var rptEl = document.getElementById(rptId);
+  if (rptEl && rptEl.offsetParent !== null) {
     setTimeout(function() {
       var paneTop = pane.getBoundingClientRect().top;
       var elTop = rptEl.getBoundingClientRect().top;
       pane.scrollTo({ top: pane.scrollTop + (elTop - paneTop), behavior: 'smooth' });
-    }, 100);
+    }, 50);
   }
 }
 
@@ -5683,7 +5689,7 @@ document.querySelector('.sidebar-form').addEventListener('keydown', function(e) 
 render();
 
 // ── SERVICE WORKER ──────────────────────────────────────────────
-var APP_VERSION = '1.038';
+var APP_VERSION = '1.039';
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(function() {
