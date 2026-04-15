@@ -1614,7 +1614,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.031</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.032</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -3053,7 +3053,7 @@ function render() {
   const _testedScores = _allScores.filter(s => s.tested);
   const overallScore  = _testedScores.length > 0 ? Math.round(_testedScores.reduce((a,b) => a + b.score, 0) / _testedScores.length) : 0;
   const prevScores   = [chairPrev, stairPrev, balPrev, gripPrev, sitPrev, reachPrev, plankPrev, squatPrev, wallPrev].filter(v => v !== null);
-  const overallPrev  = prevScores.length === 9 ? Math.round(prevScores.reduce((a,b)=>a+b,0)/9) : null;
+  const overallPrev  = prevScores.length > 0 ? Math.round(prevScores.reduce((a,b)=>a+b,0)/prevScores.length) : null;
 
   // Progress delta HTML helper
   function delta(current, prev) {
@@ -3652,7 +3652,7 @@ function render() {
         <div class="result-station">Your Result</div>
         <div class="result-value">${squatDepthLabel}</div>
         <div style="font-size: 14px; color:var(--muted); margin-top:4px;">
-          Base: ${squatDepthRaw}${squatDeduct > 0 ? ' − ' + squatDeduct + ' pts (' + squatFlags.map(function(f){return f.label;}).join(', ') + ')' : ' · no compensations'} = ${squatScore}
+          Base: ${squatDepthRaw}${squatDeduct > 0 ? ' − ' + squatDeduct + ' pts (' + squatFlags.join(', ') + ')' : ' · no compensations'} = ${squatScore}
         </div>
       </div>
       <div class="score-badge">
@@ -3926,7 +3926,7 @@ function render() {
   </div>
   <div class="closing" style="padding:40px 0 0; border-top:1px solid rgba(26,20,16,0.1); margin-top:40px; display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:24px;">
     <div class="closing-message">
-      Come back in <strong>3 months.</strong> We will retest all five stations. The goal is simple: <strong>a higher score every time</strong> you walk through that door.
+      Come back in <strong>3 months.</strong> We will retest all nine stations. The goal is simple: <strong>a higher score every time</strong> you walk through that door.
     </div>
     <div class="closing-meta">
       <p>${firstName} ${lastName} · Age ${age}<br>The 90s Lab · ${dateStr}<br>Assessed by: ${staff}</p>
@@ -4085,12 +4085,7 @@ function render() {
 
 // ── LIVE SCORE PREVIEWS ───────────────────────────────────────────
 function updateInlinePreviews() {
-  // balance fall risk warn
-  const bL = parseFloat(document.getElementById('f-balance-left')?.value) || 0;
-  const bR = parseFloat(document.getElementById('f-balance-right')?.value) || 0;
-  const best = Math.max(bL, bR);
-  const warn = document.getElementById('balance-warn');
-  if (warn) warn.style.display = best > 0 && best < 10 ? 'block' : 'none';
+  // Fall risk is shown in the report via balHighRisk
 }
 
 // ── DEBOUNCED RENDER ─────────────────────────────────────────────
@@ -4873,11 +4868,18 @@ const FIELDS = [
   'm1-val','m2-val','m3-val','m4-val','m5-val'
 ];
 
+var SQUAT_CHECKBOXES = ['f-squat-arms','f-squat-heels','f-squat-knees','f-squat-lean','f-squat-asym'];
+
 function saveForm() {
   const data = {};
   FIELDS.forEach(id => {
     const el = document.getElementById(id);
     if (el) data[id] = el.value;
+  });
+  // Save squat checkboxes separately (checkboxes use .checked, not .value)
+  SQUAT_CHECKBOXES.forEach(id => {
+    const cb = document.getElementById(id);
+    if (cb) data[id] = cb.checked;
   });
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
@@ -4890,6 +4892,11 @@ function _getFormData() {
   FIELDS.forEach(id => {
     const el = document.getElementById(id);
     if (el) data[id] = el.value;
+  });
+  // Save squat checkboxes (use .checked not .value)
+  SQUAT_CHECKBOXES.forEach(id => {
+    const cb = document.getElementById(id);
+    if (cb) data[id] = cb.checked;
   });
   return data;
 }
@@ -4918,9 +4925,12 @@ function _applyFormData(data) {
       c.classList.toggle('selected', c.getAttribute('data-val') === depth);
     });
   }
-  // Restore squat checkbox UI
-  ['f-squat-arms','f-squat-heels','f-squat-knees','f-squat-lean','f-squat-asym'].forEach(function(id) {
+  // Restore squat checkbox state and UI
+  SQUAT_CHECKBOXES.forEach(function(id) {
     var cb = document.getElementById(id);
+    if (cb && data[id] !== undefined) {
+      cb.checked = (data[id] === true || data[id] === 'true');
+    }
     if (cb && cb.checked) {
       var row = document.getElementById(id.replace('f-squat-','squat-row-'));
       if (row) row.classList.add('checked');
@@ -5448,12 +5458,8 @@ function restoreSession() {
   if (!raw) return;
   try {
     const data = JSON.parse(raw);
-    FIELDS.forEach(id => {
-      const el = document.getElementById(id);
-      if (el && data[id] !== undefined) el.value = data[id];
-    });
+    _applyFormData(data);
     showStatus('Session restored ✓');
-    render();
   } catch(e) {}
 }
 
