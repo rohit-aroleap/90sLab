@@ -1627,7 +1627,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.035</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.036</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -1722,9 +1722,14 @@ body {
 
       <!-- Hidden selects for save/load compatibility -->
       <select id="f-chair-height" style="display:none;">
+        <option value="15">15 cm</option>
         <option value="20">20 cm</option>
+        <option value="25">25 cm</option>
         <option value="30">30 cm</option>
-        <option value="40" selected>40 cm</option>
+        <option value="35">35 cm</option>
+        <option value="40">40 cm</option>
+        <option value="45" selected>45 cm</option>
+        <option value="50">50 cm</option>
       </select>
       <select id="f-chair-lower" style="display:none;">
         <option value="no" selected>No</option>
@@ -1817,9 +1822,14 @@ body {
 
       <!-- Hidden select preserves save/load compatibility -->
       <select id="f-stair-height" style="display:none;">
-        <option value="45">45 cm</option>
+        <option value="15">15 cm</option>
+        <option value="20" selected>20 cm</option>
+        <option value="25">25 cm</option>
+        <option value="30">30 cm</option>
         <option value="35">35 cm</option>
-        <option value="30" selected>30 cm</option>
+        <option value="40">40 cm</option>
+        <option value="45">45 cm</option>
+        <option value="50">50 cm</option>
       </select>
       <select id="f-stair-higher" style="display:none;">
         <option value="no" selected>No</option>
@@ -2765,12 +2775,12 @@ function render() {
   const chairPrev       = val('f-chair-prev') !== '' ? Math.min(100, Math.max(0, num('f-chair-prev'))) : null;
   const chairNotes      = val('f-chair-notes') || '';
   // Functional age bracket implied by lower-height performance
-  const chairHeightNum  = parseInt(chairH) || 40;
-  const chairHasHarderOption = chairHeightNum > 20;
+  const chairHeightNum  = parseInt(chairH) || 45;
+  const chairHasHarderOption = chairHeightNum > 15;
   const chairChallengeHeight = parseInt(val('f-chair-challenge-height')) || null;
   const chairChallengeReps = num('f-chair-challenge-reps') || 0;
   const chairHasChallenge = chairChallengeReps > 0 && chairChallengeHeight !== null;
-  const chairChallengeLabel = chairChallengeHeight === 30 ? 'ages 46–60' : chairChallengeHeight === 20 ? 'ages 10–45' : chairChallengeHeight ? chairChallengeHeight + ' cm' : '';
+  const chairChallengeLabel = chairChallengeHeight ? (chairAgeLabelForHeight(chairChallengeHeight) || chairChallengeHeight + ' cm') : '';
 
   const stairReps          = num('f-stair-reps') || 0;
   const stairEasierHeight  = val('f-stair-easier-height') || '';
@@ -2781,12 +2791,12 @@ function render() {
   const stairScore      = Math.round(Math.min(100, (stairReps / 20) * 100));
   const stairPrev       = val('f-stair-prev') !== '' ? Math.min(100, Math.max(0, num('f-stair-prev'))) : null;
   const stairNotes      = val('f-stair-notes') || '';
-  const stairHeightNum  = parseInt(stairH) || 30;
-  const stairHasHarderOption = stairHeightNum < 45;
+  const stairHeightNum  = parseInt(stairH) || 20;
+  const stairHasHarderOption = stairHeightNum < 50;
   const stairChallengeHeight = parseInt(val('f-stair-challenge-height')) || null;
   const stairChallengeReps = num('f-stair-challenge-reps') || 0;
   const stairHasChallenge  = stairChallengeReps > 0 && stairChallengeHeight !== null;
-  const stairChallengeLabel = stairChallengeHeight === 35 ? 'ages 46–60' : stairChallengeHeight === 45 ? 'ages 10–45' : stairChallengeHeight ? stairChallengeHeight + ' cm' : '';
+  const stairChallengeLabel = stairChallengeHeight ? (stairAgeLabelForHeight(stairChallengeHeight) || stairChallengeHeight + ' cm') : '';
 
   const balAge      = num('f-age') || 30;
   const balBracketIdx = balBracketIndex(balAge);
@@ -4097,16 +4107,57 @@ function updateInlinePreviews() {
 
 // ── DEBOUNCED RENDER ─────────────────────────────────────────────
 let renderTimer;
+// All available heights for chair & stair (15–50 in steps of 5)
+var ALL_HEIGHTS = [15, 20, 25, 30, 35, 40, 45, 50];
+
+// Chair: lower = harder. Age-group default heights.
+var CHAIR_AGE_MAP = [
+  { min:10, max:30, height:20 },
+  { min:31, max:45, height:25 },
+  { min:46, max:55, height:30 },
+  { min:56, max:65, height:35 },
+  { min:66, max:75, height:40 },
+  { min:76, max:999, height:45 }
+];
 function chairHeightForAge(age) {
-  if (age >= 10 && age <= 45) return 20;
-  if (age >= 46 && age <= 60) return 30;
-  return 40;
+  for (var i = 0; i < CHAIR_AGE_MAP.length; i++) {
+    if (age >= CHAIR_AGE_MAP[i].min && age <= CHAIR_AGE_MAP[i].max) return CHAIR_AGE_MAP[i].height;
+  }
+  return 45;
+}
+function chairAgeLabelForHeight(h) {
+  for (var i = 0; i < CHAIR_AGE_MAP.length; i++) {
+    if (CHAIR_AGE_MAP[i].height === h) {
+      var m = CHAIR_AGE_MAP[i];
+      return 'ages ' + m.min + (m.max >= 999 ? '+' : '–' + m.max);
+    }
+  }
+  return '';
 }
 
+// Stair: higher = harder. Age-group default heights.
+var STAIR_AGE_MAP = [
+  { min:10, max:30, height:45 },
+  { min:31, max:45, height:40 },
+  { min:46, max:55, height:35 },
+  { min:56, max:65, height:30 },
+  { min:66, max:75, height:25 },
+  { min:76, max:999, height:20 }
+];
 function stairHeightForAge(age) {
-  if (age >= 10 && age <= 45) return 45;
-  if (age >= 46 && age <= 60) return 35;
-  return 30;
+  for (var i = 0; i < STAIR_AGE_MAP.length; i++) {
+    if (age >= STAIR_AGE_MAP[i].min && age <= STAIR_AGE_MAP[i].max) return STAIR_AGE_MAP[i].height;
+  }
+  return 20;
+}
+function stairAgeLabelForHeight(h) {
+  for (var i = 0; i < STAIR_AGE_MAP.length; i++) {
+    if (STAIR_AGE_MAP[i].height === h) {
+      var m = STAIR_AGE_MAP[i];
+      return 'ages ' + m.min + (m.max >= 999 ? '+' : '–' + m.max);
+    }
+  }
+  return '';
 }
 
 var _lastAgeForChair = null;
@@ -4128,11 +4179,12 @@ function updateChairHeight() {
   var challengeSel = document.getElementById('f-chair-challenge-height');
   if (challengeSel) {
     var curChVal = challengeSel.value;
-    var harderHeights = [20,30,40].filter(function(h) { return h < stdH; });
+    var harderHeights = ALL_HEIGHTS.filter(function(h) { return h < stdH; });
     challengeSel.innerHTML = '';
     harderHeights.forEach(function(h) {
-      var ageLabel = h === 20 ? 'ages 10–45' : h === 30 ? 'ages 46–60' : '';
-      challengeSel.innerHTML += '<option value="' + h + '">' + h + ' cm (' + ageLabel + ')</option>';
+      var ageLabel = chairAgeLabelForHeight(h);
+      var labelStr = h + ' cm' + (ageLabel ? ' (' + ageLabel + ')' : '');
+      challengeSel.innerHTML += '<option value="' + h + '">' + labelStr + '</option>';
     });
     if (curChVal) challengeSel.value = curChVal;
   }
@@ -4140,10 +4192,12 @@ function updateChairHeight() {
   var easierSel = document.getElementById('f-chair-easier-height');
   if (easierSel) {
     var curVal = easierSel.value;
-    var heights = [20,30,40].filter(function(h) { return h > stdH; });
+    var heights = ALL_HEIGHTS.filter(function(h) { return h > stdH; });
     easierSel.innerHTML = '<option value="">— select —</option>';
     heights.forEach(function(h) {
-      easierSel.innerHTML += '<option value="' + h + '">' + h + ' cm</option>';
+      var ageLabel = chairAgeLabelForHeight(h);
+      var labelStr = h + ' cm' + (ageLabel ? ' (' + ageLabel + ')' : '');
+      easierSel.innerHTML += '<option value="' + h + '">' + labelStr + '</option>';
     });
     if (curVal) easierSel.value = curVal;
   }
@@ -4154,8 +4208,8 @@ function updateChairFlow() {
   var repsEl = document.getElementById('f-chair-reps');
   var reps = parseInt(repsEl ? repsEl.value : '') || 0;
   var hasRepsInput = repsEl && repsEl.value !== '';
-  var stdH = parseInt(document.getElementById('f-chair-height').value) || 40;
-  var challengeH = stdH > 20; // any height above 20 has a harder (lower) option
+  var stdH = parseInt(document.getElementById('f-chair-height').value) || 45;
+  var challengeH = stdH > 15; // any height above 15 has a harder (lower) option
 
   var challengeCard = document.getElementById('chair-challenge-card');
   var easierLink = document.getElementById('chair-easier-link');
@@ -4208,18 +4262,19 @@ function updateStairHeight() {
     stairEl.value = stairHeightForAge(age);
   }
   // Update visible labels
-  var stdH = parseInt(stairEl.value) || 30;
+  var stdH = parseInt(stairEl.value) || 20;
   var lbl = document.getElementById('stair-standard-height-label');
   if (lbl) lbl.textContent = stdH;
   // Populate challenge height options (heights ABOVE standard = harder for stair)
   var challengeSel = document.getElementById('f-stair-challenge-height');
   if (challengeSel) {
     var curChVal = challengeSel.value;
-    var harderHeights = [45,35,30].filter(function(h) { return h > stdH; });
+    var harderHeights = ALL_HEIGHTS.filter(function(h) { return h > stdH; });
     challengeSel.innerHTML = '';
     harderHeights.forEach(function(h) {
-      var ageLabel = h === 45 ? 'ages 10–45' : h === 35 ? 'ages 46–60' : '';
-      challengeSel.innerHTML += '<option value="' + h + '">' + h + ' cm (' + ageLabel + ')</option>';
+      var ageLabel = stairAgeLabelForHeight(h);
+      var labelStr = h + ' cm' + (ageLabel ? ' (' + ageLabel + ')' : '');
+      challengeSel.innerHTML += '<option value="' + h + '">' + labelStr + '</option>';
     });
     if (curChVal) challengeSel.value = curChVal;
   }
@@ -4227,10 +4282,12 @@ function updateStairHeight() {
   var easierSel = document.getElementById('f-stair-easier-height');
   if (easierSel) {
     var curVal = easierSel.value;
-    var heights = [45,35,30,20].filter(function(h) { return h < stdH; });
+    var heights = ALL_HEIGHTS.filter(function(h) { return h < stdH; });
     easierSel.innerHTML = '<option value="">— select —</option>';
     heights.forEach(function(h) {
-      easierSel.innerHTML += '<option value="' + h + '">' + h + ' cm</option>';
+      var ageLabel = stairAgeLabelForHeight(h);
+      var labelStr = h + ' cm' + (ageLabel ? ' (' + ageLabel + ')' : '');
+      easierSel.innerHTML += '<option value="' + h + '">' + labelStr + '</option>';
     });
     if (curVal) easierSel.value = curVal;
   }
@@ -4241,8 +4298,8 @@ function updateStairFlow() {
   var repsEl = document.getElementById('f-stair-reps');
   var reps = parseInt(repsEl ? repsEl.value : '') || 0;
   var hasRepsInput = repsEl && repsEl.value !== '';
-  var stdH = parseInt(document.getElementById('f-stair-height').value) || 30;
-  var challengeH = stdH < 45; // any height below 45 has a harder (higher) option
+  var stdH = parseInt(document.getElementById('f-stair-height').value) || 20;
+  var challengeH = stdH < 50; // any height below 50 has a harder (higher) option
 
   var challengeCard = document.getElementById('stair-challenge-card');
   var easierLink = document.getElementById('stair-easier-link');
