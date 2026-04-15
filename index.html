@@ -1614,7 +1614,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.033</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.034</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -1733,11 +1733,11 @@ body {
       <div id="chair-challenge-card" style="display:none; margin-top:10px; padding:10px 14px; background:rgba(74,140,92,0.08); border:1.5px solid rgba(74,140,92,0.3); border-left:3px solid var(--green); border-radius:8px;">
         <div style="font-family:'Nunito',sans-serif; font-size:9px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--green); margin-bottom:6px;">&#127942; Maxed out! Try the challenge level</div>
         <div style="display:flex; gap:8px; align-items:flex-end;">
-          <div style="flex:1;">
+          <div class="field" style="flex:1; margin:0;">
             <label>Challenge chair height</label>
             <select id="f-chair-challenge-height"></select>
           </div>
-          <div style="flex:1;">
+          <div class="field" style="flex:1; margin:0;">
             <label>Reps at challenge height</label>
             <input type="number" inputmode="numeric" id="f-chair-challenge-reps" min="0" max="20" placeholder="0–20">
           </div>
@@ -1752,13 +1752,13 @@ body {
       <div id="chair-easier-card" style="display:none; margin-top:10px; padding:10px 14px; background:rgba(201,168,76,0.08); border:1.5px solid rgba(201,168,76,0.3); border-left:3px solid var(--amber); border-radius:8px;">
         <div style="font-family:'Nunito',sans-serif; font-size:9px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--amber); margin-bottom:6px;">Baseline — easier level</div>
         <div style="display:flex; gap:8px; align-items:flex-end;">
-          <div style="flex:1;">
+          <div class="field" style="flex:1; margin:0;">
             <label>Chair height</label>
             <select id="f-chair-easier-height">
               <option value="">— select —</option>
             </select>
           </div>
-          <div style="flex:1;">
+          <div class="field" style="flex:1; margin:0;">
             <label>Reps completed</label>
             <input type="number" inputmode="numeric" id="f-chair-easier-reps" min="0" max="20" placeholder="0–20">
           </div>
@@ -1828,11 +1828,11 @@ body {
       <div id="stair-challenge-card" style="display:none; margin-top:10px; padding:10px 14px; background:rgba(74,140,92,0.08); border:1.5px solid rgba(74,140,92,0.3); border-left:3px solid var(--green); border-radius:8px;">
         <div style="font-family:'Nunito',sans-serif; font-size:9px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--green); margin-bottom:6px;">&#127942; Maxed out! Try the challenge level</div>
         <div style="display:flex; gap:8px; align-items:flex-end;">
-          <div style="flex:1;">
+          <div class="field" style="flex:1; margin:0;">
             <label>Challenge step height</label>
             <select id="f-stair-challenge-height"></select>
           </div>
-          <div style="flex:1;">
+          <div class="field" style="flex:1; margin:0;">
             <label>Reps at challenge height</label>
             <input type="number" inputmode="numeric" id="f-stair-challenge-reps" min="0" max="20" placeholder="0–20">
           </div>
@@ -1847,13 +1847,13 @@ body {
       <div id="stair-easier-card" style="display:none; margin-top:10px; padding:10px 14px; background:rgba(201,168,76,0.08); border:1.5px solid rgba(201,168,76,0.3); border-left:3px solid var(--amber); border-radius:8px;">
         <div style="font-family:'Nunito',sans-serif; font-size:9px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--amber); margin-bottom:6px;">Baseline — easier level</div>
         <div style="display:flex; gap:8px; align-items:flex-end;">
-          <div style="flex:1;">
+          <div class="field" style="flex:1; margin:0;">
             <label>Step height</label>
             <select id="f-stair-easier-height">
               <option value="">— select —</option>
             </select>
           </div>
-          <div style="flex:1;">
+          <div class="field" style="flex:1; margin:0;">
             <label>Reps completed</label>
             <input type="number" inputmode="numeric" id="f-stair-easier-reps" min="0" max="20" placeholder="0–20">
           </div>
@@ -1946,7 +1946,7 @@ body {
           <div class="field field-row">
             <div>
               <div style="display:flex;gap:8px;align-items:flex-end;">
-                <div style="flex:1;">
+                <div class="field" style="flex:1; margin:0;">
                   <label>Left leg (sec)</label>
                   <input type="number" inputmode="numeric" id="f-balance-challenge-left" min="0" max="30" placeholder="0–30 sec">
                 </div>
@@ -1955,7 +1955,7 @@ body {
             </div>
             <div>
               <div style="display:flex;gap:8px;align-items:flex-end;">
-                <div style="flex:1;">
+                <div class="field" style="flex:1; margin:0;">
                   <label>Right leg (sec)</label>
                   <input type="number" inputmode="numeric" id="f-balance-challenge-right" min="0" max="30" placeholder="0–30 sec">
                 </div>
@@ -1992,7 +1992,7 @@ body {
           <div class="field field-row">
             <div>
               <div style="display:flex;gap:8px;align-items:flex-end;">
-                <div style="flex:1;">
+                <div class="field" style="flex:1; margin:0;">
                   <label>Left leg (sec)</label>
                   <input type="number" inputmode="numeric" id="f-balance-easier-left" min="0" max="30" placeholder="0–30 sec">
                 </div>
@@ -2001,7 +2001,7 @@ body {
             </div>
             <div>
               <div style="display:flex;gap:8px;align-items:flex-end;">
-                <div style="flex:1;">
+                <div class="field" style="flex:1; margin:0;">
                   <label>Right leg (sec)</label>
                   <input type="number" inputmode="numeric" id="f-balance-easier-right" min="0" max="30" placeholder="0–30 sec">
                 </div>
