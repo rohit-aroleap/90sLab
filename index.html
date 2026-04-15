@@ -1614,7 +1614,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.030</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.031</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -2503,7 +2503,6 @@ body {
     </div>
     <div style="display:flex;gap:8px;padding:0 32px 8px;">
       <button class="btn-secondary" style="flex:1;margin:0;" onclick="exportCSV()">📊 Export CSV</button>
-      <button class="btn-secondary" style="flex:1;margin:0;" onclick="emailReport()">📧 Email Report</button>
     </div>
     <div id="save-status" style="text-align:center;font-size:10px;color:#8a7968;padding:0 32px 24px;letter-spacing:0.1em;"></div>
 
@@ -5210,161 +5209,6 @@ function exportCSV() {
     });
 }
 
-// ── EMAIL REPORT ────────────────────────────────────────────────
-function emailReport() {
-  var firstName = val('f-firstname').trim();
-  var lastName = val('f-lastname').trim();
-  var clientName = (firstName + ' ' + lastName).trim() || 'Client';
-  var date = val('f-date') || new Date().toISOString().split('T')[0];
-  var age = val('f-age') || '—';
-  var gender = val('f-gender') || '—';
-  var staff = val('f-staff') || '—';
-
-  if (!firstName && !lastName) {
-    showStatus('Enter client name first');
-    return;
-  }
-
-  var subject = 'The 90s Lab - Assessment Report - ' + clientName + ' - ' + date;
-
-  var lines = [];
-  lines.push('THE 90s LAB — FITNESS ASSESSMENT REPORT');
-  lines.push('========================================');
-  lines.push('');
-  lines.push('Client: ' + clientName);
-  lines.push('Age: ' + age + '  |  Gender: ' + (gender === 'male' ? 'Male' : gender === 'female' ? 'Female' : gender));
-  lines.push('Date: ' + date + '  |  Staff: ' + staff);
-  lines.push('');
-  lines.push('----------------------------------------');
-  lines.push('STATION RESULTS');
-  lines.push('----------------------------------------');
-
-  // Station 1: Sit-to-Stand
-  var chairReps = val('f-chair-reps');
-  if (chairReps) {
-    lines.push('');
-    lines.push('1. SIT-TO-STAND (Chair)');
-    lines.push('   Height: ' + (val('f-chair-height') || '40') + 'cm  |  Reps: ' + chairReps + '/20');
-    var chairScore = Math.round(Math.min(100, (parseInt(chairReps) / 20) * 100));
-    lines.push('   Score: ' + chairScore + '/100');
-  }
-
-  // Station 2: Stair Climb
-  var stairReps = val('f-stair-reps');
-  if (stairReps) {
-    lines.push('');
-    lines.push('2. STAIR CLIMB');
-    lines.push('   Height: ' + (val('f-stair-height') || '30') + 'cm  |  Reps: ' + stairReps + '/20');
-    var stairScore = Math.round(Math.min(100, (parseInt(stairReps) / 20) * 100));
-    lines.push('   Score: ' + stairScore + '/100');
-  }
-
-  // Station 3: Balance
-  var balL = val('f-balance-left'), balR = val('f-balance-right'), balB = val('f-balance-both');
-  if (balL || balR || balB) {
-    lines.push('');
-    lines.push('3. BALANCE / WALK IN DARK');
-    if (balL) lines.push('   Left: ' + balL + 's');
-    if (balR) lines.push('   Right: ' + balR + 's');
-    if (balB) lines.push('   Both: ' + balB + 's');
-  }
-
-  // Station 4: Grip Strength
-  var gr1 = val('f-grip-right-1'), gr2 = val('f-grip-right-2');
-  var gl1 = val('f-grip-left-1'), gl2 = val('f-grip-left-2');
-  if (gr1 || gr2 || gl1 || gl2) {
-    lines.push('');
-    lines.push('4. GRIP STRENGTH');
-    var bestR = Math.max(parseFloat(gr1) || 0, parseFloat(gr2) || 0);
-    var bestL = Math.max(parseFloat(gl1) || 0, parseFloat(gl2) || 0);
-    lines.push('   Right (best): ' + bestR + ' kg  |  Left (best): ' + bestL + ' kg');
-  }
-
-  // Station 5: Sit & Reach
-  var sitL = val('f-sit-left'), sitR = val('f-sit-right');
-  if (sitL || sitR) {
-    lines.push('');
-    lines.push('5. SIT & REACH');
-    if (sitL) lines.push('   Left: ' + sitL + ' cm');
-    if (sitR) lines.push('   Right: ' + sitR + ' cm');
-  }
-
-  // Station 6: Shoulder Reach
-  var reachL = val('f-reach-left'), reachR = val('f-reach-right');
-  if (reachL || reachR) {
-    lines.push('');
-    lines.push('6. SCRATCH BACK (Shoulder Reach)');
-    if (reachL) lines.push('   Left: ' + reachL + ' cm');
-    if (reachR) lines.push('   Right: ' + reachR + ' cm');
-  }
-
-  // Station 7: Plank
-  var plankSecs = val('f-plank-secs');
-  if (plankSecs) {
-    lines.push('');
-    lines.push('7. PLANK');
-    lines.push('   Duration: ' + plankSecs + 's');
-    var plankScore = Math.round(Math.min(100, (parseInt(plankSecs) / 120) * 100));
-    lines.push('   Score: ' + plankScore + '/100');
-  }
-
-  // Station 8: Overhead Squat
-  var sqDepth = val('f-squat-depth');
-  if (sqDepth && sqDepth !== '-1') {
-    lines.push('');
-    lines.push('8. OVERHEAD SQUAT');
-    var depthLabels = { '1': 'Above parallel', '2': 'Parallel', '3': 'Below parallel' };
-    lines.push('   Depth: ' + (depthLabels[sqDepth] || sqDepth));
-    var checks = [];
-    if (document.getElementById('f-squat-arms') && document.getElementById('f-squat-arms').checked) checks.push('Arms fall forward');
-    if (document.getElementById('f-squat-heels') && document.getElementById('f-squat-heels').checked) checks.push('Heels rise');
-    if (document.getElementById('f-squat-knees') && document.getElementById('f-squat-knees').checked) checks.push('Knees cave in');
-    if (document.getElementById('f-squat-lean') && document.getElementById('f-squat-lean').checked) checks.push('Excessive lean');
-    if (document.getElementById('f-squat-asym') && document.getElementById('f-squat-asym').checked) checks.push('Asymmetry');
-    if (checks.length) lines.push('   Compensations: ' + checks.join(', '));
-  }
-
-  // Station 9: Wall Squat
-  var wallSecs = val('f-wall-secs');
-  if (wallSecs) {
-    lines.push('');
-    lines.push('9. WALL SQUAT');
-    lines.push('   Duration: ' + wallSecs + 's');
-    var wallScore = Math.round(Math.min(100, (parseInt(wallSecs) / 120) * 100));
-    lines.push('   Score: ' + wallScore + '/100');
-  }
-
-  // Machine Strength
-  var m1 = val('m1-val'), m2 = val('m2-val'), m3 = val('m3-val');
-  if (m1 || m2 || m3) {
-    lines.push('');
-    lines.push('----------------------------------------');
-    lines.push('MACHINE STRENGTH');
-    lines.push('----------------------------------------');
-    if (m1) lines.push('   Bicep Curl: ' + m1 + ' kg');
-    if (m2) lines.push('   Tricep Ext: ' + m2 + ' kg');
-    if (m3) lines.push('   Lat Pull:   ' + m3 + ' kg');
-    var m4 = val('m4-val'), m5 = val('m5-val');
-    if (m4) lines.push('   Chest Press: ' + m4 + ' kg');
-    if (m5) lines.push('   Leg Press:   ' + m5 + ' kg');
-  }
-
-  lines.push('');
-  lines.push('----------------------------------------');
-  lines.push('');
-  lines.push('This is a summary of your assessment at The 90s Lab.');
-  lines.push('For your full visual report, please see the attached PDF.');
-  lines.push('');
-  lines.push('— The 90s Lab | Aging Gracefully');
-
-  var body = lines.join('\n');
-  // Try Gmail compose in new tab (most reliable), fall back to mailto
-  var gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1'
-    + '&su=' + encodeURIComponent(subject)
-    + '&body=' + encodeURIComponent(body);
-  window.open(gmailUrl, '_blank');
-  showStatus('Gmail opened — attach your PDF and send ✓');
-}
 
 // Required fields per station — at least one must be filled to count as "started"
 var stationRequiredFields = {
