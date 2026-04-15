@@ -1627,7 +1627,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.039</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.040</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -2701,7 +2701,7 @@ function getMachineRows() {
 
 function buildMachineSection() {
   var rows = getMachineRows().filter(function(r) { return r.name && r.val > 0; });
-  if (rows.length === 0) return '<div class="section" id="rpt-machine" style="display:none;"></div>';
+  if (rows.length === 0) return '<div class="section" id="rpt-machine" style="background:var(--paper);"><div class="section-number">Machine Strength</div><div class="section-title">Strength<br><em>profile</em></div><p style="font-family:Nunito,sans-serif;font-size:13px;color:var(--muted);margin-top:16px;">Enter machine weights on the left to see the strength profile here.</p></div>';
 
   var maxVal = 0;
   rows.forEach(function(r) {
@@ -5553,11 +5553,14 @@ function syncReportScroll(sectionId) {
   clearTimeout(renderTimer);
   try { render(); } catch(e) { console.error('Render error:', e); }
 
+  // Re-query after render (render replaces innerHTML)
   var rptEl = document.getElementById(rptId);
-  if (rptEl && rptEl.offsetParent !== null) {
+  if (rptEl) {
     setTimeout(function() {
+      var fresh = document.getElementById(rptId);
+      if (!fresh) return;
       var paneTop = pane.getBoundingClientRect().top;
-      var elTop = rptEl.getBoundingClientRect().top;
+      var elTop = fresh.getBoundingClientRect().top;
       pane.scrollTo({ top: pane.scrollTop + (elTop - paneTop), behavior: 'smooth' });
     }, 50);
   }
@@ -5689,7 +5692,7 @@ document.querySelector('.sidebar-form').addEventListener('keydown', function(e) 
 render();
 
 // ── SERVICE WORKER ──────────────────────────────────────────────
-var APP_VERSION = '1.039';
+var APP_VERSION = '1.040';
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(function() {
