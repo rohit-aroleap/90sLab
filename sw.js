@@ -1,4 +1,4 @@
-var CACHE_NAME = '90slab-v1.036';
+var CACHE_NAME = '90slab-v1.037';
 var ASSETS = [
   '/',
   '/index.html'
@@ -53,6 +53,11 @@ self.addEventListener('fetch', function(event) {
   if (url.hostname.indexOf('gstatic.com') !== -1 ||
       url.hostname.indexOf('googleapis.com') !== -1 ||
       url.hostname.indexOf('firebase') !== -1) {
+    return;
+  }
+
+  // Never cache sw.js itself (version check fetches it)
+  if (url.pathname.endsWith('/sw.js')) {
     return;
   }
 

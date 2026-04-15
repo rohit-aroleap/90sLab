@@ -1627,7 +1627,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.036</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.037</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -5683,36 +5683,31 @@ document.querySelector('.sidebar-form').addEventListener('keydown', function(e) 
 render();
 
 // ── SERVICE WORKER ──────────────────────────────────────────────
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').then(function(reg) {
-    // Check for updates every 5 minutes
-    setInterval(function() { reg.update(); }, 5 * 60 * 1000);
+var APP_VERSION = '1.037';
 
-    // When a new SW is found installing, watch it
-    reg.addEventListener('updatefound', function() {
-      var newWorker = reg.installing;
-      if (!newWorker) return;
-      newWorker.addEventListener('statechange', function() {
-        // New SW is active and there's already a controller (not first install)
-        if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
-          showUpdateBanner();
-        }
-      });
-    });
-  }).catch(function() {
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(function() {
     // SW registration may fail on file:// or localhost — that's fine
   });
-
-  // Also catch when a new SW takes over via skipWaiting + clients.claim
-  navigator.serviceWorker.addEventListener('controllerchange', function() {
-    showUpdateBanner();
-  });
 }
 
-function showUpdateBanner() {
-  var banner = document.getElementById('update-banner');
-  if (banner) banner.style.display = '';
+// ── VERSION CHECK — poll sw.js for newer version ────────────────
+function checkForUpdate() {
+  fetch('/sw.js?_t=' + Date.now(), { cache: 'no-store' })
+    .then(function(r) { return r.text(); })
+    .then(function(txt) {
+      var m = txt.match(/90slab-v([\d.]+)/);
+      if (m && m[1] !== APP_VERSION) {
+        var banner = document.getElementById('update-banner');
+        if (banner) banner.style.display = '';
+      }
+    })
+    .catch(function() { /* offline or fetch failed — ignore */ });
 }
+
+// First check after 10 seconds (gives page time to settle), then every 3 minutes
+setTimeout(checkForUpdate, 10000);
+setInterval(checkForUpdate, 3 * 60 * 1000);
 </script>
 
 <!-- ══════════════════════ CLIENT MODAL ══════════════════════ -->
