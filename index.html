@@ -1606,19 +1606,6 @@ body {
 </head>
 <body>
 
-<!-- Update available banner -->
-<div id="update-banner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:99999; background:linear-gradient(135deg,#1a1410 0%,#2a2218 100%); color:#f5f0e8; font-family:'Nunito',sans-serif; padding:12px 20px; text-align:center; box-shadow:0 2px 12px rgba(0,0,0,0.3); animation:slideDown 0.4s ease-out;">
-  <div style="display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap;">
-    <span style="font-size:13px;">&#10024; A newer version is available!</span>
-    <button onclick="hardRefresh();" style="background:#c4622d; color:#fff; border:none; border-radius:6px; padding:6px 18px; font-family:'Nunito',sans-serif; font-size:12px; font-weight:600; cursor:pointer; transition:background 0.15s;">Refresh now</button>
-    <button onclick="document.getElementById('update-banner').style.display='none';" style="background:transparent; color:rgba(245,240,232,0.5); border:1px solid rgba(245,240,232,0.2); border-radius:6px; padding:6px 12px; font-family:'Nunito',sans-serif; font-size:11px; cursor:pointer;">Later</button>
-  </div>
-</div>
-<style>
-@keyframes slideDown { from { transform:translateY(-100%); opacity:0; } to { transform:translateY(0); opacity:1; } }
-#update-banner button:first-of-type:hover { background:#d4722d !important; }
-</style>
-
 <div class="app-shell">
 
   <!-- ══════════════════════ SIDEBAR FORM ══════════════════════ -->
@@ -1627,7 +1614,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.043</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.044</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -5692,57 +5679,11 @@ document.querySelector('.sidebar-form').addEventListener('keydown', function(e) 
 render();
 
 // ── SERVICE WORKER ──────────────────────────────────────────────
-var APP_VERSION = '1.043';
-
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(function() {
     // SW registration may fail on file:// or localhost — that's fine
   });
 }
-
-// ── VERSION CHECK — poll version.txt for newer version ──────────
-var _updateFound = false;
-var _versionInterval = null;
-
-function checkForUpdate() {
-  if (_updateFound) return;
-  fetch('/version.txt?_v=' + Date.now(), { cache: 'no-store' })
-    .then(function(r) { return r.text(); })
-    .then(function(txt) {
-      var serverVersion = txt.trim();
-      if (serverVersion && serverVersion !== APP_VERSION) {
-        _updateFound = true;
-        if (_versionInterval) clearInterval(_versionInterval);
-        console.log('[update] New version available: ' + serverVersion + ' (current: ' + APP_VERSION + ')');
-        var banner = document.getElementById('update-banner');
-        if (banner) banner.style.display = '';
-      }
-    })
-    .catch(function() { /* offline or fetch failed — ignore */ });
-}
-
-function hardRefresh() {
-  // Clear all SW caches, unregister SW, then reload
-  if ('caches' in window) {
-    caches.keys().then(function(names) {
-      return Promise.all(names.map(function(n) { return caches.delete(n); }));
-    }).then(function() {
-      if (navigator.serviceWorker) {
-        return navigator.serviceWorker.getRegistrations().then(function(regs) {
-          return Promise.all(regs.map(function(r) { return r.unregister(); }));
-        });
-      }
-    }).then(function() {
-      window.location.href = window.location.pathname + '?_v=' + Date.now();
-    });
-  } else {
-    window.location.href = window.location.pathname + '?_v=' + Date.now();
-  }
-}
-
-// First check after 5 seconds, then every 30 seconds
-setTimeout(checkForUpdate, 5000);
-_versionInterval = setInterval(checkForUpdate, 30 * 1000);
 </script>
 
 <!-- ══════════════════════ CLIENT MODAL ══════════════════════ -->
