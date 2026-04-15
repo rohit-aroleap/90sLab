@@ -1614,7 +1614,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.032</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.033</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -1726,10 +1726,7 @@ body {
 
       <div class="field">
         <label>Reps completed (out of 20)</label>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <input type="number" inputmode="numeric" id="f-chair-reps" min="0" max="20" placeholder="0–20" style="flex:1;">
-          <button class="timer-btn" onclick="toggleTimer(this,'f-chair-reps')" style="white-space:nowrap;">&#9654; Start</button>
-        </div>
+        <input type="number" inputmode="numeric" id="f-chair-reps" min="0" max="20" placeholder="0–20">
       </div>
 
       <!-- CHALLENGE LEVEL — shown when reps = 20 (lower height = harder for chair) -->
@@ -1824,10 +1821,7 @@ body {
 
       <div class="field">
         <label>Reps completed (out of 20)</label>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <input type="number" inputmode="numeric" id="f-stair-reps" min="0" max="20" placeholder="0–20" style="flex:1;">
-          <button class="timer-btn" onclick="toggleTimer(this,'f-stair-reps')" style="white-space:nowrap;">&#9654; Start</button>
-        </div>
+        <input type="number" inputmode="numeric" id="f-stair-reps" min="0" max="20" placeholder="0–20">
       </div>
 
       <!-- CHALLENGE LEVEL — shown when reps = 20 -->
