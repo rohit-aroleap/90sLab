@@ -1614,7 +1614,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.029</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.030</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -4302,26 +4302,13 @@ function toggleSquatFlag(rowEl, inputId) {
 }
 
 function scheduleRender() {
-  updateInlinePreviews();
-  updateMachineTargets();
-  updateChairHeight();
-  updateStairHeight();
-  updateBalanceUI();
-  updateChairScorePreview();
-  updateStairScorePreview();
-  updateBalScorePreview();
-  updateGripScorePreview();
-  updateSitScorePreview();
-  updateReachScorePreview();
-  updatePlankScorePreview();
-  updateSquatScorePreview();
-  updateWallScorePreview();
-  updateProgress();
+  var _fns = [updateInlinePreviews, updateMachineTargets, updateChairHeight, updateStairHeight, updateBalanceUI, updateChairScorePreview, updateStairScorePreview, updateBalScorePreview, updateGripScorePreview, updateSitScorePreview, updateReachScorePreview, updatePlankScorePreview, updateSquatScorePreview, updateWallScorePreview, updateProgress];
+  _fns.forEach(function(fn) { try { fn(); } catch(e) { console.error('scheduleRender error in ' + fn.name + ':', e); } });
   clearTimeout(renderTimer);
   var updEl = document.getElementById('preview-updating');
   if (updEl) updEl.style.display = '';
   renderTimer = setTimeout(function() {
-    render();
+    try { render(); } catch(e) { console.error('Render error:', e); }
     if (updEl) updEl.style.display = 'none';
   }, 220);
 }
@@ -4499,7 +4486,11 @@ function updateBalanceFlow() {
   // Auto-sync hidden f-balance-harder for backward compat
   var harderSel = document.getElementById('f-balance-harder');
   if (harderSel) {
-    harderSel.value = hasSavedChallenge ? 'yes' : 'no';
+    var cL2 = document.getElementById('f-balance-challenge-left');
+    var cR2 = document.getElementById('f-balance-challenge-right');
+    var cB2 = document.getElementById('f-balance-challenge-both');
+    var challengeHasData = (cL2 && cL2.value !== '') || (cR2 && cR2.value !== '') || (cB2 && cB2.value !== '');
+    harderSel.value = challengeHasData ? 'yes' : 'no';
   }
 }
 
