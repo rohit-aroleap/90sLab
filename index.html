@@ -1614,7 +1614,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.048</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.049</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -5038,6 +5038,8 @@ function executeClear(source) {
     if (banner) banner.remove();
     _saveBlocked = false;
   }
+  _autoSaveDocId = null;
+  clearTimeout(_autoSaveTimer);
   _resetFormState();
   render();
   showUndoToast();
@@ -5233,6 +5235,51 @@ function saveToCloud() {
     });
 }
 
+// ── AUTO-SAVE TO CLOUD ──────────────────────────────────────────
+var _autoSaveDocId = null;
+var _autoSaveTimer = null;
+
+function autoSaveToCloud() {
+  if (_saveBlocked) return;
+  var firstName = val('f-firstname').trim();
+  if (!firstName) return; // Need at least a first name before auto-saving
+
+  var lastName = val('f-lastname').trim();
+  var clientName = (firstName + ' ' + lastName).trim();
+  var date = val('f-date') || new Date().toISOString().split('T')[0];
+  var docId = (clientName + '-' + date).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+  // Track the current doc ID so we know when it changes
+  _autoSaveDocId = docId;
+
+  var data = _getFormData();
+  var clientDoc = {
+    name: clientName,
+    firstName: firstName,
+    lastName: lastName,
+    age: val('f-age'),
+    gender: val('f-gender'),
+    date: date,
+    staff: val('f-staff'),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    fields: data
+  };
+
+  db.collection('assessments').doc(docId).set(clientDoc, { merge: true })
+    .then(function() {
+      showStatus('Auto-saved ✓');
+    })
+    .catch(function(err) {
+      console.error('Auto-save error:', err);
+    });
+}
+
+function debouncedAutoSave() {
+  if (_saveBlocked) return;
+  clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = setTimeout(autoSaveToCloud, 3000);
+}
+
 function loadFromCloud(docId) {
   if (!docId) return;
   showStatus('Loading…');
@@ -5241,6 +5288,7 @@ function loadFromCloud(docId) {
       if (!doc.exists) { showStatus('Client not found'); return; }
       var data = doc.data();
       _resetFormState();
+      _autoSaveDocId = docId; // Track loaded client for auto-save
       _applyFormData(data.fields);
       document.querySelectorAll('textarea[id$="-rec"]').forEach(function(el) {
         if (el.value !== '') el.dataset.touched = '1';
@@ -5676,8 +5724,8 @@ function _guardedSave() {
   saveForm();
 }
 document.querySelectorAll('input, select, textarea').forEach(el => {
-  el.addEventListener('change', _guardedSave);
-  el.addEventListener('input', debouncedSave);
+  el.addEventListener('change', function() { _guardedSave(); debouncedAutoSave(); });
+  el.addEventListener('input', function() { debouncedSave(); debouncedAutoSave(); });
 });
 
 // Auto-load on page open
