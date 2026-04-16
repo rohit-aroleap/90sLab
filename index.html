@@ -1614,7 +1614,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.047</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.048</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -4919,6 +4919,12 @@ document.querySelectorAll('input, select, textarea').forEach(el => {
 // so auto-populate doesn't overwrite cleared fields
 document.querySelectorAll('textarea[id$="-rec"]').forEach(el => {
   el.addEventListener('input', function() { this.dataset.touched = '1'; });
+});
+
+// Prevent scroll wheel from changing number input values
+// (scrolling the sidebar while cursor is over a number field changes its value)
+document.querySelectorAll('input[type="number"]').forEach(function(el) {
+  el.addEventListener('wheel', function(e) { e.preventDefault(); }, { passive: false });
 });
 
 
