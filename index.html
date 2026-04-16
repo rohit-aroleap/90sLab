@@ -1614,7 +1614,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.046</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.047</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -5538,11 +5538,14 @@ function updateProgress() {
   if (pctEl)   pctEl.textContent = pct + '%';
 
   // Lock client info fields once any station has data
+  // But never lock the currently focused field (prevents blocking mid-typing)
   var clientFields = ['f-firstname','f-lastname','f-date','f-staff'];
   var anyFilled = filled > 0;
+  var activeId = document.activeElement ? document.activeElement.id : '';
   clientFields.forEach(function(fid) {
     var el = document.getElementById(fid);
     if (!el) return;
+    if (fid === activeId) return; // skip — user is actively editing this field
     if (anyFilled && el.value) {
       el.readOnly = el.tagName === 'INPUT';
       if (el.tagName === 'SELECT') el.style.pointerEvents = 'none';
