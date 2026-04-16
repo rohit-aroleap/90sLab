@@ -1656,7 +1656,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.050</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.051</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -2550,7 +2550,7 @@ body {
       </div><!-- /sidebar-form -->
 
     <div style="display:flex;gap:8px;padding:0 28px 12px;">
-      <button class="btn-print" style="flex:1;margin:0;" onclick="if(checkBeforePrint()) window.print()">🖨 Print</button>
+      <button class="btn-print" style="flex:1;margin:0;" onclick="autoStopTimer();if(checkBeforePrint()) window.print()">🖨 Print</button>
       <button class="btn-print" id="btn-pdf" style="flex:1;margin:0;" onclick="downloadPDF()">📥 Save as PDF</button>
     </div>
     <div style="display:flex;gap:8px;padding:0 32px 8px;">
@@ -5003,6 +5003,7 @@ function checkBeforePrint() {
 // Sets the page title to the client name so browser's "Save as PDF"
 // suggests the right filename, then opens print dialog
 function downloadPDF() {
+  autoStopTimer();
   if (!checkBeforePrint()) return;
   var firstName = val('f-firstname') || 'Client';
   var lastName = val('f-lastname') || '';
@@ -5283,6 +5284,7 @@ function _applyFormData(data) {
 }
 
 function saveToCloud() {
+  autoStopTimer();
   if (!validateBeforeSave()) return;
   var firstName = val('f-firstname').trim();
   var lastName = val('f-lastname').trim();
@@ -5853,6 +5855,31 @@ function updateTimerDisplay() {
   if (display) display.textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
 }
 
+// Auto-start timer on first station field input
+var _stationFieldIds = (function() {
+  var ids = [];
+  ['section-s01','section-s02','section-s03','section-s04','section-s05',
+   'section-s06','section-s07','section-s08','section-s09','section-machine'].forEach(function(sec) {
+    var fields = stationRequiredFields[sec];
+    if (fields) fields.forEach(function(id) { ids.push(id); });
+  });
+  return ids;
+})();
+
+function maybeAutoStartTimer(fieldId) {
+  // If timer is already running or already has elapsed time, do nothing
+  if (_timerInterval || _timerElapsed > 0) return;
+  // Only auto-start when a station field gets data
+  if (_stationFieldIds.indexOf(fieldId) === -1) return;
+  var el = document.getElementById(fieldId);
+  if (!el || !el.value || el.value === '' || el.value === '-1') return;
+  startTimer();
+}
+
+function autoStopTimer() {
+  if (_timerInterval) stopTimer();
+}
+
 function formatTimerForReport(totalSecs) {
   if (!totalSecs || totalSecs <= 0) return '';
   var mins = Math.floor(totalSecs / 60);
@@ -5882,8 +5909,8 @@ function _guardedSave() {
   saveForm();
 }
 document.querySelectorAll('input, select, textarea').forEach(el => {
-  el.addEventListener('change', function() { _guardedSave(); debouncedAutoSave(); });
-  el.addEventListener('input', function() { debouncedSave(); debouncedAutoSave(); });
+  el.addEventListener('change', function() { _guardedSave(); debouncedAutoSave(); maybeAutoStartTimer(el.id); });
+  el.addEventListener('input', function() { debouncedSave(); debouncedAutoSave(); maybeAutoStartTimer(el.id); });
 });
 
 // Auto-load on page open
