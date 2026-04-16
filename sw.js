@@ -1,4 +1,4 @@
-var CACHE_NAME = '90slab-v1.045';
+var CACHE_NAME = '90slab-v1.046';
 var ASSETS = [
   '/',
   '/index.html'
