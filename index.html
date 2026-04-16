@@ -261,6 +261,48 @@ body {
   gap: 12px;
 }
 
+/* ASSESSMENT TIMER */
+.timer-row {
+  margin-bottom: 14px;
+}
+.timer-widget {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.timer-display {
+  font-family: 'DM Mono', monospace;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: 0.05em;
+  min-width: 70px;
+}
+.timer-btn {
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 16px;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+.timer-start {
+  background: var(--rust);
+  color: #fff;
+}
+.timer-start:hover { opacity: 0.85; }
+.timer-start.running {
+  background: #c0392b;
+}
+.timer-reset {
+  background: rgba(26,20,16,0.08);
+  color: var(--ink);
+}
+.timer-reset:hover { background: rgba(26,20,16,0.14); }
+
 /* AGE BADGE PREVIEW */
 .age-preview {
   display: flex;
@@ -1614,7 +1656,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.049</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.050</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -1694,6 +1736,17 @@ body {
           <input type="number" inputmode="numeric" id="m-bw" min="30" max="200" step="0.5" placeholder="e.g. 68">
         </div>
         <div></div>
+      </div>
+
+      <!-- Assessment Timer -->
+      <div class="field timer-row">
+        <label>Assessment Timer</label>
+        <div class="timer-widget">
+          <span class="timer-display" id="timer-display">00:00</span>
+          <button type="button" class="timer-btn timer-start" id="timer-start-btn" onclick="toggleTimer()">Start</button>
+          <button type="button" class="timer-btn timer-reset" id="timer-reset-btn" onclick="resetTimer()" style="display:none;">Reset</button>
+        </div>
+        <input type="hidden" id="f-timer-elapsed" value="">
       </div>
 
       </div>
@@ -2745,6 +2798,9 @@ function render() {
     if (!d) return today();
     return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   })();
+
+  const timerElapsed = parseInt(val('f-timer-elapsed')) || 0;
+  const durationStr  = formatTimerForReport(timerElapsed);
 
   const chairReps          = num('f-chair-reps') || 0;
   const chairEasierHeight  = val('f-chair-easier-height') || '';
@@ -3958,7 +4014,7 @@ function render() {
       Come back in <strong>3 months.</strong> We will retest all nine stations. The goal is simple: <strong>a higher score every time</strong> you walk through that door.
     </div>
     <div class="closing-meta">
-      <p>${firstName} ${lastName} · Age ${age}<br>The 90s Lab · ${dateStr}<br>Assessed by: ${staff}</p>
+      <p>${firstName} ${lastName} · Age ${age}<br>The 90s Lab · ${dateStr}${durationStr ? '<br>Duration: ' + durationStr : ''}<br>Assessed by: ${staff}</p>
       <div class="footer-mark">The 90s Lab</div>
     </div>
   </div>
@@ -3970,7 +4026,7 @@ function render() {
   <div class="section-title" style="font-size:28px; margin-bottom:16px;">Data<br><em>Record</em></div>
   <div style="font-size:10px; color:var(--muted); margin-bottom:24px; line-height:1.6;">
     All values entered during the assessment. Retained for clinical reference and future comparison.<br>
-    ${dateStr} · Staff: ${staff} · ${firstName} ${lastName}, Age ${age}, ${gripGender === 'male' ? 'Male' : 'Female'}${val('m-bw') ? ' · ' + val('m-bw') + ' kg' : ''}
+    ${dateStr} · Staff: ${staff} · ${firstName} ${lastName}, Age ${age}, ${gripGender === 'male' ? 'Male' : 'Female'}${val('m-bw') ? ' · ' + val('m-bw') + ' kg' : ''}${durationStr ? ' · Duration: ' + durationStr : ''}
   </div>
   ${(function() {
     function sec(title) {
@@ -4972,6 +5028,8 @@ function _resetFormState() {
   _lastAgeForChair = null;
   _lastAgeForStair = null;
   _lastBalSingle = null;
+  // Reset timer
+  resetTimer();
   // Reset date to today
   var dateInput = document.getElementById('f-date');
   if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
@@ -4982,6 +5040,12 @@ var _undoSnapshot = null;
 var _undoTimer = null;
 
 function _getFormSnapshot() {
+  // Snapshot current timer elapsed into hidden field
+  var _curElapsed = _timerElapsed;
+  if (_timerStartTime) _curElapsed += Math.floor((Date.now() - _timerStartTime) / 1000);
+  var _timerHidden = document.getElementById('f-timer-elapsed');
+  if (_timerHidden && _curElapsed > 0) _timerHidden.value = _curElapsed;
+
   var data = {};
   FIELDS.forEach(function(id) { var el = document.getElementById(id); if (el) data[id] = el.value; });
   SQUAT_CHECKBOXES.forEach(function(id) { var cb = document.getElementById(id); if (cb) data[id] = cb.checked; });
@@ -5124,7 +5188,8 @@ const FIELDS = [
   'f-sit-rec','f-reach-rec','f-plank-rec','f-squat-rec','f-wall-rec',
   'f-notes',
   'm-bw',
-  'm1-val','m2-val','m3-val','m4-val','m5-val'
+  'm1-val','m2-val','m3-val','m4-val','m5-val',
+  'f-timer-elapsed'
 ];
 
 var SQUAT_CHECKBOXES = ['f-squat-arms','f-squat-heels','f-squat-knees','f-squat-lean','f-squat-asym'];
@@ -5147,6 +5212,12 @@ function saveForm() {
 
 // ── FIREBASE SAVE / LOAD ────────────────────────────────────────
 function _getFormData() {
+  // Snapshot current timer elapsed into hidden field before collecting
+  var _curElapsed = _timerElapsed;
+  if (_timerStartTime) _curElapsed += Math.floor((Date.now() - _timerStartTime) / 1000);
+  var _timerHidden = document.getElementById('f-timer-elapsed');
+  if (_timerHidden && _curElapsed > 0) _timerHidden.value = _curElapsed;
+
   const data = {};
   FIELDS.forEach(id => {
     const el = document.getElementById(id);
@@ -5195,6 +5266,19 @@ function _applyFormData(data) {
       if (row) row.classList.add('checked');
     }
   });
+  // Restore timer display from saved elapsed time
+  var savedElapsed = parseInt(data['f-timer-elapsed']) || 0;
+  if (savedElapsed > 0) {
+    _timerElapsed = savedElapsed;
+    _timerStartTime = null;
+    clearInterval(_timerInterval);
+    _timerInterval = null;
+    updateTimerDisplay();
+    var resetBtn = document.getElementById('timer-reset-btn');
+    if (resetBtn) resetBtn.style.display = '';
+    var startBtn = document.getElementById('timer-start-btn');
+    if (startBtn) { startBtn.textContent = 'Start'; startBtn.classList.remove('running'); }
+  }
   scheduleRender();
 }
 
@@ -5702,6 +5786,80 @@ function scrollToSection(id, tabEl) {
     });
   });
 })();
+
+// ── ASSESSMENT TIMER ────────────────────────────────────────────
+var _timerInterval = null;
+var _timerStartTime = null;
+var _timerElapsed = 0; // seconds accumulated before current run
+
+function toggleTimer() {
+  if (_timerInterval) {
+    stopTimer();
+  } else {
+    startTimer();
+  }
+}
+
+function startTimer() {
+  _timerStartTime = Date.now();
+  _timerInterval = setInterval(updateTimerDisplay, 1000);
+  var btn = document.getElementById('timer-start-btn');
+  if (btn) { btn.textContent = 'Stop'; btn.classList.add('running'); }
+  var resetBtn = document.getElementById('timer-reset-btn');
+  if (resetBtn) resetBtn.style.display = 'none';
+  updateTimerDisplay();
+}
+
+function stopTimer() {
+  if (_timerStartTime) {
+    _timerElapsed += Math.floor((Date.now() - _timerStartTime) / 1000);
+    _timerStartTime = null;
+  }
+  clearInterval(_timerInterval);
+  _timerInterval = null;
+  var btn = document.getElementById('timer-start-btn');
+  if (btn) { btn.textContent = 'Start'; btn.classList.remove('running'); }
+  var resetBtn = document.getElementById('timer-reset-btn');
+  if (resetBtn) resetBtn.style.display = '';
+  // Store elapsed in hidden field for save/restore
+  var hiddenEl = document.getElementById('f-timer-elapsed');
+  if (hiddenEl) hiddenEl.value = _timerElapsed;
+  updateTimerDisplay();
+}
+
+function resetTimer() {
+  clearInterval(_timerInterval);
+  _timerInterval = null;
+  _timerStartTime = null;
+  _timerElapsed = 0;
+  var btn = document.getElementById('timer-start-btn');
+  if (btn) { btn.textContent = 'Start'; btn.classList.remove('running'); }
+  var resetBtn = document.getElementById('timer-reset-btn');
+  if (resetBtn) resetBtn.style.display = 'none';
+  var hiddenEl = document.getElementById('f-timer-elapsed');
+  if (hiddenEl) hiddenEl.value = '';
+  var display = document.getElementById('timer-display');
+  if (display) display.textContent = '00:00';
+}
+
+function updateTimerDisplay() {
+  var total = _timerElapsed;
+  if (_timerStartTime) {
+    total += Math.floor((Date.now() - _timerStartTime) / 1000);
+  }
+  var mins = Math.floor(total / 60);
+  var secs = total % 60;
+  var display = document.getElementById('timer-display');
+  if (display) display.textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+}
+
+function formatTimerForReport(totalSecs) {
+  if (!totalSecs || totalSecs <= 0) return '';
+  var mins = Math.floor(totalSecs / 60);
+  if (mins < 1) return totalSecs + ' sec';
+  var secs = totalSecs % 60;
+  return mins + ' min' + (secs > 0 ? ' ' + secs + ' sec' : '');
+}
 
 function showStatus(msg) {
   const el = document.getElementById('save-status');
