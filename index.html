@@ -1656,7 +1656,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.053</div>
+      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.054</div>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
       <div class="sidebar-nav-tab" onclick="scrollToSection('section-s01', this)">Sit to Stand</div>
@@ -4016,7 +4016,7 @@ function render() {
       Come back in <strong>3 months.</strong> We will retest all nine stations. The goal is simple: <strong>a higher score every time</strong> you walk through that door.
     </div>
     <div class="closing-meta">
-      <p>${firstName} ${lastName} · Age ${age}<br>The 90s Lab · ${dateStr}${durationStr ? '<br>Duration: ' + durationStr : ''}<br>Assessed by: ${staff}</p>
+      <p>${firstName} ${lastName} · Age ${age}<br>The 90s Lab · ${dateStr}<br>Assessed by: ${staff}${durationStr ? '<br>Assessment duration: ' + durationStr : ''}</p>
       <div class="footer-mark">The 90s Lab</div>
     </div>
   </div>
@@ -5829,6 +5829,8 @@ function stopTimer() {
   var hiddenEl = document.getElementById('f-timer-elapsed');
   if (hiddenEl) hiddenEl.value = _timerElapsed;
   updateTimerDisplay();
+  // Re-render report so duration appears immediately
+  scheduleRender();
 }
 
 function resetTimer() {
