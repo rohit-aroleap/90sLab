@@ -1743,7 +1743,7 @@ body {
         <label>Assessment Timer</label>
         <div class="timer-widget">
           <span class="timer-display" id="timer-display">00:00</span>
-          <button type="button" class="timer-btn timer-start" id="timer-start-btn" onclick="toggleTimer()">Start</button>
+          <button type="button" class="timer-btn timer-start" id="timer-start-btn" onclick="toggleAssessmentTimer()">Start</button>
           <button type="button" class="timer-btn timer-reset" id="timer-reset-btn" onclick="resetTimer()" style="display:none;">Reset</button>
         </div>
         <input type="hidden" id="f-timer-elapsed" value="">
@@ -5787,7 +5787,7 @@ var _timerInterval = null;
 var _timerStartTime = null;
 var _timerElapsed = 0; // seconds accumulated before current run
 
-function toggleTimer() {
+function toggleAssessmentTimer() {
   if (_timerInterval) {
     stopTimer();
   } else {
