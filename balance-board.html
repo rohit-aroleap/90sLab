@@ -46,6 +46,12 @@ body { max-width: 960px; margin: 0 auto; padding: 20px 16px 60px; }
 .dot.rec { background: var(--red); animation: blink 1s infinite; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
 
+.dashboard-picker { display: inline-flex; gap: 2px; padding: 3px; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px; }
+.dp-opt { font-family: var(--font); font-size: 12px; font-weight: 500; padding: 6px 12px; border-radius: 6px;
+          color: var(--text2); text-decoration: none; transition: background .15s, color .15s; }
+.dp-opt:hover { color: var(--text); }
+.dp-opt.dp-active { background: var(--bg4); color: var(--text); }
+
 .tabs { display: flex; gap: 1px; margin-bottom: 18px; border-bottom: 1px solid var(--border); }
 .tab { font-size: 13px; font-weight: 500; padding: 8px 14px; background: none; border: none;
        color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s; }
@@ -137,6 +143,11 @@ input:focus { border-color: var(--blue); }
   <div class="spacer"></div>
   <span class="pill" id="hz-pill" style="display:none"><span id="hz-val">–</span> Hz</span>
   <span class="pill" style="margin-left:6px"><span class="dot" id="status-dot"></span><span id="status-text">Disconnected</span></span>
+</div>
+
+<div class="dashboard-picker">
+  <a href="balance-board.html" class="dp-opt dp-active">IMU Board</a>
+  <a href="forceplate.html" class="dp-opt">Force Plate</a>
 </div>
 
 <div class="tabs">
