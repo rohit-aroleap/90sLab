@@ -193,15 +193,6 @@ input:focus { border-color: var(--blue); }
   </div>
 </div>
 
-<!-- Force over time -->
-<div class="card">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-    <span class="card-title">Force over time</span>
-    <span style="font-size:11px;color:var(--text3)">Window: 20 s</span>
-  </div>
-  <div style="position:relative;height:220px"><canvas id="forceChart"></canvas></div>
-</div>
-
 <!-- Stabilogram (live COP trail) -->
 <div class="card">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -209,6 +200,15 @@ input:focus { border-color: var(--blue); }
     <span style="font-size:11px;color:var(--text3)">Trail: 5 s</span>
   </div>
   <canvas id="stabCanvas" width="1060" height="1060"></canvas>
+</div>
+
+<!-- Force over time -->
+<div class="card">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <span class="card-title">Force over time</span>
+    <span style="font-size:11px;color:var(--text3)">Window: 20 s</span>
+  </div>
+  <div style="position:relative;height:220px"><canvas id="forceChart"></canvas></div>
 </div>
 
 <script>
