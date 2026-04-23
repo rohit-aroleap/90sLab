@@ -98,6 +98,29 @@ input:focus { border-color: var(--blue); }
                  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r); margin-bottom: 12px; font-size: 12px; color: var(--text2); }
 .ss-item strong { font-family: var(--mono); color: var(--text); font-weight: 500; }
 
+/* Balance Test card */
+.test-grid { display: grid; grid-template-columns: 180px 1fr; gap: 16px; align-items: stretch; }
+@media (max-width: 600px) { .test-grid { grid-template-columns: 1fr; } }
+.test-score-box { background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--r2);
+                  display: flex; flex-direction: column; align-items: center; justify-content: center;
+                  padding: 18px 10px; text-align: center; }
+.test-score-label { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--text3); margin-bottom: 6px; }
+.test-score-val { font-family: var(--mono); font-size: 52px; font-weight: 500; line-height: 1; color: var(--text); }
+.test-score-val.scored-100 { color: var(--green); }
+.test-score-val.scored-80  { color: var(--green); }
+.test-score-val.scored-60  { color: var(--amber); }
+.test-score-val.scored-40  { color: var(--amber); }
+.test-score-val.scored-0   { color: var(--red); }
+.test-score-sub { font-size: 11px; color: var(--text3); margin-top: 6px; font-family: var(--mono); }
+.test-panel { display: flex; flex-direction: column; gap: 6px; justify-content: space-between; }
+.test-stat-row { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 0;
+                 border-bottom: 1px solid var(--border); }
+.test-stat-label { font-size: 12px; color: var(--text2); }
+.test-stat-val { font-family: var(--mono); font-size: 14px; color: var(--text); font-weight: 500; }
+.test-controls { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.test-progress { margin-top: 10px; height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+.test-progress-fill { height: 100%; width: 0%; background: var(--green); transition: width .15s, background .2s; }
+
 .log { background: var(--bg); border: 1px solid var(--border); border-radius: var(--r);
        height: 90px; overflow-y: auto; padding: 6px 10px; font-family: var(--mono); font-size: 11px; color: var(--text3); }
 .log-line { padding: 1px 0; }
@@ -145,6 +168,41 @@ input:focus { border-color: var(--blue); }
 
   <!-- ESP32 status info line -->
   <div class="esp-info" id="esp-info"></div>
+
+  <!-- BALANCE TEST CARD -->
+  <div class="card" id="test-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <span class="card-title">Balance Test · 30 seconds</span>
+      <span id="test-state" style="font-size:11px;color:var(--text3);font-family:var(--mono)">Ready</span>
+    </div>
+    <div class="test-grid">
+      <div class="test-score-box">
+        <div class="test-score-label">Score</div>
+        <div class="test-score-val" id="test-score">–</div>
+        <div class="test-score-sub" id="test-score-sub">out of 100</div>
+      </div>
+      <div class="test-panel">
+        <div class="test-stat-row">
+          <span class="test-stat-label">Time remaining</span>
+          <span class="test-stat-val" id="test-time">30.0 s</span>
+        </div>
+        <div class="test-stat-row">
+          <span class="test-stat-label">Time held</span>
+          <span class="test-stat-val" id="test-held">0.0 s</span>
+        </div>
+        <div class="test-stat-row">
+          <span class="test-stat-label">Mean sway velocity</span>
+          <span class="test-stat-val" id="test-vel">– °/s</span>
+        </div>
+        <div class="test-controls">
+          <button class="btn-green" id="btn-test-start" disabled>▶ Start Test</button>
+          <button class="btn-red"   id="btn-test-stop"  disabled>■ Stop (Fell Off)</button>
+          <button                    id="btn-test-reset">Reset</button>
+        </div>
+      </div>
+    </div>
+    <div class="test-progress"><div class="test-progress-fill" id="test-progress-fill"></div></div>
+  </div>
 
   <div class="metrics">
     <div class="metric">
@@ -508,6 +566,9 @@ function updateLive(t, roll, pitch, yaw) {
   trailHead = (trailHead + 1) % TRAIL_LEN;
   if (trailHead === 0) trailFull = true;
 
+  // Feed balance test accumulator
+  testAccumulate(roll, pitch);
+
   // Sway area (always visible, not just during recording)
   const ellipse = computeSwayEllipse();
   $('ss-sway').textContent = ellipse ? ellipse.area.toFixed(2) : '–';
@@ -546,6 +607,148 @@ function updateLive(t, roll, pitch, yaw) {
     csvRows.push([new Date().toISOString(), recElapsed.toFixed(3), t,
                   roll.toFixed(4), pitch.toFixed(4), yaw.toFixed(4)].join(','));
   }
+}
+
+// ── BALANCE TEST ───────────────────────────────────────────────────────────
+// 30-second timed stand. Score combines time-held + mean sway velocity.
+//
+// Tier 1 (completed 30s): score 60–100 based on velocity
+//   velocity ≤ 1.0 deg/s → 100 (excellent stability)
+//   velocity ≥ 3.0 deg/s → 60  (shaky but stayed up)
+//   linear interpolation in between
+// Tier 2 (dropped early): score 0–55 based on time held
+//   score = (timeHeld / 30) × 55 → max 55 < 60 so completion always wins
+
+const TEST_DURATION = 30.0;       // seconds
+const VEL_EXCELLENT = 1.0;        // deg/s — top score at or below this
+const VEL_POOR      = 3.0;        // deg/s — bottom of completed range
+const COMPLETION_BONUS_FLOOR = 60;
+const DROPPED_MAX = 55;
+
+let testState     = 'ready';      // 'ready' | 'running' | 'complete' | 'dropped'
+let testStartT    = 0;            // performance.now() at start
+let testSwayPath  = 0;
+let testPrevRoll  = null;
+let testPrevPitch = null;
+let testTimerRAF  = null;
+let testFinalScore = null;
+
+function calcBalanceScore(timeHeldSec, meanVelocity) {
+  if (timeHeldSec >= TEST_DURATION) {
+    if (meanVelocity <= VEL_EXCELLENT) return 100;
+    if (meanVelocity >= VEL_POOR)      return COMPLETION_BONUS_FLOOR;
+    const pct = (VEL_POOR - meanVelocity) / (VEL_POOR - VEL_EXCELLENT);
+    return Math.round(COMPLETION_BONUS_FLOOR + pct * (100 - COMPLETION_BONUS_FLOOR));
+  }
+  return Math.round((timeHeldSec / TEST_DURATION) * DROPPED_MAX);
+}
+
+function colorClassForScore(s) {
+  if (s >= 90) return 'scored-100';
+  if (s >= 75) return 'scored-80';
+  if (s >= 55) return 'scored-60';
+  if (s >= 35) return 'scored-40';
+  return 'scored-0';
+}
+
+function renderTestScore(score, subLabel) {
+  const el = $('test-score');
+  el.textContent = (score === null || score === undefined) ? '–' : String(score);
+  el.className = 'test-score-val ' + (score === null ? '' : colorClassForScore(score));
+  $('test-score-sub').textContent = subLabel;
+}
+
+function resetTest() {
+  cancelAnimationFrame(testTimerRAF);
+  testState = connected ? 'ready' : 'ready';
+  testStartT = 0;
+  testSwayPath = 0;
+  testPrevRoll = null;
+  testPrevPitch = null;
+  testFinalScore = null;
+  $('test-state').textContent = 'Ready';
+  $('test-state').style.color = '';
+  $('test-time').textContent = TEST_DURATION.toFixed(1) + ' s';
+  $('test-held').textContent = '0.0 s';
+  $('test-vel').textContent = '– °/s';
+  $('test-progress-fill').style.width = '0%';
+  $('test-progress-fill').style.background = 'var(--green)';
+  renderTestScore(null, 'out of 100');
+  $('btn-test-start').disabled = !connected;
+  $('btn-test-stop').disabled  = true;
+}
+
+function startBalanceTest() {
+  if (!connected) { log('Connect to the board first', 'warn'); return; }
+  if (testState === 'running') return;
+  testState = 'running';
+  testStartT = performance.now();
+  testSwayPath = 0;
+  testPrevRoll = null;
+  testPrevPitch = null;
+  testFinalScore = null;
+  $('test-state').textContent = 'Running';
+  $('test-state').style.color = 'var(--green)';
+  $('btn-test-start').disabled = true;
+  $('btn-test-stop').disabled  = false;
+  log('Balance test started — hold for 30 s', 'ok');
+  testLoop();
+}
+
+function stopBalanceTest(reason) {
+  // reason: 'complete' | 'dropped'
+  if (testState !== 'running') return;
+  cancelAnimationFrame(testTimerRAF);
+  const elapsed = Math.min(TEST_DURATION, (performance.now() - testStartT) / 1000);
+  const meanVel = elapsed > 0 ? (testSwayPath / elapsed) : 0;
+  const score = calcBalanceScore(elapsed, meanVel);
+  testFinalScore = score;
+  testState = (reason === 'complete') ? 'complete' : 'dropped';
+
+  $('test-state').textContent = (reason === 'complete') ? 'Completed ✓' : 'Stopped (fell off)';
+  $('test-state').style.color = (reason === 'complete') ? 'var(--green)' : 'var(--red)';
+  $('test-held').textContent = elapsed.toFixed(1) + ' s';
+  $('test-vel').textContent  = meanVel.toFixed(2) + ' °/s';
+  $('test-time').textContent = (TEST_DURATION - elapsed).toFixed(1) + ' s';
+  $('test-progress-fill').style.width = ((elapsed / TEST_DURATION) * 100).toFixed(1) + '%';
+  $('test-progress-fill').style.background = (reason === 'complete') ? 'var(--green)' : 'var(--red)';
+  renderTestScore(score, reason === 'complete' ? 'completed · ' + meanVel.toFixed(2) + ' °/s' : 'dropped at ' + elapsed.toFixed(1) + ' s');
+  $('btn-test-start').disabled = !connected;
+  $('btn-test-stop').disabled  = true;
+  log('Test ' + (reason === 'complete' ? 'completed' : 'stopped') + ' — score ' + score + '/100 (' + elapsed.toFixed(1) + 's · ' + meanVel.toFixed(2) + ' °/s)', 'ok');
+}
+
+function testLoop() {
+  if (testState !== 'running') return;
+  const elapsed = (performance.now() - testStartT) / 1000;
+
+  if (elapsed >= TEST_DURATION) {
+    stopBalanceTest('complete');
+    return;
+  }
+
+  const remaining = TEST_DURATION - elapsed;
+  const meanVel = elapsed > 0 ? (testSwayPath / elapsed) : 0;
+  const liveScore = calcBalanceScore(elapsed, meanVel);
+
+  $('test-time').textContent = remaining.toFixed(1) + ' s';
+  $('test-held').textContent = elapsed.toFixed(1) + ' s';
+  $('test-vel').textContent  = meanVel.toFixed(2) + ' °/s';
+  $('test-progress-fill').style.width = ((elapsed / TEST_DURATION) * 100).toFixed(1) + '%';
+  renderTestScore(liveScore, 'live · ' + elapsed.toFixed(1) + 's');
+
+  testTimerRAF = requestAnimationFrame(testLoop);
+}
+
+// Called from updateLive() to accumulate sway path during an active test
+function testAccumulate(roll, pitch) {
+  if (testState !== 'running') return;
+  if (testPrevRoll !== null) {
+    const dr = roll - testPrevRoll, dp = pitch - testPrevPitch;
+    testSwayPath += Math.sqrt(dr * dr + dp * dp);
+  }
+  testPrevRoll = roll;
+  testPrevPitch = pitch;
 }
 
 // ── WebSocket ──────────────────────────────────────────────────────────────
@@ -641,6 +844,7 @@ function setStatus(state) {
     $('btn-record').disabled     = false;
     $('btn-zero').disabled       = false;
     $('cmd-row').style.display   = '';
+    if (testState !== 'running') $('btn-test-start').disabled = false;
   } else if (state === 'recording') {
     dot.classList.add('rec'); txt.textContent = 'Recording';
   } else {
@@ -651,6 +855,10 @@ function setStatus(state) {
     $('btn-stop').disabled       = true;
     $('btn-zero').disabled       = true;
     $('cmd-row').style.display   = 'none';
+    // If a test is running when we disconnect, force-stop it as dropped
+    if (testState === 'running') stopBalanceTest('dropped');
+    $('btn-test-start').disabled = true;
+    $('btn-test-stop').disabled  = true;
     $('v-roll').textContent = $('v-pitch').textContent = $('v-yaw').textContent = $('v-tilt').textContent = '–';
     $('hz-pill').style.display = 'none';
     $('esp-info').textContent = '';
@@ -734,6 +942,14 @@ $('max-angle-slider').addEventListener('input', () => {
   $('max-angle-label').textContent = `±${maxAngle}°`;
   drawTiltPlot(lastRoll, lastPitch);
 });
+
+// Balance test buttons
+$('btn-test-start').addEventListener('click', startBalanceTest);
+$('btn-test-stop').addEventListener('click', () => stopBalanceTest('dropped'));
+$('btn-test-reset').addEventListener('click', resetTest);
+
+// Initialize test UI on load
+resetTest();
 </script>
 </body>
 </html>
