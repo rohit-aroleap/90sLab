@@ -620,8 +620,8 @@ function updateLive(t, roll, pitch, yaw) {
 //   score = (timeHeld / 30) × 55 → max 55 < 60 so completion always wins
 
 const TEST_DURATION = 30.0;       // seconds
-const VEL_EXCELLENT = 1.0;        // deg/s — top score at or below this
-const VEL_POOR      = 3.0;        // deg/s — bottom of completed range
+const VEL_EXCELLENT = 8.0;        // deg/s — top score at or below this
+const VEL_POOR      = 24.0;       // deg/s — bottom of completed range
 const COMPLETION_BONUS_FLOOR = 60;
 const DROPPED_MAX = 55;
 
