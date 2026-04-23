@@ -172,6 +172,19 @@ input:focus { border-color: var(--blue); }
     </div>
   </div>
   <div class="test-progress"><div class="test-progress-fill" id="test-progress-fill"></div></div>
+  <details style="margin-top:10px;font-size:11px;color:var(--text3);">
+    <summary style="cursor:pointer;letter-spacing:.06em;text-transform:uppercase;">Scoring thresholds (advanced)</summary>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;align-items:center;">
+      <label style="display:flex;gap:6px;align-items:center;">Excellent ≤
+        <input type="number" id="thr-excellent" step="0.5" min="0" style="width:70px;"> mm/s
+      </label>
+      <label style="display:flex;gap:6px;align-items:center;">Poor ≥
+        <input type="number" id="thr-poor" step="0.5" min="0" style="width:70px;"> mm/s
+      </label>
+      <button id="thr-reset" style="padding:4px 10px;font-size:11px;">Reset to defaults</button>
+      <span id="thr-status" style="color:var(--text3);"></span>
+    </div>
+  </details>
 </div>
 
 <!-- Corner forces -->
@@ -229,8 +242,10 @@ const MIN_FORCE_G      = 100;   // freeze COP when below this
 
 // 30-sec balance test
 const TEST_DURATION          = 30.0;
-const VEL_EXCELLENT_MM       = 10.0;
-const VEL_POOR_MM            = 30.0;
+const VEL_EXCELLENT_MM_DEFAULT = 10.0;
+const VEL_POOR_MM_DEFAULT      = 30.0;
+let VEL_EXCELLENT_MM = parseFloat(localStorage.getItem('90slab.fp.velExcellent')) || VEL_EXCELLENT_MM_DEFAULT;
+let VEL_POOR_MM      = parseFloat(localStorage.getItem('90slab.fp.velPoor'))      || VEL_POOR_MM_DEFAULT;
 const COMPLETION_BONUS_FLOOR = 60;
 const DROPPED_MAX            = 55;
 const TEST_DROP_FORCE_G      = 100;
@@ -766,6 +781,32 @@ $('host-input').addEventListener('keydown', e => { if (e.key === 'Enter') connec
 $('btn-test-start').addEventListener('click', startBalanceTest);
 $('btn-test-stop').addEventListener('click', () => stopBalanceTest('dropped'));
 $('btn-test-reset').addEventListener('click', resetTest);
+
+// Threshold tuning UI
+const thrExcellent = $('thr-excellent'), thrPoor = $('thr-poor'), thrStatus = $('thr-status');
+function syncThresholdUI() {
+  thrExcellent.value = VEL_EXCELLENT_MM;
+  thrPoor.value      = VEL_POOR_MM;
+  const isDefault = VEL_EXCELLENT_MM === VEL_EXCELLENT_MM_DEFAULT && VEL_POOR_MM === VEL_POOR_MM_DEFAULT;
+  thrStatus.textContent = isDefault ? '(defaults)' : '(custom · saved)';
+}
+function onThresholdChange() {
+  const e = parseFloat(thrExcellent.value), p = parseFloat(thrPoor.value);
+  if (!isFinite(e) || !isFinite(p) || e <= 0 || p <= e) { thrStatus.textContent = '(invalid · e must be >0 and <poor)'; return; }
+  VEL_EXCELLENT_MM = e; VEL_POOR_MM = p;
+  localStorage.setItem('90slab.fp.velExcellent', String(e));
+  localStorage.setItem('90slab.fp.velPoor', String(p));
+  syncThresholdUI();
+}
+thrExcellent.addEventListener('change', onThresholdChange);
+thrPoor.addEventListener('change', onThresholdChange);
+$('thr-reset').addEventListener('click', () => {
+  VEL_EXCELLENT_MM = VEL_EXCELLENT_MM_DEFAULT; VEL_POOR_MM = VEL_POOR_MM_DEFAULT;
+  localStorage.removeItem('90slab.fp.velExcellent');
+  localStorage.removeItem('90slab.fp.velPoor');
+  syncThresholdUI();
+});
+syncThresholdUI();
 
 // Initial UI state
 initForceChart();

@@ -1,4 +1,5 @@
-var CACHE_NAME = '90slab-v1.063';
+importScripts('./version.js');
+var CACHE_NAME = '90slab-' + self.APP_VERSION;
 var ASSETS = [
   '/',
   '/index.html'
@@ -10,7 +11,11 @@ self.addEventListener('install', function(event) {
       return cache.addAll(ASSETS);
     })
   );
-  self.skipWaiting();
+  // Do NOT auto-skipWaiting — we want the update toast in the page to drive it.
+});
+
+self.addEventListener('message', function(event) {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', function(event) {
@@ -56,8 +61,8 @@ self.addEventListener('fetch', function(event) {
     return;
   }
 
-  // Never cache sw.js
-  if (url.pathname.endsWith('/sw.js')) {
+  // Never cache sw.js or version.js — they drive the update machinery
+  if (url.pathname.endsWith('/sw.js') || url.pathname.endsWith('/version.js')) {
     return;
   }
 

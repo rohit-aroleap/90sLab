@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The 90s Lab · Report Generator</title>
+<script src="version.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&family=Syne:wght@400;700;800&family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&family=Raleway:wght@300;400;500;600&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ── GLOBAL ──────────────────────────────────────────────────────── */
@@ -1679,7 +1680,7 @@ body {
       <div class="sidebar-logo">The 90s Lab</div>
       <div class="sidebar-tagline" style="font-style:italic; opacity:0.6; font-size:10px; letter-spacing:0.12em;">aging gracefully</div>
       <div class="sidebar-tagline">Assessment Report Generator</div>
-      <div style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v1.063</div>
+      <div id="app-version-label" style="font-family:'DM Mono',monospace; font-size:9px; color:rgba(26,20,16,0.3); letter-spacing:0.08em; margin-top:2px;">v–</div>
       <a href="balance-board.html" target="_blank" rel="noopener" class="balance-board-link">
         <span style="font-size:13px;">⚖</span>
         <span>Balance Board Dashboard</span>
@@ -6136,10 +6137,56 @@ document.querySelector('.sidebar-form').addEventListener('keydown', function(e) 
 // ── INITIAL RENDER ───────────────────────────────────────────────
 render();
 
+// ── VERSION LABEL ───────────────────────────────────────────────
+try { document.getElementById('app-version-label').textContent = self.APP_VERSION || 'v?'; } catch(e) {}
+
 // ── SERVICE WORKER ──────────────────────────────────────────────
+// New version flow: new SW enters "installed" state → show toast → user clicks
+// Reload → we postMessage SKIP_WAITING → new SW activates → page reloads.
+function showUpdateToast(reg) {
+  if (document.getElementById('sw-update-toast')) return;
+  var toast = document.createElement('div');
+  toast.id = 'sw-update-toast';
+  toast.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:99999;' +
+    'background:#1a1410;color:#f5f0e8;padding:14px 18px;border-radius:10px;' +
+    'box-shadow:0 8px 24px rgba(0,0,0,0.25);font-family:\'DM Mono\',monospace;' +
+    'font-size:12px;letter-spacing:0.04em;display:flex;gap:12px;align-items:center;' +
+    'border:1px solid rgba(245,240,232,0.15);max-width:360px;';
+  toast.innerHTML = '<span>New version available</span>' +
+    '<button style="background:#c4622d;color:#f5f0e8;border:0;border-radius:6px;' +
+    'padding:6px 12px;font-family:inherit;font-size:11px;cursor:pointer;letter-spacing:0.06em;">RELOAD</button>' +
+    '<button style="background:transparent;color:rgba(245,240,232,0.5);border:0;' +
+    'cursor:pointer;font-size:16px;padding:0 4px;">×</button>';
+  document.body.appendChild(toast);
+  var btns = toast.querySelectorAll('button');
+  btns[0].onclick = function() {
+    if (reg && reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+    else window.location.reload();
+  };
+  btns[1].onclick = function() { toast.remove(); };
+}
+
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(function() {
-    // SW registration may fail on file:// or localhost — that's fine
+  navigator.serviceWorker.register('/sw.js').then(function(reg) {
+    // Check for updates once registered, and then on every focus.
+    if (reg.waiting && navigator.serviceWorker.controller) showUpdateToast(reg);
+    reg.addEventListener('updatefound', function() {
+      var nw = reg.installing;
+      if (!nw) return;
+      nw.addEventListener('statechange', function() {
+        if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+          showUpdateToast(reg);
+        }
+      });
+    });
+    window.addEventListener('focus', function() { reg.update().catch(function(){}); });
+  }).catch(function() {});
+
+  var _swReloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function() {
+    if (_swReloading) return;
+    _swReloading = true;
+    window.location.reload();
   });
 }
 </script>
