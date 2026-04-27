@@ -1988,26 +1988,39 @@ body {
         <span class="accordion-chevron">&#9660;</span>
       </div>
       <div class="accordion-body">
-      <div class="field-hint" style="margin-bottom:10px;">Run the 30-sec test on the <a href="balance-board.html" target="_blank" style="color:var(--rust);">balance board dashboard</a>, then enter the final score here. Final station score = average of left + right.</div>
+      <div class="field-hint" style="margin-bottom:10px;">Test adapts to age bracket. Enter seconds held. Score = seconds ÷ 30 × 100.</div>
 
       <div id="bal-test-description" style="margin-bottom:12px; padding:10px 12px; background:rgba(26,20,16,0.06); border-left:3px solid var(--ink); font-size:12px; line-height:1.6; color:var(--ink);"></div>
 
       <div id="bal-single-fields">
         <div class="field field-row">
           <div>
-            <label>Left leg score</label>
-            <input type="number" inputmode="numeric" id="f-balance-left" min="0" max="100" placeholder="0–100">
+            <div style="display:flex;gap:8px;align-items:flex-end;">
+              <div style="flex:1;">
+                <label>Left leg (sec)</label>
+                <input type="number" inputmode="numeric" id="f-balance-left" min="0" max="30" placeholder="0–30 sec">
+              </div>
+              <button class="timer-btn" onclick="toggleTimer(this,'f-balance-left')">&#9654; Start</button>
+            </div>
           </div>
           <div>
-            <label>Right leg score</label>
-            <input type="number" inputmode="numeric" id="f-balance-right" min="0" max="100" placeholder="0–100">
+            <div style="display:flex;gap:8px;align-items:flex-end;">
+              <div style="flex:1;">
+                <label>Right leg (sec)</label>
+                <input type="number" inputmode="numeric" id="f-balance-right" min="0" max="30" placeholder="0–30 sec">
+              </div>
+              <button class="timer-btn" onclick="toggleTimer(this,'f-balance-right')">&#9654; Start</button>
+            </div>
           </div>
         </div>
       </div>
       <div id="bal-both-fields" style="display:none;">
-        <div class="field">
-          <label>Both legs score</label>
-          <input type="number" inputmode="numeric" id="f-balance-both" min="0" max="100" placeholder="0–100">
+        <div style="display:flex;gap:8px;align-items:flex-end;">
+          <div class="field" style="flex:1;">
+            <label>Both legs (sec)</label>
+            <input type="number" inputmode="numeric" id="f-balance-both" min="0" max="30" placeholder="0–30 sec">
+          </div>
+          <button class="timer-btn" onclick="toggleTimer(this,'f-balance-both')">&#9654; Start</button>
         </div>
       </div>
 
@@ -2024,19 +2037,32 @@ body {
         <div id="bal-challenge-single-fields" style="display:none;">
           <div class="field field-row">
             <div>
-              <label>Left leg score</label>
-              <input type="number" inputmode="numeric" id="f-balance-challenge-left" min="0" max="100" placeholder="0–100">
+              <div style="display:flex;gap:8px;align-items:flex-end;">
+                <div class="field" style="flex:1; margin:0;">
+                  <label>Left leg (sec)</label>
+                  <input type="number" inputmode="numeric" id="f-balance-challenge-left" min="0" max="30" placeholder="0–30 sec">
+                </div>
+                <button class="timer-btn" onclick="toggleTimer(this,'f-balance-challenge-left')">&#9654; Start</button>
+              </div>
             </div>
             <div>
-              <label>Right leg score</label>
-              <input type="number" inputmode="numeric" id="f-balance-challenge-right" min="0" max="100" placeholder="0–100">
+              <div style="display:flex;gap:8px;align-items:flex-end;">
+                <div class="field" style="flex:1; margin:0;">
+                  <label>Right leg (sec)</label>
+                  <input type="number" inputmode="numeric" id="f-balance-challenge-right" min="0" max="30" placeholder="0–30 sec">
+                </div>
+                <button class="timer-btn" onclick="toggleTimer(this,'f-balance-challenge-right')">&#9654; Start</button>
+              </div>
             </div>
           </div>
         </div>
         <div id="bal-challenge-both-fields" style="display:none;">
-          <div class="field">
-            <label>Both legs score</label>
-            <input type="number" inputmode="numeric" id="f-balance-challenge-both" min="0" max="100" placeholder="0–100">
+          <div style="display:flex;gap:8px;align-items:flex-end;">
+            <div class="field" style="flex:1;">
+              <label>Both legs (sec)</label>
+              <input type="number" inputmode="numeric" id="f-balance-challenge-both" min="0" max="30" placeholder="0–30 sec">
+            </div>
+            <button class="timer-btn" onclick="toggleTimer(this,'f-balance-challenge-both')">&#9654; Start</button>
           </div>
         </div>
         <div class="field-hint" style="margin-top:4px;">Score stays 100. This shows you're performing above your age group.</div>
@@ -2057,19 +2083,32 @@ body {
         <div id="bal-easier-single-fields" style="display:none;">
           <div class="field field-row">
             <div>
-              <label>Left leg score</label>
-              <input type="number" inputmode="numeric" id="f-balance-easier-left" min="0" max="100" placeholder="0–100">
+              <div style="display:flex;gap:8px;align-items:flex-end;">
+                <div class="field" style="flex:1; margin:0;">
+                  <label>Left leg (sec)</label>
+                  <input type="number" inputmode="numeric" id="f-balance-easier-left" min="0" max="30" placeholder="0–30 sec">
+                </div>
+                <button class="timer-btn" onclick="toggleTimer(this,'f-balance-easier-left')">&#9654; Start</button>
+              </div>
             </div>
             <div>
-              <label>Right leg score</label>
-              <input type="number" inputmode="numeric" id="f-balance-easier-right" min="0" max="100" placeholder="0–100">
+              <div style="display:flex;gap:8px;align-items:flex-end;">
+                <div class="field" style="flex:1; margin:0;">
+                  <label>Right leg (sec)</label>
+                  <input type="number" inputmode="numeric" id="f-balance-easier-right" min="0" max="30" placeholder="0–30 sec">
+                </div>
+                <button class="timer-btn" onclick="toggleTimer(this,'f-balance-easier-right')">&#9654; Start</button>
+              </div>
             </div>
           </div>
         </div>
         <div id="bal-easier-both-fields" style="display:none;">
-          <div class="field">
-            <label>Both legs score</label>
-            <input type="number" inputmode="numeric" id="f-balance-easier-both" min="0" max="100" placeholder="0–100">
+          <div style="display:flex;gap:8px;align-items:flex-end;">
+            <div class="field" style="flex:1;">
+              <label>Both legs (sec)</label>
+              <input type="number" inputmode="numeric" id="f-balance-easier-both" min="0" max="30" placeholder="0–30 sec">
+            </div>
+            <button class="timer-btn" onclick="toggleTimer(this,'f-balance-easier-both')">&#9654; Start</button>
           </div>
         </div>
         <div class="field-hint" style="margin-top:4px;">Scaled down since tested at an easier bracket. Tracked as baseline for future visits.</div>
@@ -2861,15 +2900,14 @@ function render() {
   const balWorstLeg = balInfo.single && val('f-balance-left') !== '' && val('f-balance-right') !== ''
                         ? (balLeft <= balRight ? 'left' : 'right')
                         : null;
-  // Scores are entered directly (0–100) from the external balance board dashboard.
-  // Station score = average of left + right (single leg) or both-legs score directly.
-  const balLeftScore  = balInfo.single && val('f-balance-left')  !== '' ? balLeft  : 0;
-  const balRightScore = balInfo.single && val('f-balance-right') !== '' ? balRight : 0;
+  // Scores calculated from seconds held (0–30 per leg). Score = secs ÷ 30 × 100.
+  const balLeftSecs   = balInfo.single && val('f-balance-left')  !== '' ? balLeft  : 0;
+  const balRightSecs  = balInfo.single && val('f-balance-right') !== '' ? balRight : 0;
+  const balLeftScore  = Math.min(100, Math.round((balLeftSecs  / 30) * 100));
+  const balRightScore = Math.min(100, Math.round((balRightSecs / 30) * 100));
   const balRawScore  = balInfo.single
-    ? (val('f-balance-left') !== '' && val('f-balance-right') !== ''
-        ? Math.round((balLeft + balRight) / 2)
-        : (val('f-balance-left') !== '' ? balLeft : (val('f-balance-right') !== '' ? balRight : 0)))
-    : balBoth;
+    ? Math.min(100, Math.round(((balLeftSecs + balRightSecs) / 60) * 100))
+    : Math.min(100, Math.round((balBoth / 30) * 100));
 
   // Easier data (computed before balScore so it can contribute to score)
   const balEasierBracketIdx = parseInt(val('f-balance-easier-bracket'));
@@ -2882,19 +2920,17 @@ function render() {
       ? (val('f-balance-easier-left') !== '' || val('f-balance-easier-right') !== '')
       : val('f-balance-easier-both') !== ''
   );
-  // Easier raw score (0–100, averaged across legs if single)
+  // Easier raw score (0–100, derived from seconds)
   const balEasierPct = balEasierBracket
     ? (balEasierBracket.single
-        ? (val('f-balance-easier-left') !== '' && val('f-balance-easier-right') !== ''
-            ? Math.round((balEasierLeft + balEasierRight) / 2)
-            : Math.max(balEasierLeft, balEasierRight))
-        : balEasierBoth)
+        ? Math.min(100, Math.round(((balEasierLeft + balEasierRight) / 60) * 100))
+        : Math.min(100, Math.round((balEasierBoth / 30) * 100)))
     : 0;
 
-  // Score: entered score used directly at standard bracket. Easier level scaled to 0–30 cap.
+  // Score: seconds → 0–100 proportional. Easier level scaled to 0–30 cap.
   var balScore;
   if (balRawScore > 0) {
-    balScore = Math.min(100, Math.round(balRawScore));
+    balScore = balRawScore;
   } else if (balHasEasier) {
     var balStepsEasier = balEasierBracketIdx - balBracketIdx;
     balScore = Math.round((balEasierPct / 100) * easierMaxScore(balStepsEasier));
@@ -2904,7 +2940,7 @@ function render() {
 
   const balPrev     = val('f-balance-prev') !== '' ? Math.min(100, Math.max(0, num('f-balance-prev'))) : null;
   const balNotes    = val('f-balance-notes') || '';
-  const balHighRisk = balRawScore > 0 && balRawScore < 30;
+  const balHighRisk = balWorst > 0 && balWorst < 10;
   const balHasHarderOption = balBracketIdx > 0;
 
   // Challenge data
@@ -4073,10 +4109,10 @@ function render() {
     o += sec('Station 03 · Walking in Dark (Balance)');
     o += row('Test bracket', balInfo.label);
     if (balInfo.single) {
-      o += row('Left leg score', val('f-balance-left') !== '' ? balLeftScore : '—');
-      o += row('Right leg score', val('f-balance-right') !== '' ? balRightScore : '—');
+      o += row('Left leg', val('f-balance-left') !== '' ? balLeftSecs + ' sec → ' + balLeftScore : '—');
+      o += row('Right leg', val('f-balance-right') !== '' ? balRightSecs + ' sec → ' + balRightScore : '—');
     } else {
-      o += row('Both legs score', val('f-balance-both') !== '' ? balBoth : '—');
+      o += row('Both legs', val('f-balance-both') !== '' ? balBoth + ' sec → ' + Math.min(100,Math.round((balBoth/30)*100)) : '—');
     }
     o += row('Challenge bracket', balHasChallenge ? balChallengeLabel + ' — ' + (balChallengeBracket.single ? 'L:' + balChallengeLeft + ' R:' + balChallengeRight : balChallengeBoth) : '—');
     o += row('Easier bracket', balHasEasier ? balEasierBracket.label + ' — ' + (balEasierBracket.single ? 'L:' + balEasierLeft + ' R:' + balEasierRight : balEasierBoth) : '—');
@@ -4692,16 +4728,16 @@ function updateBalScorePreview() {
     var hasL = lEl && lEl.value !== '';
     var hasR = rEl && rEl.value !== '';
     if (!hasL && !hasR) { valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)'; lblDisp.textContent = '—'; updateScoreBar('balance-score-bar', 0); return; }
-    var leftSc  = hasL ? parseFloat(lEl.value) : 0;
-    var rightSc = hasR ? parseFloat(rEl.value) : 0;
-    rawScore = (hasL && hasR) ? Math.round((leftSc + rightSc) / 2) : (hasL ? leftSc : rightSc);
+    var leftSecs  = hasL ? parseFloat(lEl.value) : 0;
+    var rightSecs = hasR ? parseFloat(rEl.value) : 0;
+    rawScore = Math.min(100, Math.round(((leftSecs + rightSecs) / 60) * 100));
   } else {
     var bEl = document.getElementById('f-balance-both');
     if (!bEl || bEl.value === '') { valDisp.textContent = '—'; valDisp.style.color = 'rgba(245,240,232,0.3)'; lblDisp.textContent = '—'; updateScoreBar('balance-score-bar', 0); return; }
-    rawScore = parseFloat(bEl.value) || 0;
+    rawScore = Math.min(100, Math.round((parseFloat(bEl.value) / 30) * 100));
   }
   if (rawScore > 0) {
-    score = Math.min(100, Math.round(rawScore));
+    score = rawScore;
   } else {
     // Check for easier-level data
     var bracketIdx = balBracketIndex(age);
@@ -4715,11 +4751,11 @@ function updateBalScorePreview() {
         var eRv = document.getElementById('f-balance-easier-right').value;
         var eL = parseFloat(eLv) || 0;
         var eR = parseFloat(eRv) || 0;
-        if (eLv !== '' && eRv !== '') easierPct = Math.round((eL + eR) / 2);
-        else if (eLv !== '' || eRv !== '') easierPct = Math.max(eL, eR);
+        if (eLv !== '' && eRv !== '') easierPct = Math.min(100, Math.round(((eL + eR) / 60) * 100));
+        else if (eLv !== '' || eRv !== '') easierPct = Math.min(100, Math.round((Math.max(eL, eR) / 30) * 100));
       } else {
         var eB = parseFloat(document.getElementById('f-balance-easier-both').value) || 0;
-        if (eB > 0) easierPct = eB;
+        if (eB > 0) easierPct = Math.min(100, Math.round((eB / 30) * 100));
       }
       var balSteps = easierIdx - bracketIdx;
       score = Math.round((easierPct / 100) * easierMaxScore(balSteps));
