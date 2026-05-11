@@ -1668,6 +1668,54 @@ body {
   background: rgba(196,98,45,0.12);
   border-color: var(--rust);
 }
+/* ── AI IMPROVE BUTTON + SETTINGS MODAL ──────────────────────────── */
+.ai-ta-wrap { position: relative; }
+.ai-improve-btn {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  background: var(--rust);
+  color: #fff;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.75;
+  transition: opacity 0.15s;
+  z-index: 2;
+}
+.ai-improve-btn:hover { opacity: 1; }
+.ai-improve-btn:disabled { opacity: 0.4; cursor: wait; }
+.ai-improve-btn.ai-ok { background: var(--sage); }
+.ai-improve-btn.ai-err { background: #b04545; }
+.ai-ta-wrap textarea { padding-right: 110px !important; }
+
+.settings-modal { width: 560px; }
+.settings-field { margin-bottom: 14px; }
+.settings-field label {
+  display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: #6b5d4f; margin-bottom: 4px;
+}
+.settings-field input, .settings-field select, .settings-field textarea {
+  width: 100%; padding: 8px 10px; border: 1px solid #d4c8b8; border-radius: 6px;
+  font-family: 'DM Mono', monospace; font-size: 12px; background: #faf6ef; color: var(--ink);
+}
+.settings-field textarea { resize: vertical; font-family: 'Nunito', sans-serif; font-size: 13px; }
+.settings-hint { font-size: 11px; color: #8b7d6b; margin-top: 3px; font-style: italic; }
+.settings-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.settings-actions button {
+  padding: 8px 14px; border-radius: 6px; border: 1px solid var(--ink);
+  background: var(--ink); color: var(--cream); font-family: 'Raleway', sans-serif;
+  font-size: 12px; font-weight: 500; letter-spacing: 0.06em; cursor: pointer;
+}
+.settings-actions button.btn-secondary { background: transparent; color: var(--ink); }
+.settings-actions button.btn-link {
+  background: transparent; color: var(--rust); border: 0; font-size: 11px;
+  text-decoration: underline; cursor: pointer; padding: 8px 4px;
+}
 </style>
 </head>
 <body>
@@ -1685,6 +1733,10 @@ body {
         <span style="font-size:13px;">⚖</span>
         <span>Balance Board Dashboard</span>
         <span style="font-size:9px; opacity:0.6;">↗</span>
+      </a>
+      <a href="#" onclick="openSettings();return false;" class="balance-board-link" style="margin-top:6px;">
+        <span style="font-size:13px;">⚙</span>
+        <span>AI Settings</span>
       </a>
       <nav class="sidebar-nav" id="sidebar-nav">
       <div class="sidebar-nav-tab active" onclick="scrollToSection('section-client', this)">Client Info</div>
@@ -6176,6 +6228,151 @@ render();
 // ── VERSION LABEL ───────────────────────────────────────────────
 try { document.getElementById('app-version-label').textContent = self.APP_VERSION || 'v?'; } catch(e) {}
 
+// ── AI IMPROVE (Claude API direct from browser) ─────────────────
+const AI_DEFAULT_PROMPT = `You are a professional fitness coach writing assistant. Rewrite the following coach note from a fitness assessment so it is clear, professional, and constructive in tone. Preserve every observation and the original intent — do NOT invent measurements, exercises, weights, reps, medical advice, or facts that are not in the original. Keep it concise (1–3 sentences unless the original is longer). Return only the improved text, with no preamble, no quotes, and no explanation.
+
+Coach note:
+{text}`;
+const AI_DEFAULT_MODEL = 'claude-opus-4-7';
+
+function getAISettings() {
+  return {
+    apiKey: localStorage.getItem('90slab.ai.apiKey') || '',
+    model:  localStorage.getItem('90slab.ai.model')  || AI_DEFAULT_MODEL,
+    prompt: localStorage.getItem('90slab.ai.prompt') || AI_DEFAULT_PROMPT,
+  };
+}
+
+async function callClaudeImprove(text) {
+  const { apiKey, model, prompt } = getAISettings();
+  if (!apiKey) {
+    const err = new Error('Click ⚙ AI Settings in the sidebar to add your Claude API key.');
+    err.noKey = true;
+    throw err;
+  }
+  if (!text || !text.trim()) throw new Error('Nothing to improve — type something first.');
+
+  const userMessage = prompt.includes('{text}') ? prompt.replace('{text}', text) : (prompt + '\n\n' + text);
+
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: model,
+      max_tokens: 1024,
+      messages: [{ role: 'user', content: userMessage }],
+    }),
+  });
+
+  if (!resp.ok) {
+    let msg = 'API error ' + resp.status;
+    try { const j = await resp.json(); if (j && j.error && j.error.message) msg = j.error.message; } catch(e) {}
+    throw new Error(msg);
+  }
+  const data = await resp.json();
+  const block = (data.content || []).find(b => b.type === 'text');
+  if (!block || !block.text) throw new Error('Empty response from Claude.');
+  return block.text.trim();
+}
+
+const AI_TARGET_IDS = [
+  'f-chair-rec', 'f-chair-notes',
+  'f-stair-rec', 'f-stair-notes',
+  'f-balance-rec', 'f-balance-notes',
+  'f-grip-rec', 'f-grip-notes',
+  'f-sit-rec', 'f-sit-notes',
+  'f-reach-rec', 'f-reach-notes',
+  'f-plank-rec', 'f-plank-notes',
+  'f-squat-rec', 'f-squat-notes',
+  'f-wall-rec', 'f-wall-notes',
+  'f-notes',
+];
+
+function attachAIButton(ta) {
+  if (!ta || ta.dataset.aiAttached === '1') return;
+  ta.dataset.aiAttached = '1';
+  const wrap = document.createElement('div');
+  wrap.className = 'ai-ta-wrap';
+  ta.parentNode.insertBefore(wrap, ta);
+  wrap.appendChild(ta);
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'ai-improve-btn';
+  btn.textContent = '✨ Improve with AI';
+  btn.title = 'Rewrite this note with Claude';
+  btn.addEventListener('click', () => improveTextarea(ta, btn));
+  wrap.appendChild(btn);
+}
+
+async function improveTextarea(ta, btn) {
+  const original = ta.value;
+  if (!original.trim()) {
+    btn.classList.add('ai-err');
+    btn.textContent = '⚠ empty';
+    setTimeout(() => { btn.classList.remove('ai-err'); btn.textContent = '✨ Improve with AI'; }, 1800);
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = '⟳ Improving…';
+  try {
+    const improved = await callClaudeImprove(original);
+    ta.value = improved;
+    // Mark as touched so auto-populate logic doesn't overwrite it later
+    ta.dataset.touched = '1';
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+    btn.classList.add('ai-ok');
+    btn.textContent = '✓ Improved';
+    setTimeout(() => { btn.classList.remove('ai-ok'); btn.textContent = '✨ Improve with AI'; }, 1800);
+  } catch (e) {
+    btn.classList.add('ai-err');
+    btn.textContent = '⚠ Failed';
+    setTimeout(() => { btn.classList.remove('ai-err'); btn.textContent = '✨ Improve with AI'; }, 2500);
+    if (e.noKey) {
+      if (confirm('No Claude API key set.\n\nOpen AI Settings now to add one?')) openSettings();
+    } else {
+      alert('AI Improve failed:\n\n' + e.message);
+    }
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+AI_TARGET_IDS.forEach(id => attachAIButton(document.getElementById(id)));
+
+// ── SETTINGS MODAL ──────────────────────────────────────────────
+function openSettings() {
+  const s = getAISettings();
+  document.getElementById('set-api-key').value = s.apiKey;
+  document.getElementById('set-model').value = s.model;
+  document.getElementById('set-prompt').value = s.prompt;
+  document.getElementById('settings-modal').classList.add('open');
+}
+function closeSettings() {
+  document.getElementById('settings-modal').classList.remove('open');
+}
+function saveSettings() {
+  const key = document.getElementById('set-api-key').value.trim();
+  const model = document.getElementById('set-model').value;
+  const prompt = document.getElementById('set-prompt').value;
+  localStorage.setItem('90slab.ai.apiKey', key);
+  localStorage.setItem('90slab.ai.model', model);
+  localStorage.setItem('90slab.ai.prompt', prompt);
+  closeSettings();
+}
+function resetPromptToDefault() {
+  document.getElementById('set-prompt').value = AI_DEFAULT_PROMPT;
+}
+window.openSettings = openSettings;
+window.closeSettings = closeSettings;
+window.saveSettings = saveSettings;
+window.resetPromptToDefault = resetPromptToDefault;
+
+
 // ── SERVICE WORKER ──────────────────────────────────────────────
 // New version flow: new SW enters "installed" state → show toast → user clicks
 // Reload → we postMessage SKIP_WAITING → new SW activates → page reloads.
@@ -6247,6 +6444,44 @@ if ('serviceWorker' in navigator) {
     <div class="client-modal-footer">
       <button class="client-modal-close" onclick="exportCSV()" style="color:var(--rust);border-color:var(--rust);">📊 Export CSV</button>
       <button class="client-modal-close" onclick="closeClientModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SETTINGS MODAL ══════════════════════ -->
+<div class="client-modal-overlay" id="settings-modal" onclick="if(event.target===this)closeSettings()">
+  <div class="client-modal settings-modal">
+    <div class="client-modal-header">
+      <h2>AI Settings</h2>
+      <p style="font-size:12px;color:#8b7d6b;margin-top:4px;">Connect your Claude API key to enable “Improve with AI” on coach comments. Everything is stored locally in this browser.</p>
+    </div>
+    <div style="padding:18px 24px;overflow-y:auto;">
+      <div class="settings-field">
+        <label>Claude API Key</label>
+        <input id="set-api-key" type="password" placeholder="sk-ant-..." autocomplete="off">
+        <div class="settings-hint">Get one at console.anthropic.com → API Keys. Stored only in this browser's localStorage.</div>
+      </div>
+      <div class="settings-field">
+        <label>Model</label>
+        <select id="set-model">
+          <option value="claude-opus-4-7">Claude Opus 4.7 — best quality (slower, ~$0.005 / improve)</option>
+          <option value="claude-sonnet-4-6">Claude Sonnet 4.6 — balanced (faster, ~$0.001 / improve)</option>
+          <option value="claude-haiku-4-5">Claude Haiku 4.5 — cheapest (fastest, ~$0.0005 / improve)</option>
+        </select>
+        <div class="settings-hint">Haiku is plenty for short comment rewrites; switch up if quality matters.</div>
+      </div>
+      <div class="settings-field">
+        <label>Improve-with-AI prompt</label>
+        <textarea id="set-prompt" rows="10"></textarea>
+        <div class="settings-hint">Use <code style="background:#f0e8d8;padding:1px 4px;border-radius:3px;">{text}</code> as the placeholder for the coach's original comment.</div>
+      </div>
+    </div>
+    <div class="client-modal-footer" style="justify-content:space-between;">
+      <button class="client-modal-close btn-link" onclick="resetPromptToDefault()" style="color:var(--rust);border:0;text-decoration:underline;background:transparent;">Reset prompt to default</button>
+      <div style="display:flex;gap:8px;">
+        <button class="client-modal-close" onclick="closeSettings()">Cancel</button>
+        <button class="client-modal-close" onclick="saveSettings()" style="background:var(--ink);color:var(--cream);border-color:var(--ink);">Save</button>
+      </div>
     </div>
   </div>
 </div>
