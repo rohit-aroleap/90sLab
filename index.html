@@ -6236,15 +6236,17 @@ Coach note:
 const AI_DEFAULT_MODEL = 'claude-opus-4-7';
 
 function getAISettings() {
+  const ctxStored = localStorage.getItem('90slab.ai.sendContext');
   return {
     apiKey: localStorage.getItem('90slab.ai.apiKey') || '',
     model:  localStorage.getItem('90slab.ai.model')  || AI_DEFAULT_MODEL,
     prompt: localStorage.getItem('90slab.ai.prompt') || AI_DEFAULT_PROMPT,
+    sendContext: ctxStored === null ? true : ctxStored === 'true',
   };
 }
 
-async function callClaudeImprove(text) {
-  const { apiKey, model, prompt } = getAISettings();
+async function callClaudeImprove(text, taId) {
+  const { apiKey, model, prompt, sendContext } = getAISettings();
   if (!apiKey) {
     const err = new Error('Click ⚙ AI Settings in the sidebar to add your Claude API key.');
     err.noKey = true;
@@ -6252,7 +6254,9 @@ async function callClaudeImprove(text) {
   }
   if (!text || !text.trim()) throw new Error('Nothing to improve — type something first.');
 
-  const userMessage = prompt.includes('{text}') ? prompt.replace('{text}', text) : (prompt + '\n\n' + text);
+  const context = sendContext ? buildStationContext(taId) : '';
+  const basePrompt = prompt.includes('{text}') ? prompt.replace('{text}', text) : (prompt + '\n\n' + text);
+  const userMessage = context + basePrompt;
 
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -6293,6 +6297,52 @@ const AI_TARGET_IDS = [
   'f-notes',
 ];
 
+// Map textarea id → station label + score-display element id
+const AI_STATION_META = {
+  'f-chair-rec':   { name: 'Sit-to-Stand (Chair Stand)', scoreEl: 'chair-score-val-display' },
+  'f-chair-notes': { name: 'Sit-to-Stand (Chair Stand)', scoreEl: 'chair-score-val-display' },
+  'f-stair-rec':   { name: 'Stair Climb',                scoreEl: 'stair-score-val-display' },
+  'f-stair-notes': { name: 'Stair Climb',                scoreEl: 'stair-score-val-display' },
+  'f-balance-rec':   { name: 'Walk in the Dark (Balance)', scoreEl: 'balance-score-val-display' },
+  'f-balance-notes': { name: 'Walk in the Dark (Balance)', scoreEl: 'balance-score-val-display' },
+  'f-grip-rec':   { name: 'Grip Strength',  scoreEl: 'grip-score-val-display' },
+  'f-grip-notes': { name: 'Grip Strength',  scoreEl: 'grip-score-val-display' },
+  'f-sit-rec':    { name: 'Sit & Reach',    scoreEl: 'sit-score-val-display' },
+  'f-sit-notes':  { name: 'Sit & Reach',    scoreEl: 'sit-score-val-display' },
+  'f-reach-rec':   { name: 'Shoulder Reach', scoreEl: 'reach-score-val-display' },
+  'f-reach-notes': { name: 'Shoulder Reach', scoreEl: 'reach-score-val-display' },
+  'f-plank-rec':   { name: 'Plank',          scoreEl: 'plank-score-val-display' },
+  'f-plank-notes': { name: 'Plank',          scoreEl: 'plank-score-val-display' },
+  'f-squat-rec':   { name: 'Overhead Squat', scoreEl: 'squat-score-val-display' },
+  'f-squat-notes': { name: 'Overhead Squat', scoreEl: 'squat-score-val-display' },
+  'f-wall-rec':   { name: 'Wall Squat',      scoreEl: 'wall-score-val-display' },
+  'f-wall-notes': { name: 'Wall Squat',      scoreEl: 'wall-score-val-display' },
+  'f-notes':      { name: 'Overall clinical observations', scoreEl: null },
+};
+
+function buildStationContext(taId) {
+  const meta = AI_STATION_META[taId];
+  if (!meta) return '';
+  const fieldType = taId.endsWith('-rec')
+    ? 'a recommendation shown to the client'
+    : (taId === 'f-notes' ? 'overall clinical observations' : "the coach's free-text observations");
+  let scoreLine = '';
+  if (meta.scoreEl) {
+    const el = document.getElementById(meta.scoreEl);
+    const raw = el ? (el.textContent || '').trim() : '';
+    if (raw && raw !== '—' && raw !== '–') scoreLine = `\nClient's score on this station: ${raw} / 100.`;
+  }
+  // Pull a couple of client demographics if available
+  const name = (document.getElementById('f-name')||{}).value || '';
+  const age  = (document.getElementById('f-age') ||{}).value || '';
+  const sex  = (document.getElementById('f-sex') ||{}).value || '';
+  let demo = [];
+  if (age) demo.push(`age ${age}`);
+  if (sex) demo.push(sex);
+  const demoLine = demo.length ? `\nClient: ${demo.join(', ')}${name ? ' (' + name + ')' : ''}.` : '';
+  return `Context (do not restate verbatim, just use to inform tone and framing):\nStation: ${meta.name}.\nField being rewritten: ${fieldType}.${scoreLine}${demoLine}\n\n`;
+}
+
 function attachAIButton(ta) {
   if (!ta || ta.dataset.aiAttached === '1') return;
   ta.dataset.aiAttached = '1';
@@ -6320,7 +6370,7 @@ async function improveTextarea(ta, btn) {
   btn.disabled = true;
   btn.textContent = '⟳ Improving…';
   try {
-    const improved = await callClaudeImprove(original);
+    const improved = await callClaudeImprove(original, ta.id);
     ta.value = improved;
     // Mark as touched so auto-populate logic doesn't overwrite it later
     ta.dataset.touched = '1';
@@ -6350,6 +6400,7 @@ function openSettings() {
   document.getElementById('set-api-key').value = s.apiKey;
   document.getElementById('set-model').value = s.model;
   document.getElementById('set-prompt').value = s.prompt;
+  document.getElementById('set-send-context').checked = s.sendContext;
   document.getElementById('settings-modal').classList.add('open');
 }
 function closeSettings() {
@@ -6359,9 +6410,11 @@ function saveSettings() {
   const key = document.getElementById('set-api-key').value.trim();
   const model = document.getElementById('set-model').value;
   const prompt = document.getElementById('set-prompt').value;
+  const sendContext = document.getElementById('set-send-context').checked;
   localStorage.setItem('90slab.ai.apiKey', key);
   localStorage.setItem('90slab.ai.model', model);
   localStorage.setItem('90slab.ai.prompt', prompt);
+  localStorage.setItem('90slab.ai.sendContext', String(sendContext));
   closeSettings();
 }
 function resetPromptToDefault() {
@@ -6474,6 +6527,13 @@ if ('serviceWorker' in navigator) {
         <label>Improve-with-AI prompt</label>
         <textarea id="set-prompt" rows="10"></textarea>
         <div class="settings-hint">Use <code style="background:#f0e8d8;padding:1px 4px;border-radius:3px;">{text}</code> as the placeholder for the coach's original comment.</div>
+      </div>
+      <div class="settings-field">
+        <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-weight:500;font-size:13px;color:var(--ink);">
+          <input id="set-send-context" type="checkbox" style="width:auto;">
+          Send station context (station name, score, client age/sex) with each request
+        </label>
+        <div class="settings-hint">Lets Claude tailor the rewrite to the specific test. Recommended — turn off only if you want the prompt to be the only input.</div>
       </div>
     </div>
     <div class="client-modal-footer" style="justify-content:space-between;">
