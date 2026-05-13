@@ -1692,6 +1692,43 @@ body {
 .ai-improve-btn.ai-ok { background: var(--sage); }
 .ai-improve-btn.ai-err { background: #b04545; }
 .ai-ta-wrap textarea { padding-right: 110px !important; }
+.ai-gen-btn {
+  position: absolute;
+  top: 28px;
+  right: 6px;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  background: #7a6120;
+  color: #fff;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.75;
+  transition: opacity 0.15s;
+  z-index: 2;
+}
+.ai-gen-btn:hover { opacity: 1; }
+.ai-gen-btn:disabled { opacity: 0.4; cursor: wait; }
+.ai-gen-btn.ai-ok { background: var(--sage); }
+.ai-gen-btn.ai-err { background: #b04545; }
+.ai-gen-all-btn {
+  width: 100%;
+  padding: 9px 0;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  background: #7a6120;
+  color: #fff;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.15s, background 0.2s;
+}
+.ai-gen-all-btn:hover { opacity: 1; }
+.ai-gen-all-btn:disabled { opacity: 0.4; cursor: wait; }
 
 .settings-modal { width: 560px; }
 .settings-field { margin-bottom: 14px; }
@@ -1919,12 +1956,8 @@ body {
         <input type="number" inputmode="numeric" id="f-chair-prev" min="0" max="100" placeholder="Leave blank if first visit">
       </div>
       <div class="field" style="margin-top:10px;">
-        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
+        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendations &amp; Coach Notes <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
         <textarea id="f-chair-rec" rows="3" style="resize:vertical;" placeholder="Auto-populated from score — edit to personalise"></textarea>
-        <div class="field" style="margin-top:8px;">
-        <label>Coach comments (optional)</label>
-        <textarea id="f-chair-notes" rows="3" placeholder="e.g. Form was shaky on last 3 reps, used armrests slightly..." style="resize:vertical;"></textarea>
-        </div>
       </div>
         </div>
       </div>
@@ -2019,12 +2052,8 @@ body {
         <input type="number" inputmode="numeric" id="f-stair-prev" min="0" max="100" placeholder="Leave blank if first visit">
       </div>
       <div class="field" style="margin-top:10px;">
-        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
+        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendations &amp; Coach Notes <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
         <textarea id="f-stair-rec" rows="3" style="resize:vertical;" placeholder="Auto-populated from score — edit to personalise"></textarea>
-        <div class="field" style="margin-top:8px;">
-        <label>Coach comments (optional)</label>
-        <textarea id="f-stair-notes" rows="3" placeholder="e.g. Held railing on final 4 reps, breathing laboured..." style="resize:vertical;"></textarea>
-        </div>
       </div>
         </div>
       </div>
@@ -2181,12 +2210,8 @@ body {
         <input type="number" inputmode="numeric" id="f-balance-prev" min="0" max="100" placeholder="Leave blank if first visit">
       </div>
       <div class="field" style="margin-top:10px;">
-        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
+        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendations &amp; Coach Notes <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
         <textarea id="f-balance-rec" rows="3" style="resize:vertical;" placeholder="Auto-populated from score — edit to personalise"></textarea>
-        <div class="field" style="margin-top:8px;">
-        <label>Coach comments (optional)</label>
-        <textarea id="f-balance-notes" rows="3" placeholder="e.g. Visible tremor on left leg, arms used for balance..." style="resize:vertical;"></textarea>
-        </div>
       </div>
         </div>
       </div>
@@ -2239,12 +2264,8 @@ body {
         <input type="number" inputmode="numeric" id="f-grip-prev" min="0" max="100" placeholder="Leave blank if first visit">
       </div>
       <div class="field" style="margin-top:10px;">
-        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
+        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendations &amp; Coach Notes <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
         <textarea id="f-grip-rec" rows="3" style="resize:vertical;" placeholder="Auto-populated from score — edit to personalise"></textarea>
-        <div class="field" style="margin-top:8px;">
-        <label>Coach comments (optional)</label>
-        <textarea id="f-grip-notes" rows="3" placeholder="e.g. Dominant hand noticeably weaker than expected..." style="resize:vertical;"></textarea>
-        </div>
       </div>
         </div>
       </div>
@@ -2288,12 +2309,8 @@ body {
         <input type="number" inputmode="numeric" id="f-sit-prev" min="0" max="100" placeholder="First visit?">
       </div>
       <div class="field" style="margin-top:10px;">
-        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
+        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendations &amp; Coach Notes <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
         <textarea id="f-sit-rec" rows="3" style="resize:vertical;" placeholder="Auto-populated from score — edit to personalise"></textarea>
-        <div class="field" style="margin-top:8px;">
-        <label>Coach comments (optional)</label>
-        <textarea id="f-sit-notes" rows="3" placeholder="e.g. Visibly struggled on left side, hip tightness noted..." style="resize:vertical;"></textarea>
-        </div>
       </div>
         </div>
       </div>
@@ -2337,12 +2354,8 @@ body {
         <input type="number" inputmode="numeric" id="f-reach-prev" min="0" max="100" placeholder="First visit?">
       </div>
       <div class="field" style="margin-top:10px;">
-        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
+        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendations &amp; Coach Notes <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
         <textarea id="f-reach-rec" rows="3" style="resize:vertical;" placeholder="Auto-populated from score — edit to personalise"></textarea>
-        <div class="field" style="margin-top:8px;">
-        <label>Coach comments (optional)</label>
-        <textarea id="f-reach-notes" rows="3" placeholder="e.g. Right shoulder significantly tighter than left..." style="resize:vertical;"></textarea>
-        </div>
       </div>
         </div>
       </div>
@@ -2382,12 +2395,8 @@ body {
         <input type="number" inputmode="numeric" id="f-plank-prev" min="0" max="100" placeholder="Leave blank if first visit">
       </div>
       <div class="field" style="margin-top:10px;">
-        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
+        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendations &amp; Coach Notes <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
         <textarea id="f-plank-rec" rows="3" style="resize:vertical;" placeholder="Auto-populated from score — edit to personalise"></textarea>
-        <div class="field" style="margin-top:8px;">
-        <label>Coach comments (optional)</label>
-        <textarea id="f-plank-notes" rows="3" placeholder="e.g. Hips dropped at 35 sec, form broke down..." style="resize:vertical;"></textarea>
-        </div>
       </div>
         </div>
       </div>
@@ -2475,12 +2484,8 @@ body {
         <input type="number" inputmode="numeric" id="f-squat-prev" min="0" max="100" placeholder="Leave blank if first visit">
       </div>
       <div class="field" style="margin-top:10px;">
-        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
+        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendations &amp; Coach Notes <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
         <textarea id="f-squat-rec" rows="3" style="resize:vertical;" placeholder="Auto-populated from score — edit to personalise"></textarea>
-        <div class="field" style="margin-top:8px;">
-        <label>Coach comments (optional)</label>
-        <textarea id="f-squat-notes" rows="3" placeholder="e.g. Right knee collapsed at bottom, significant forward lean noted..." style="resize:vertical;"></textarea>
-        </div>
       </div>
         </div>
       </div>
@@ -2520,12 +2525,8 @@ body {
         <input type="number" inputmode="numeric" id="f-wall-prev" min="0" max="100" placeholder="Leave blank if first visit">
       </div>
       <div class="field" style="margin-top:10px;">
-        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendation <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
+        <label style="display:flex;justify-content:space-between;align-items:center;">Recommendations &amp; Coach Notes <span style="font-weight:400;opacity:0.5;font-size:9px;">editable</span></label>
         <textarea id="f-wall-rec" rows="3" style="resize:vertical;" placeholder="Auto-populated from score — edit to personalise"></textarea>
-        <div class="field" style="margin-top:8px;">
-        <label>Coach comments (optional)</label>
-        <textarea id="f-wall-notes" rows="3" placeholder="e.g. Knees shaking at 25 sec, right knee tracking inward..." style="resize:vertical;"></textarea>
-        </div>
       </div>
         </div>
       </div>
@@ -2637,6 +2638,9 @@ body {
     </div>
     <div style="display:flex;gap:8px;padding:0 32px 8px;">
       <button class="btn-secondary" style="flex:1;margin:0;" onclick="exportCSV()">📊 Export CSV</button>
+    </div>
+    <div style="padding:0 32px 8px;">
+      <button class="ai-gen-all-btn" onclick="generateAllRecs(this)">✦ Generate All Recs</button>
     </div>
     <div id="save-status" style="text-align:center;font-size:10px;color:#8a7968;padding:0 32px 24px;letter-spacing:0.1em;"></div>
 
@@ -6234,14 +6238,16 @@ const AI_DEFAULT_PROMPT = `You are a professional fitness coach writing assistan
 Coach note:
 {text}`;
 const AI_DEFAULT_MODEL = 'claude-opus-4-7';
+const AI_DEFAULT_COACH_STYLE = `Write in a warm, encouraging tone. Lead with what the client did well, then give one specific and actionable suggestion. Keep each recommendation to 2–3 concise sentences. Avoid jargon — speak plainly so the client can easily act on the advice. Address the client directly using "you" and "your".`;
 
 function getAISettings() {
   const ctxStored = localStorage.getItem('90slab.ai.sendContext');
   return {
-    apiKey: localStorage.getItem('90slab.ai.apiKey') || '',
-    model:  localStorage.getItem('90slab.ai.model')  || AI_DEFAULT_MODEL,
-    prompt: localStorage.getItem('90slab.ai.prompt') || AI_DEFAULT_PROMPT,
+    apiKey:     localStorage.getItem('90slab.ai.apiKey')      || '',
+    model:      localStorage.getItem('90slab.ai.model')       || AI_DEFAULT_MODEL,
+    prompt:     localStorage.getItem('90slab.ai.prompt')      || AI_DEFAULT_PROMPT,
     sendContext: ctxStored === null ? true : ctxStored === 'true',
+    coachStyle: localStorage.getItem('90slab.ai.coachStyle')  || AI_DEFAULT_COACH_STYLE,
   };
 }
 
@@ -6285,39 +6291,30 @@ async function callClaudeImprove(text, taId) {
 }
 
 const AI_TARGET_IDS = [
-  'f-chair-rec', 'f-chair-notes',
-  'f-stair-rec', 'f-stair-notes',
-  'f-balance-rec', 'f-balance-notes',
-  'f-grip-rec', 'f-grip-notes',
-  'f-sit-rec', 'f-sit-notes',
-  'f-reach-rec', 'f-reach-notes',
-  'f-plank-rec', 'f-plank-notes',
-  'f-squat-rec', 'f-squat-notes',
-  'f-wall-rec', 'f-wall-notes',
+  'f-chair-rec',
+  'f-stair-rec',
+  'f-balance-rec',
+  'f-grip-rec',
+  'f-sit-rec',
+  'f-reach-rec',
+  'f-plank-rec',
+  'f-squat-rec',
+  'f-wall-rec',
   'f-notes',
 ];
 
 // Map textarea id → station label + score-display element id
 const AI_STATION_META = {
-  'f-chair-rec':   { name: 'Sit-to-Stand (Chair Stand)', scoreEl: 'chair-score-val-display' },
-  'f-chair-notes': { name: 'Sit-to-Stand (Chair Stand)', scoreEl: 'chair-score-val-display' },
-  'f-stair-rec':   { name: 'Stair Climb',                scoreEl: 'stair-score-val-display' },
-  'f-stair-notes': { name: 'Stair Climb',                scoreEl: 'stair-score-val-display' },
-  'f-balance-rec':   { name: 'Walk in the Dark (Balance)', scoreEl: 'balance-score-val-display' },
-  'f-balance-notes': { name: 'Walk in the Dark (Balance)', scoreEl: 'balance-score-val-display' },
-  'f-grip-rec':   { name: 'Grip Strength',  scoreEl: 'grip-score-val-display' },
-  'f-grip-notes': { name: 'Grip Strength',  scoreEl: 'grip-score-val-display' },
-  'f-sit-rec':    { name: 'Sit & Reach',    scoreEl: 'sit-score-val-display' },
-  'f-sit-notes':  { name: 'Sit & Reach',    scoreEl: 'sit-score-val-display' },
-  'f-reach-rec':   { name: 'Shoulder Reach', scoreEl: 'reach-score-val-display' },
-  'f-reach-notes': { name: 'Shoulder Reach', scoreEl: 'reach-score-val-display' },
-  'f-plank-rec':   { name: 'Plank',          scoreEl: 'plank-score-val-display' },
-  'f-plank-notes': { name: 'Plank',          scoreEl: 'plank-score-val-display' },
-  'f-squat-rec':   { name: 'Overhead Squat', scoreEl: 'squat-score-val-display' },
-  'f-squat-notes': { name: 'Overhead Squat', scoreEl: 'squat-score-val-display' },
-  'f-wall-rec':   { name: 'Wall Squat',      scoreEl: 'wall-score-val-display' },
-  'f-wall-notes': { name: 'Wall Squat',      scoreEl: 'wall-score-val-display' },
-  'f-notes':      { name: 'Overall clinical observations', scoreEl: null },
+  'f-chair-rec':   { name: 'Sit-to-Stand (Chair Stand)',  scoreEl: 'chair-score-val-display' },
+  'f-stair-rec':   { name: 'Stair Climb',                 scoreEl: 'stair-score-val-display' },
+  'f-balance-rec': { name: 'Walk in the Dark (Balance)',  scoreEl: 'balance-score-val-display' },
+  'f-grip-rec':    { name: 'Grip Strength',               scoreEl: 'grip-score-val-display' },
+  'f-sit-rec':     { name: 'Sit & Reach',                 scoreEl: 'sit-score-val-display' },
+  'f-reach-rec':   { name: 'Shoulder Reach',              scoreEl: 'reach-score-val-display' },
+  'f-plank-rec':   { name: 'Plank',                       scoreEl: 'plank-score-val-display' },
+  'f-squat-rec':   { name: 'Overhead Squat',              scoreEl: 'squat-score-val-display' },
+  'f-wall-rec':    { name: 'Wall Squat',                  scoreEl: 'wall-score-val-display' },
+  'f-notes':       { name: 'Overall clinical observations', scoreEl: null },
 };
 
 function buildStationContext(taId) {
@@ -6401,6 +6398,7 @@ function openSettings() {
   document.getElementById('set-model').value = s.model;
   document.getElementById('set-prompt').value = s.prompt;
   document.getElementById('set-send-context').checked = s.sendContext;
+  document.getElementById('set-coach-style').value = s.coachStyle;
   document.getElementById('settings-modal').classList.add('open');
 }
 function closeSettings() {
@@ -6411,10 +6409,12 @@ function saveSettings() {
   const model = document.getElementById('set-model').value;
   const prompt = document.getElementById('set-prompt').value;
   const sendContext = document.getElementById('set-send-context').checked;
+  const coachStyle = document.getElementById('set-coach-style').value;
   localStorage.setItem('90slab.ai.apiKey', key);
   localStorage.setItem('90slab.ai.model', model);
   localStorage.setItem('90slab.ai.prompt', prompt);
   localStorage.setItem('90slab.ai.sendContext', String(sendContext));
+  localStorage.setItem('90slab.ai.coachStyle', coachStyle);
   closeSettings();
 }
 function resetPromptToDefault() {
@@ -6425,6 +6425,208 @@ window.closeSettings = closeSettings;
 window.saveSettings = saveSettings;
 window.resetPromptToDefault = resetPromptToDefault;
 
+// ── AI GENERATE RECOMMENDATIONS ─────────────────────────────────
+const STATION_NAMES_MAP = {
+  chair:   'Sit-to-Stand (Chair Stand)',
+  stair:   'Stair Climb',
+  balance: 'Walk in the Dark (Balance)',
+  grip:    'Grip Strength',
+  sit:     'Sit & Reach',
+  reach:   'Shoulder Reach',
+  plank:   'Plank',
+  squat:   'Overhead Squat',
+  wall:    'Wall Squat',
+};
+
+function collectAssessmentData() {
+  const v  = id => (document.getElementById(id) || {}).value || '';
+  const tx = id => { const el = document.getElementById(id); return el ? (el.textContent || el.innerText || '').trim() : ''; };
+  const stations = Object.entries(STATION_NAMES_MAP).map(([key, name]) => ({
+    key, name,
+    score: tx(key + '-score-val-display'),
+  }));
+  return {
+    name:     v('f-name'),
+    age:      v('f-age'),
+    sex:      v('f-sex'),
+    stations,
+  };
+}
+
+function buildGenerateAllPrompt() {
+  const { coachStyle } = getAISettings();
+  const data = collectAssessmentData();
+  const demo = [data.age && `Age: ${data.age}`, data.sex && `Sex: ${data.sex}`].filter(Boolean).join(', ');
+  const scored = data.stations.filter(s => s.score && s.score !== '—' && s.score !== '–' && s.score !== '');
+  const stationLines = scored.length
+    ? scored.map(s => `- ${s.name}: ${s.score}/100`).join('\n')
+    : '(No scores entered yet — write a brief general tip for each movement.)';
+  return `You are an expert fitness assessment coach generating client recommendations.
+
+CLIENT:
+Name: ${data.name || 'Client'}${demo ? '\n' + demo : ''}
+
+ASSESSMENT RESULTS (score out of 100):
+${stationLines}
+
+COACHING STYLE:
+${coachStyle || AI_DEFAULT_COACH_STYLE}
+
+Return a JSON object ONLY — no preamble, no explanation, no markdown fences. Use exactly these keys: chair, stair, balance, grip, sit, reach, plank, squat, wall. Each value is the recommendation string for that station.`;
+}
+
+function buildGenerateOnePrompt(stationKey) {
+  const { coachStyle } = getAISettings();
+  const data = collectAssessmentData();
+  const station = data.stations.find(s => s.key === stationKey) || {};
+  const hasScore = station.score && station.score !== '—' && station.score !== '–' && station.score !== '';
+  const scoreLine = hasScore ? `Score: ${station.score}/100` : 'Score: not yet entered';
+  const demo = [data.age && `Age: ${data.age}`, data.sex && `Sex: ${data.sex}`].filter(Boolean).join(', ');
+  return `You are an expert fitness assessment coach writing a recommendation for one station.
+
+CLIENT:
+Name: ${data.name || 'Client'}${demo ? '\n' + demo : ''}
+
+STATION: ${STATION_NAMES_MAP[stationKey] || stationKey}
+${scoreLine}
+
+COACHING STYLE:
+${coachStyle || AI_DEFAULT_COACH_STYLE}
+
+Return only the recommendation text. No preamble, no quotes, no explanation.`;
+}
+
+async function callClaudeGenerate(prompt) {
+  const { apiKey, model } = getAISettings();
+  if (!apiKey) {
+    const err = new Error('Click ⚙ AI Settings in the sidebar to add your Claude API key.');
+    err.noKey = true;
+    throw err;
+  }
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: model,
+      max_tokens: 2048,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+  if (!resp.ok) {
+    let msg = 'API error ' + resp.status;
+    try { const j = await resp.json(); if (j && j.error && j.error.message) msg = j.error.message; } catch(e) {}
+    throw new Error(msg);
+  }
+  const data = await resp.json();
+  const block = (data.content || []).find(b => b.type === 'text');
+  if (!block || !block.text) throw new Error('Empty response from Claude.');
+  return block.text.trim();
+}
+
+async function generateAllRecs(btn) {
+  const { apiKey } = getAISettings();
+  if (!apiKey) {
+    if (confirm('No Claude API key set.\n\nOpen AI Settings now to add one?')) openSettings();
+    return;
+  }
+  const keys = Object.keys(STATION_NAMES_MAP);
+  const existingFilled = keys.some(k => {
+    const ta = document.getElementById('f-' + k + '-rec');
+    return ta && ta.value.trim();
+  });
+  if (existingFilled && !confirm('Some recommendations already have content. Replace all with AI-generated versions?')) return;
+  btn.disabled = true;
+  btn.textContent = '⟳ Generating all recs…';
+  try {
+    const raw = await callClaudeGenerate(buildGenerateAllPrompt());
+    let parsed;
+    try {
+      const clean = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+      parsed = JSON.parse(clean);
+    } catch(e) {
+      throw new Error('Could not parse Claude response.\n\n' + raw.substring(0, 400));
+    }
+    keys.forEach(k => {
+      const ta = document.getElementById('f-' + k + '-rec');
+      if (ta && parsed[k]) {
+        ta.value = String(parsed[k]);
+        ta.dataset.touched = '1';
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+    btn.textContent = '✦ Generate All Recs';
+    btn.style.background = 'var(--sage)';
+    setTimeout(() => { btn.style.background = ''; }, 2000);
+  } catch(e) {
+    btn.textContent = '✦ Generate All Recs';
+    if (e.noKey) {
+      if (confirm('No Claude API key.\n\nOpen AI Settings?')) openSettings();
+    } else {
+      alert('Generate failed:\n\n' + e.message);
+    }
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function generateStationRec(stationKey, btn) {
+  const { apiKey } = getAISettings();
+  if (!apiKey) {
+    if (confirm('No Claude API key set.\n\nOpen AI Settings now to add one?')) openSettings();
+    return;
+  }
+  const ta = document.getElementById('f-' + stationKey + '-rec');
+  if (ta && ta.value.trim() && !confirm('This field already has content. Replace with an AI-generated recommendation?')) return;
+  btn.disabled = true;
+  btn.textContent = '⟳ …';
+  try {
+    const text = await callClaudeGenerate(buildGenerateOnePrompt(stationKey));
+    if (ta) {
+      ta.value = text;
+      ta.dataset.touched = '1';
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    btn.classList.add('ai-ok');
+    btn.textContent = '✓ Done';
+    setTimeout(() => { btn.classList.remove('ai-ok'); btn.textContent = '✦ Generate'; }, 1800);
+  } catch(e) {
+    btn.classList.add('ai-err');
+    btn.textContent = '⚠ Err';
+    setTimeout(() => { btn.classList.remove('ai-err'); btn.textContent = '✦ Generate'; }, 2500);
+    if (e.noKey) {
+      if (confirm('No Claude API key.\n\nOpen AI Settings?')) openSettings();
+    } else {
+      alert('Generate failed:\n\n' + e.message);
+    }
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function attachGenerateButton(ta, stationKey) {
+  if (!ta || ta.dataset.genAttached === '1') return;
+  ta.dataset.genAttached = '1';
+  const wrap = ta.closest('.ai-ta-wrap') || ta.parentElement;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'ai-gen-btn';
+  btn.textContent = '✦ Generate';
+  btn.title = 'Generate recommendation from assessment data using Claude';
+  btn.addEventListener('click', () => generateStationRec(stationKey, btn));
+  wrap.appendChild(btn);
+}
+
+window.generateAllRecs = generateAllRecs;
+
+// Attach per-station generate buttons (after improve buttons are already attached)
+Object.keys(STATION_NAMES_MAP).forEach(k => {
+  attachGenerateButton(document.getElementById('f-' + k + '-rec'), k);
+});
 
 // ── SERVICE WORKER ──────────────────────────────────────────────
 // New version flow: new SW enters "installed" state → show toast → user clicks
@@ -6506,7 +6708,7 @@ if ('serviceWorker' in navigator) {
   <div class="client-modal settings-modal">
     <div class="client-modal-header">
       <h2>AI Settings</h2>
-      <p style="font-size:12px;color:#8b7d6b;margin-top:4px;">Connect your Claude API key to enable “Improve with AI” on coach comments. Everything is stored locally in this browser.</p>
+      <p style=”font-size:12px;color:#8b7d6b;margin-top:4px;”>Connect your Claude API key to enable AI-generated recommendations and “Improve with AI”. Everything is stored locally in this browser.</p>
     </div>
     <div style="padding:18px 24px;overflow-y:auto;">
       <div class="settings-field">
@@ -6534,6 +6736,11 @@ if ('serviceWorker' in navigator) {
           Send station context (station name, score, client age/sex) with each request
         </label>
         <div class="settings-hint">Lets Claude tailor the rewrite to the specific test. Recommended — turn off only if you want the prompt to be the only input.</div>
+      </div>
+      <div class="settings-field">
+        <label>Coach Style &amp; Method <span style="font-weight:400;font-size:10px;color:#8b7d6b;letter-spacing:0;">(used when generating recommendations)</span></label>
+        <textarea id="set-coach-style" rows="5" placeholder="Describe your coaching style, tone, and approach. e.g. 'Write warmly and encourage the client. Lead with a positive, then give one specific actionable tip. Keep it to 2–3 sentences. Avoid jargon. Address the client directly.'"></textarea>
+        <div class="settings-hint">Claude uses these instructions when generating recommendations from assessment data. Leave blank to use the built-in default.</div>
       </div>
     </div>
     <div class="client-modal-footer" style="justify-content:space-between;">
