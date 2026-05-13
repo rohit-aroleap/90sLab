@@ -6472,16 +6472,39 @@ ${stationLines}
 COACHING STYLE:
 ${coachStyle || AI_DEFAULT_COACH_STYLE}
 
-Return a JSON object ONLY — no preamble, no explanation, no markdown fences. Use exactly these keys: chair, stair, balance, grip, sit, reach, plank, squat, wall. Each value is the recommendation string for that station.`;
+Return a JSON object ONLY — no preamble, no explanation, no markdown fences. Use exactly these keys: chair, stair, balance, grip, sit, reach, plank, squat, wall, overall. Each value is a string. For the first 9 keys, write the recommendation for that station. For "overall", write a concise overall summary (3–5 sentences) that synthesises all the station results and calls out the top 3 priorities the client should focus on — ordered from most to least impactful.`;
 }
 
 function buildGenerateOnePrompt(stationKey) {
   const { coachStyle } = getAISettings();
   const data = collectAssessmentData();
+  const demo = [data.age && `Age: ${data.age}`, data.sex && `Sex: ${data.sex}`].filter(Boolean).join(', ');
+
+  if (stationKey === 'notes') {
+    const scored = data.stations
+      .filter(s => s.score && s.score !== '—' && s.score !== '–' && s.score !== '')
+      .map(s => ({ ...s, scoreNum: parseInt(s.score, 10) }))
+      .sort((a, b) => a.scoreNum - b.scoreNum);
+    const stationLines = scored.length
+      ? scored.map(s => `- ${s.name}: ${s.score}/100`).join('\n')
+      : '(No scores entered yet)';
+    return `You are an expert fitness assessment coach writing an overall notes section for a client assessment report.
+
+CLIENT:
+Name: ${data.name || 'Client'}${demo ? '\n' + demo : ''}
+
+ALL STATION RESULTS (sorted lowest to highest):
+${stationLines}
+
+COACHING STYLE:
+${coachStyle || AI_DEFAULT_COACH_STYLE}
+
+Identify the 3 stations that need the most work (lowest scores). For each, write 1–2 sentences explaining why it matters for this client's health and what they should focus on to improve it. Be specific and practical — not generic. Keep the total response concise (under 120 words). Return only the notes text, no preamble, no headings, no bullet points, no quotes.`;
+  }
+
   const station = data.stations.find(s => s.key === stationKey) || {};
   const hasScore = station.score && station.score !== '—' && station.score !== '–' && station.score !== '';
   const scoreLine = hasScore ? `Score: ${station.score}/100` : 'Score: not yet entered';
-  const demo = [data.age && `Age: ${data.age}`, data.sex && `Sex: ${data.sex}`].filter(Boolean).join(', ');
   return `You are an expert fitness assessment coach writing a recommendation for one station.
 
 CLIENT:
@@ -6535,10 +6558,11 @@ async function generateAllRecs(btn) {
     return;
   }
   const keys = Object.keys(STATION_NAMES_MAP);
+  const notesEl = document.getElementById('f-notes');
   const existingFilled = keys.some(k => {
     const ta = document.getElementById('f-' + k + '-rec');
     return ta && ta.value.trim();
-  });
+  }) || (notesEl && notesEl.value.trim());
   if (existingFilled && !confirm('Some recommendations already have content. Replace all with AI-generated versions?')) return;
   btn.disabled = true;
   btn.textContent = '⟳ Generating all recs…';
@@ -6559,6 +6583,11 @@ async function generateAllRecs(btn) {
         ta.dispatchEvent(new Event('input', { bubbles: true }));
       }
     });
+    if (parsed.overall && notesEl) {
+      notesEl.value = String(parsed.overall);
+      notesEl.dataset.touched = '1';
+      notesEl.dispatchEvent(new Event('input', { bubbles: true }));
+    }
     btn.textContent = '✦ Generate All Recs';
     btn.style.background = 'var(--sage)';
     setTimeout(() => { btn.style.background = ''; }, 2000);
@@ -6580,7 +6609,7 @@ async function generateStationRec(stationKey, btn) {
     if (confirm('No Claude API key set.\n\nOpen AI Settings now to add one?')) openSettings();
     return;
   }
-  const ta = document.getElementById('f-' + stationKey + '-rec');
+  const ta = document.getElementById(stationKey === 'notes' ? 'f-notes' : 'f-' + stationKey + '-rec');
   if (ta && ta.value.trim() && !confirm('This field already has content. Replace with an AI-generated recommendation?')) return;
   btn.disabled = true;
   btn.textContent = '⟳ …';
@@ -6616,7 +6645,9 @@ function attachGenerateButton(ta, stationKey) {
   btn.type = 'button';
   btn.className = 'ai-gen-btn';
   btn.textContent = '✦ Generate';
-  btn.title = 'Generate recommendation from assessment data using Claude';
+  btn.title = stationKey === 'notes'
+    ? 'Generate overall notes focusing on the top 3 areas needing the most work'
+    : 'Generate recommendation from assessment data using Claude';
   btn.addEventListener('click', () => generateStationRec(stationKey, btn));
   wrap.appendChild(btn);
 }
@@ -6627,6 +6658,8 @@ window.generateAllRecs = generateAllRecs;
 Object.keys(STATION_NAMES_MAP).forEach(k => {
   attachGenerateButton(document.getElementById('f-' + k + '-rec'), k);
 });
+// Overall Notes standalone generate button (top 3 weakest stations)
+attachGenerateButton(document.getElementById('f-notes'), 'notes');
 
 // ── SERVICE WORKER ──────────────────────────────────────────────
 // New version flow: new SW enters "installed" state → show toast → user clicks
