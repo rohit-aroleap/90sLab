@@ -1856,6 +1856,11 @@ body {
         <div></div>
       </div>
 
+      <div class="field">
+        <label>Client Conditions &amp; Context <span style="font-weight:400;opacity:0.5;font-size:9px;">used by AI recommendations</span></label>
+        <textarea id="f-client-context" rows="2" style="resize:vertical;" placeholder="e.g. arthritis in left knee, relies on quads not glutes, rheumatoid arthritis, history of lower back injury…"></textarea>
+      </div>
+
       <!-- Assessment Timer -->
       <div class="field timer-row">
         <label>Assessment Timer</label>
@@ -5270,7 +5275,7 @@ function resetForm() {
 // ── SAVE / LOAD ──────────────────────────────────────────────────
 const SAVE_KEY = '90slab_form';
 const FIELDS = [
-  'f-firstname','f-lastname','f-age','f-gender','f-date','f-staff',
+  'f-firstname','f-lastname','f-age','f-gender','f-date','f-staff','f-client-context',
   'f-chair-height','f-chair-reps','f-chair-lower','f-chair-challenge-height','f-chair-challenge-reps','f-chair-easier-height','f-chair-easier-reps','f-chair-prev','f-chair-notes',
   'f-stair-height','f-stair-reps','f-stair-higher','f-stair-challenge-height','f-stair-challenge-reps','f-stair-easier-height','f-stair-easier-reps','f-stair-prev','f-stair-notes',
   'f-balance-left','f-balance-right','f-balance-both','f-balance-harder',
@@ -6329,15 +6334,19 @@ function buildStationContext(taId) {
     const raw = el ? (el.textContent || '').trim() : '';
     if (raw && raw !== '—' && raw !== '–') scoreLine = `\nClient's score on this station: ${raw} / 100.`;
   }
-  // Pull a couple of client demographics if available
-  const name = (document.getElementById('f-name')||{}).value || '';
-  const age  = (document.getElementById('f-age') ||{}).value || '';
-  const sex  = (document.getElementById('f-sex') ||{}).value || '';
+  // Pull client demographics and conditions
+  const fn  = (document.getElementById('f-firstname')||{}).value || '';
+  const ln  = (document.getElementById('f-lastname') ||{}).value || '';
+  const name = (fn + ' ' + ln).trim();
+  const age  = (document.getElementById('f-age')   ||{}).value || '';
+  const sex  = (document.getElementById('f-gender') ||{}).value || '';
+  const ctx  = (document.getElementById('f-client-context')||{}).value || '';
   let demo = [];
   if (age) demo.push(`age ${age}`);
   if (sex) demo.push(sex);
   const demoLine = demo.length ? `\nClient: ${demo.join(', ')}${name ? ' (' + name + ')' : ''}.` : '';
-  return `Context (do not restate verbatim, just use to inform tone and framing):\nStation: ${meta.name}.\nField being rewritten: ${fieldType}.${scoreLine}${demoLine}\n\n`;
+  const ctxLine  = ctx ? `\nClient conditions/context: ${ctx}.` : '';
+  return `Context (do not restate verbatim, just use to inform tone and framing):\nStation: ${meta.name}.\nField being rewritten: ${fieldType}.${scoreLine}${demoLine}${ctxLine}\n\n`;
 }
 
 function attachAIButton(ta) {
@@ -6446,9 +6455,10 @@ function collectAssessmentData() {
     score: tx(key + '-score-val-display'),
   }));
   return {
-    name:     v('f-name'),
+    name:     (v('f-firstname') + ' ' + v('f-lastname')).trim() || 'Client',
     age:      v('f-age'),
-    sex:      v('f-sex'),
+    sex:      v('f-gender'),
+    context:  v('f-client-context'),
     stations,
   };
 }
@@ -6461,10 +6471,11 @@ function buildGenerateAllPrompt() {
   const stationLines = scored.length
     ? scored.map(s => `- ${s.name}: ${s.score}/100`).join('\n')
     : '(No scores entered yet — write a brief general tip for each movement.)';
+  const contextLine = data.context ? `\nCLIENT CONDITIONS / CONTEXT (factor into every recommendation):\n${data.context}` : '';
   return `You are an expert fitness assessment coach generating client recommendations.
 
 CLIENT:
-Name: ${data.name || 'Client'}${demo ? '\n' + demo : ''}
+Name: ${data.name}${demo ? '\n' + demo : ''}${contextLine}
 
 ASSESSMENT RESULTS (score out of 100):
 ${stationLines}
@@ -6480,6 +6491,8 @@ function buildGenerateOnePrompt(stationKey) {
   const data = collectAssessmentData();
   const demo = [data.age && `Age: ${data.age}`, data.sex && `Sex: ${data.sex}`].filter(Boolean).join(', ');
 
+  const contextLine = data.context ? `\nCLIENT CONDITIONS / CONTEXT (factor into your recommendation):\n${data.context}` : '';
+
   if (stationKey === 'notes') {
     const scored = data.stations
       .filter(s => s.score && s.score !== '—' && s.score !== '–' && s.score !== '')
@@ -6491,7 +6504,7 @@ function buildGenerateOnePrompt(stationKey) {
     return `You are an expert fitness assessment coach writing an overall notes section for a client assessment report.
 
 CLIENT:
-Name: ${data.name || 'Client'}${demo ? '\n' + demo : ''}
+Name: ${data.name}${demo ? '\n' + demo : ''}${contextLine}
 
 ALL STATION RESULTS (sorted lowest to highest):
 ${stationLines}
@@ -6508,7 +6521,7 @@ Identify the 3 stations that need the most work (lowest scores). For each, write
   return `You are an expert fitness assessment coach writing a recommendation for one station.
 
 CLIENT:
-Name: ${data.name || 'Client'}${demo ? '\n' + demo : ''}
+Name: ${data.name}${demo ? '\n' + demo : ''}${contextLine}
 
 STATION: ${STATION_NAMES_MAP[stationKey] || stationKey}
 ${scoreLine}
