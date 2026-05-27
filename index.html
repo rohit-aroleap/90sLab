@@ -2298,7 +2298,7 @@ body {
           <input type="number" inputmode="numeric" id="f-sit-right" min="-20" max="60" step="0.5" placeholder="e.g. 8 or -3">
         </div>
       </div>
-      <div class="field-hint" style="margin-top:-10px;margin-bottom:8px;">Scored on worst side. Normative brackets adjust by age &amp; sex — Rikli &amp; Jones (2013) for 60+, ACSM for 18–49.</div>
+      <div class="field-hint" style="margin-top:-10px;margin-bottom:8px;">Scored on worst side. Age bonus applied: 51–65 → +4 cm · 66–80 → +8 cm · 81+ → +12 cm.</div>
       <div class="score-input-preview">
         <span id="sit-score-label-display">—</span>
         <div class="score-bar-wrap"><div class="score-bar-fill" id="sit-score-bar"></div></div>
@@ -3079,7 +3079,60 @@ function render() {
   const sitAge     = num('f-age') || 30;
   const sitGender  = val('f-gender') || 'male';
 
-  const sitScore = (val('f-sit-left') === '' && val('f-sit-right') === '') ? 0 : calcSitScore(sitWorst, sitAge, sitGender);
+  // Brackets: younger = stricter, older = more forgiving (90s simulation)
+  // Returns [lowerBound, upperBound] for "On Track" range
+  // Source: ACSM/YMCA (ages 18–49 floor-based) · Rikli & Jones 2013 (ages 60–94 chair) · extrapolated (ages 50–59)
+  // App convention: positive = short of toes (worse), negative = past toes (better)
+  function sitBracket(ag, gender) {
+    if (gender === 'female') {
+      if (ag <= 29) return [-8,  2];
+      if (ag <= 39) return [-6,  4];
+      if (ag <= 49) return [-4,  6];
+      if (ag <= 54) return [-5.5, -0.5];
+      if (ag <= 59) return [-4.5,  0.0];
+      if (ag <= 64) return [-5.0,  0.5];
+      if (ag <= 69) return [-5.0,  0.5];
+      if (ag <= 74) return [-4.5,  1.0];
+      if (ag <= 79) return [-4.0,  1.5];
+      if (ag <= 84) return [-3.0,  2.0];
+      if (ag <= 89) return [-2.5,  2.5];
+      return              [-2.0,  3.0];
+    } else {
+      if (ag <= 29) return [-4,  6];
+      if (ag <= 39) return [-2,  8];
+      if (ag <= 49) return [ 0, 10];
+      if (ag <= 54) return [-4.5,  1.0];
+      if (ag <= 59) return [-3.5,  2.0];
+      if (ag <= 64) return [-4.0,  2.5];
+      if (ag <= 69) return [-3.0,  3.0];
+      if (ag <= 74) return [-2.5,  3.5];
+      if (ag <= 79) return [-2.0,  4.0];
+      if (ag <= 84) return [-1.5,  5.5];
+      if (ag <= 89) return [-0.5,  5.5];
+      return              [ 0.0,  6.5];
+    }
+  }
+  const sitBounds = sitBracket(sitAge, sitGender);
+  const sitLow    = sitBounds[0]; // On Track lower bound
+  const sitHigh   = sitBounds[1]; // On Track upper bound
+  const sitRange  = sitHigh - sitLow;
+
+  // Fully continuous 0-100 — no dead zones
+  function sitCalcScore(gap) {
+    if (sitRange === 0) return 70; // Guard: equal bounds
+    if (gap < sitLow) {
+      // Above Avg: 80 at boundary, sliding up to 100
+      var aboveRange = Math.abs(sitLow) + 10; // scale over 10cm past boundary
+      return Math.min(100, Math.round(80 + ((sitLow - gap) / (aboveRange || 1)) * 20));
+    }
+    if (gap <= sitHigh) {
+      // On Track: 80 at lower bound → 60 at upper bound
+      return Math.round(80 - ((gap - sitLow) / sitRange) * 20);
+    }
+    // Below Avg: 60 at boundary → 0 over 2x the range
+    return Math.max(0, Math.round(60 - ((gap - sitHigh) / (sitRange * 2)) * 60));
+  }
+  const sitScore   = (val('f-sit-left') === '' && val('f-sit-right') === '') ? 0 : sitCalcScore(sitWorst);
 
   const reachLeft  = num('f-reach-left') || 0;
   const reachRight = num('f-reach-right') || 0;
@@ -3210,49 +3263,49 @@ function render() {
   function recommendation(station, score) {
     const recs = {
       chair: {
-        low:  'Your lower body strength and endurance are meaningful areas to build on — this directly affects how comfortably you get up from chairs, manage stairs, and move through your day with confidence. Controlled chair squats (sitting and standing with a focus on pushing through your heels and engaging your glutes) are a great starting point; use a higher seat or armrests for support as needed. As this improves, you\'ll notice a real difference in how independent and capable you feel in everyday movement.',
-        mid:  'Your lower body has a solid foundation with good room to build further — strength here supports everything from walking and climbing stairs to standing up from low surfaces with ease. Continue with controlled sit-to-stands, focusing on hinging at the hips and engaging your glutes and thighs as you rise rather than relying on momentum. Gradual lower body strengthening in your sessions will translate directly into more comfortable, confident movement through your day.',
-        high: 'You showed strong lower body strength and control — one of the best indicators of functional independence and long-term resilience. Continue your lower body strengthening work and maintain quality movement in your sit-to-stands by keeping the emphasis on hip and glute engagement. This level of strength will continue to protect your joints and support you through stairs, daily tasks, and sustained activity for years to come.'
+        low:  'Start with sit-to-stand from a normal chair height — 3 sets of 8 reps, three times a week. Hold the armrests at first if needed.',
+        mid:  'Progress to lower chair heights. Try 3 sets of 10 reps without using your hands to push off.',
+        high: 'Maintain with regular stair climbing and bodyweight squats. Add weight as you improve.'
       },
       stair: {
-        low:  'Your stair climb results suggest that lower body endurance and stamina are areas to prioritise — this directly impacts how manageable stairs, longer walks, and sustained activity feel day to day. Start with controlled step-ups onto a low step, using a railing for support as needed, and build gradually at a pace that feels comfortable and secure. As your endurance grows, you\'ll notice stairs and daily movement requiring noticeably less effort.',
-        mid:  'You showed good lower body movement quality with clear room to build further endurance — the kind that makes stairs, hills, and longer walks feel easier and less effortful. Controlled step-ups and gradually incorporating more stair use into your daily routine (choosing stairs when you can) are great ways to keep building this capacity. Small, consistent steps here will make a meaningful difference in how you feel during sustained movement.',
-        high: 'Excellent lower body endurance and movement control — this reflects real capacity to sustain effort through stairs, hills, and prolonged walking without fatigue. Continue maintaining your strength and stamina through regular lower body work in your sessions. This level of endurance is a strong protective factor for joint health and sustained energy in daily life.'
+        low:  'Practice step-ups on a low step (15–20 cm) daily. Focus on controlled movement, both up and down.',
+        mid:  'Increase step height gradually. Climb stairs instead of using lifts — aim for 4+ flights a day.',
+        high: 'Add load — carry a light backpack while climbing. Maintain with regular stair use.'
       },
       balance: {
-        low:  'Your balance results indicate that stability and body awareness during movement (proprioception) are areas to prioritise — this has a direct impact on your confidence when walking on uneven surfaces, moving in low light, or changing direction quickly. Begin with single-leg standing near a wall or sturdy support on a flat, stable surface, progressing only when you feel steady and secure. Improving your balance is one of the most effective ways to reduce fall risk and build genuine confidence in everyday movement.',
-        mid:  'You showed a good starting level of balance, with clear room to build further stability and body awareness (proprioception — your body\'s sense of where it is during movement). Practising single-leg balance daily, even while brushing your teeth, is a simple and highly effective habit. Over time, you can progress to a slightly uneven surface or brief eyes-closed intervals to keep challenging your balance system.',
-        high: 'You demonstrated strong balance and proprioception (your body\'s awareness of its position during movement) — a key indicator of confident, safe movement in daily life. To continue progressing, try challenging this further with eyes-closed standing, single-leg balance on a folded towel, or adding a cognitive task while balancing. This kind of training keeps your nervous system sharp and your movement steady and reliable.'
+        low:  'Stand on one leg while brushing your teeth — 60 seconds each side, twice daily. Start near a wall for safety.',
+        mid:  'Progress to standing on one leg on a folded towel or cushion. Close your eyes for short intervals.',
+        high: 'Try tandem walking (heel-to-toe) and single-leg stands on uneven surfaces to maintain your level.'
       },
       grip: {
-        low:  'Your grip strength suggests that hand and upper body support are areas to develop — this affects how comfortably you carry bags, hold objects, open containers, and support yourself through daily tasks. Gentle grip exercises like squeezing a stress ball, wringing a towel, or using a hand gripper are practical and accessible starting points. Improving grip strength is often underestimated, but it has a meaningful impact on upper body function and everyday independence.',
-        mid:  'Your grip shows a good starting level of strength with room to build further — grip strength is closely linked to overall upper body capacity and your ability to carry, hold, and support yourself confidently through daily tasks. Incorporating grip-focused habits (a hand gripper, stress ball, or carrying shopping bags by hand) alongside your upper body strengthening work will support steady improvement. Small gains here make a noticeable difference in everyday function.',
-        high: 'Strong grip and upper body support — this reflects well-developed hand and forearm strength, which underpins carrying, holding, and stabilising across a wide range of daily and physical activities. Continue maintaining this through your regular upper body strengthening, and consider varied gripping movements like carries, rows, or pull-focused exercises. Grip strength at this level is a reliable indicator of overall functional health.'
+        low:  'Carry shopping bags by hand instead of using a trolley. Use a hand gripper for 5 minutes while watching TV.',
+        mid:  'Increase load gradually — heavier bags, gardening, or resistance band exercises for hands and forearms.',
+        high: 'Maintain with regular resistance training. Rock climbing, gardening, and heavy carries all help.'
       },
       sit: {
-        low:  'Your flexibility results suggest that hamstring and posterior chain mobility (the muscles and connective tissue along the back of your body) are areas to work on — this affects how comfortable bending, reaching, and lower back movement feel in daily life. Gentle daily stretching with a focus on hinging from the hips rather than rounding the spine is the most effective approach; a seated forward fold or towel-assisted stretch is a safe and practical starting point. Patient, consistent flexibility work will gradually improve your bending comfort and lower back ease.',
-        mid:  'You showed a good baseline of flexibility, with clear room to develop your hamstring and posterior chain mobility further — this directly supports comfortable bending, picking things up from the floor, and lower back ease in everyday movement. Hamstring stretching with a focus on hinging from the hips (spine long, knees straight) will give you the most benefit over time. Consistent work here will reduce stiffness and make daily movements like putting on shoes and reaching to the floor feel noticeably more comfortable.',
-        high: 'Excellent flexibility and posterior chain mobility (through the full length of the muscles at the back of your body) — this level of range supports comfortable movement through bending, reaching, and lower back function in daily life. Maintain this with regular stretching, yoga, or swimming, and continue the habit of hinging from your hips during daily movements rather than rounding your spine. Flexibility at this level is a real asset for joint health and pain-free movement long-term.'
+        low:  'Seated forward fold daily — sit on the floor with legs straight and reach as far as you can, hold 30 seconds. Consistency matters more than intensity.',
+        mid:  'Progress with strap-assisted stretches. Loop a towel around your feet and gently pull yourself forward. Add hamstring and lower-back stretches.',
+        high: 'Maintain with regular yoga, stretching, or swimming. Floor-based stretching three times a week keeps this range.'
       },
       reach: {
-        low:  'Your shoulder reach results suggest that shoulder mobility and rotational range are areas to work on — this affects daily tasks like dressing, reaching behind you, and lifting overhead. Gentle towel stretches (holding a towel behind your back and softly guiding one shoulder through its range) are a safe and effective starting point, working only within a comfortable range. Patient, consistent work here will gradually improve your reaching comfort and shoulder freedom.',
-        mid:  'You showed a good starting level of shoulder mobility, with room to build further range and ease — this directly affects how comfortable reaching, dressing, and lifting overhead feel in daily life. A towel stretch behind the back (holding each end and gently guiding the shoulder through its range) is a practical daily exercise that reliably builds mobility over time. Progress comes with consistency, and you\'ll notice the improvement in everyday reaching and overhead movement.',
-        high: 'You demonstrated good shoulder mobility and movement freedom — this supports comfortable reaching, dressing, overhead lifting, and upper body function across a wide range of daily activities. Continue maintaining this with shoulder mobility work and overhead movements in your training. Shoulder flexibility at this level is an important protective factor for long-term upper body health and ease of movement.'
+        low:  'Doorframe stretches daily: place your hand on a doorframe at shoulder height and gently rotate away. Hold 30 seconds each side. Avoid forcing the range.',
+        mid:  'Add a towel-assisted reach stretch — hold a towel behind your back and gently pull one end upward. Progress the distance over weeks.',
+        high: 'Maintain with overhead stretching and swimming. Reaching for high shelves and light overhead press movements help preserve this range.'
       },
       plank: {
-        low:  'Your plank result suggests that core stability — your body\'s ability to support and protect the spine during movement — is an area to develop. This has a broad impact on posture, balance, lifting mechanics, and overall movement quality in daily life. A modified knee plank is a great starting point: focus on keeping your hips level and spine neutral for short, quality holds, and build from there. Gradual core strengthening will improve your posture, reduce strain through your lower back, and give your movement a more stable, controlled foundation.',
-        mid:  'You showed a good starting level of core control, with clear room to build further endurance and stability — core strength supports nearly every movement you do, from posture and lifting to balance and walking. Progressing your plank holds gradually, alongside core engagement in your other exercises (squats, carries, full-body movements), will build this steadily over time. A stronger core will translate into better posture, lower back comfort, and more controlled movement through your day.',
-        high: 'Strong core stability — your ability to maintain spinal support under sustained effort reflects well-developed deep core function, which underpins good posture, safe lifting mechanics, and controlled movement in everything you do. Continue building on this with varied progressions (side plank, plank with reach, instability surfaces) and maintaining core engagement as a habit in your other lifts. Core endurance at this level significantly reduces injury risk and supports healthy, controlled movement long-term.'
-      },
-      squat: {
-        low:  'Your overhead squat results reveal some movement compensations worth addressing — patterns like arms drifting forward, knees caving inward, or heels rising reflect restrictions in ankle mobility, hip control, or upper back (thoracic) movement that are very common and very addressable. Working within a comfortable range and focusing on controlled mechanics — foot stability, glute engagement, and upright posture — is the right starting point. Improving these patterns will have a meaningful impact on your posture, bending mechanics, and the way your body handles everyday lifting and movement.',
-        mid:  'Your overhead squat showed generally good movement with some areas of control and alignment to continue refining — this movement reflects how well your ankles, hips, upper back, and shoulders work together through a full-body pattern. Focused work on glute engagement, foot stability, and mobility in your sessions will help clean up any compensations and build more robust movement quality. These improvements carry over directly into more controlled bending, lifting, and postural strength in daily life.',
-        high: 'Excellent movement quality and control in your overhead squat — this reflects strong coordination between your ankles, hips, thoracic spine, and shoulders working together through a demanding full-body pattern. Continue maintaining this with regular practice, mobility work, and gradual progressive loading. Movement quality at this level is one of the strongest indicators of long-term joint health and pain-free functional movement.'
+        low:  'Start with a knee plank: hold for 10–15 seconds, 3 sets. Focus on keeping hips level. Progress to full plank only when form is solid.',
+        mid:  'Practice full plank holds for 20–30 seconds, 3–4 sets. Add dead bugs and bird-dogs to build the deep stabilisers that protect you from falls.',
+        high: 'Maintain with varied plank progressions — side plank, plank with reach, or instability surface. Core endurance at this level significantly reduces injury risk from trips.'
       },
       wall: {
-        low:  'Your wall squat results indicate that lower body endurance and sustained muscular support are areas to build on — the ability to hold a supported squat position reflects the stamina needed for stairs, prolonged standing, and activities that demand sustained lower body effort. Begin with comfortable, shorter holds within a pain-free range (a chair placed in front for security can be helpful), and build the duration gradually over time. This kind of endurance training is particularly protective for knee health and will make daily activities like stairs and longer walks feel more manageable.',
-        mid:  'You showed a solid lower body base with clear room to build further endurance and sustained strength — wall squat capacity reflects the muscular stamina needed to feel confident and capable on stairs, during long walks, and through prolonged standing throughout your day. Continue wall squat work in your sessions, progressing the hold duration as your comfort and strength allow, alongside your broader lower body strengthening. Building this further will translate into noticeably more supported, comfortable movement in daily life.',
-        high: 'Strong lower body endurance and sustained muscular support — your wall squat performance reflects excellent quad and glute stamina, which is directly protective of knee health and supports confident, comfortable movement through stairs, walking, and sustained daily activity. Maintain this with regular wall squat practice and progressive lower body strengthening. This level of endurance is one of the best long-term protectors of knee joint health and functional independence.'
+        low:  'Begin with a supported wall squat — use a chair in front for safety. Hold for 10 seconds at a time, building gradually. Quad and glute strength at this level is the primary protector of your knee joint.',
+        mid:  'Practice wall squats 3–4 times per week, targeting sets of 30–45 seconds. Add single-leg press and step-up exercises to build the strength needed to reduce knee load during daily activities like stairs and getting up from chairs.',
+        high: 'Excellent knee endurance. Maintain with regular wall squats and progress to dynamic movements — split squats, step-ups with load. This level of quad endurance strongly protects against knee pain in daily life.'
+      },
+      squat: {
+        low:  'Focus on mobility first before loading. Daily ankle and hip flexor stretches, box squats to a high surface, and thoracic spine rotations. The compensations observed today are early warning signs for joint pain in daily movement.',
+        mid:  'Work on the specific restrictions flagged today. Ankle mobility drills, hip flexor stretches, and goblet squats with a light weight will reinforce correct movement patterns. Aim to eliminate compensations before increasing depth or load.',
+        high: 'Excellent movement quality. Maintain with regular overhead squat practice, continue mobility work, and consider adding load progressively. Clean squat mechanics at this level strongly protect against future joint pain.'
       }
     };
     const tier = score < 40 ? 'low' : score < 75 ? 'mid' : 'high';
@@ -4485,50 +4538,6 @@ function toggleSquatFlag(rowEl, inputId) {
   scheduleRender();
 }
 
-// ── SIT & REACH — shared normative brackets + scorer ────────────
-// App sign convention: negative = past toes/ankle (better), positive = short of toes/ankle (worse)
-// Source: ACSM/YMCA floor-based (18–49) · Rikli & Jones 2013 chair (60–94) · extrapolated (50–59)
-// Women score 3–6 cm better than men at all ages (chair version: ankle reference point)
-function getSitBracket(age, gender) {
-  if ((gender || '').toLowerCase() === 'female') {
-    if (age <= 29) return [-8,   2  ];  // ACSM/YMCA floor: avg −2 to +8 std
-    if (age <= 39) return [-6,   4  ];  // avg −4 to +6 std
-    if (age <= 49) return [-4,   6  ];  // avg −6 to +4 std
-    if (age <= 54) return [-5.5, -0.5]; // chair extrapolated: avg +0.5 to +5.5 std
-    if (age <= 59) return [-4.5,  0.0]; // avg 0.0 to +4.5 std
-    if (age <= 64) return [-5.0,  0.5]; // Rikli & Jones: avg −0.5 to +5.0 std
-    if (age <= 69) return [-5.0,  0.5]; // avg −0.5 to +5.0 std
-    if (age <= 74) return [-4.5,  1.0]; // avg −1.0 to +4.5 std
-    if (age <= 79) return [-4.0,  1.5]; // avg −1.5 to +4.0 std
-    if (age <= 84) return [-3.0,  2.0]; // avg −2.0 to +3.0 std
-    if (age <= 89) return [-2.5,  2.5]; // avg −2.5 to +2.5 std
-    return              [-2.0,  3.0];   // 90–94: avg −3.0 to +2.0 std
-  } else {
-    if (age <= 29) return [-4,   6  ];  // ACSM/YMCA floor: avg −6 to +4 std
-    if (age <= 39) return [-2,   8  ];  // avg −8 to +2 std
-    if (age <= 49) return [ 0,  10  ];  // avg −10 to 0 std
-    if (age <= 54) return [-4.5,  1.0]; // chair extrapolated: avg −1.0 to +4.5 std
-    if (age <= 59) return [-3.5,  2.0]; // avg −2.0 to +3.5 std
-    if (age <= 64) return [-4.0,  2.5]; // Rikli & Jones: avg −2.5 to +4.0 std
-    if (age <= 69) return [-3.0,  3.0]; // avg −3.0 to +3.0 std
-    if (age <= 74) return [-2.5,  3.5]; // avg −3.5 to +2.5 std
-    if (age <= 79) return [-2.0,  4.0]; // avg −4.0 to +2.0 std
-    if (age <= 84) return [-1.5,  5.5]; // avg −5.5 to +1.5 std
-    if (age <= 89) return [-0.5,  5.5]; // avg −5.5 to +0.5 std
-    return              [ 0.0,  6.5];   // 90–94: avg −6.5 to 0.0 std
-  }
-}
-function calcSitScore(gap, age, gender) {
-  var b = getSitBracket(age, gender), lo = b[0], hi = b[1], range = hi - lo;
-  if (range === 0) return 70;
-  if (gap < lo) {
-    var aboveRange = Math.abs(lo) + 10;
-    return Math.min(100, Math.round(80 + ((lo - gap) / (aboveRange || 1)) * 20));
-  }
-  if (gap <= hi) return Math.round(80 - ((gap - lo) / range) * 20);
-  return Math.max(0, Math.round(60 - ((gap - hi) / (range * 2)) * 60));
-}
-
 function scheduleRender() {
   var _fns = [updateInlinePreviews, updateMachineTargets, updateChairHeight, updateStairHeight, updateBalanceUI, updateChairScorePreview, updateStairScorePreview, updateBalScorePreview, updateGripScorePreview, updateSitScorePreview, updateReachScorePreview, updatePlankScorePreview, updateSquatScorePreview, updateWallScorePreview, updateProgress];
   _fns.forEach(function(fn) { try { fn(); } catch(e) { console.error('scheduleRender error in ' + fn.name + ':', e); } });
@@ -4941,7 +4950,22 @@ function updateSitScorePreview() {
   var worst  = Math.max(hasLeft ? left : -999, hasRight ? right : -999);
   var age    = parseInt(ageEl    ? ageEl.value    : '') || 30;
   var gender = genderEl ? genderEl.value.toLowerCase() : 'male';
-  var score  = calcSitScore(worst, age, gender);
+  var bounds, lo, hi, range;
+  if (gender === 'female') {
+    bounds = age <= 45 ? [-5,2] : age <= 60 ? [-3,4] : age <= 75 ? [-1,6] : [0,8];
+  } else {
+    bounds = age <= 45 ? [-7,-1] : age <= 60 ? [-4,2] : age <= 75 ? [-1,5] : [1,8];
+  }
+  lo = bounds[0]; hi = bounds[1]; range = hi - lo;
+  var score;
+  if (worst < lo) {
+    var aboveRange = Math.abs(lo) + 10;
+    score = Math.min(100, Math.round(80 + ((lo - worst) / aboveRange) * 20));
+  } else if (worst <= hi) {
+    score = Math.round(80 - ((worst - lo) / range) * 20);
+  } else {
+    score = Math.max(0, Math.round(60 - ((worst - hi) / (range * 2)) * 60));
+  }
   var color = score >= 75 ? 'var(--green)' : score >= 55 ? 'var(--amber)' : score >= 38 ? 'var(--rust)' : 'var(--red)';
   var label = score >= 75 ? 'Strong' : score >= 55 ? 'Moderate' : score >= 38 ? 'Needs work' : 'Urgent';
   valDisp.textContent = score; valDisp.style.color = color;
@@ -6221,105 +6245,14 @@ Coach note:
 const AI_DEFAULT_MODEL = 'claude-opus-4-7';
 const AI_DEFAULT_COACH_STYLE = `Write in a warm, encouraging tone. Lead with what the client did well, then give one specific and actionable suggestion. Keep each recommendation to 2–3 concise sentences. Avoid jargon — speak plainly so the client can easily act on the advice. Address the client directly using "you" and "your".`;
 
-const AI_STATION_RULES = `MASTER STATION WRITING RULES — apply to every recommendation without exception:
-
-STRUCTURE FOR EACH STATION (in order):
-1. What the result suggests functionally
-2. What needs improvement (if anything)
-3. HOW they can improve it
-4. Correlation to daily activities
-5. Ferra-style practical recommendation
-6. Strength training correlation where relevant
-7. Clinically informed but easy-to-understand language
-8. Technical terms briefly mentioned AND simply explained
-9. Actionable solutions — never generic advice
-
-OUTPUT TONE: clinically informed · movement-focused · practical · reassuring · professional · human
-DO NOT: sound robotic · over-explain · diagnose · give reps/sets/timelines · repeat identical sentence structures
-
---- STATION-SPECIFIC GUIDANCE ---
-
-SIT-TO-STAND
-Excellent: Strong lower body strength and control. Continue lower body strength training. Maintain controlled movement quality. Correlate to sitting/standing independently.
-Good/Moderate: Good lower body base with room to build. Controlled sit-to-stands. Continue lower body strengthening. Use hips and glutes while getting up.
-Needs Work: Lower body strength and endurance (leg support and stamina) can improve. Controlled sit-to-stands/chair squats. Focus on glute engagement. Correlate to stairs, walking, sitting, standing.
-Urgent: Significant lower body weakness/endurance limitation. Use support/bar/chair if needed. Higher chair height if needed. Gradual lower body strengthening. Improve independence and confidence.
-If knees cave in: Band above knees, push knees outward, squeeze glutes/hips while coming up, improve knee alignment and stability.
-
-STAIR CLIMB
-Excellent: Good lower body endurance and movement control. Continue maintaining strength and stamina.
-Good/Moderate: Good movement quality with room to improve endurance. Controlled step-ups. Build confidence and stability.
-Needs Work: Lower body support and stamina can improve. Controlled step-ups. Use railing if needed. Gradual lower body strengthening.
-Urgent: Significant difficulty or confidence limitation. Lower step height, use railing/support, comfortable movement only, gradual progression.
-If uneven: Use both legs evenly, improve stability and control.
-Correlate to: stairs, walking endurance, daily movement confidence.
-
-BALANCE / WALK IN THE DARK
-Excellent: Good balance and proprioception (body awareness during movement). Progress to eyes-closed or unstable surfaces.
-Good/Moderate: Good starting balance. One-leg balance while brushing teeth. Gradual progression.
-Needs Work: Balance and stability can improve further. One-leg balance daily. Eyes-closed progression. Build confidence gradually.
-Urgent: Significant balance/stability limitation. Use nearby support/bar initially, stable surface first, gradual progression, focus on steadiness and fall prevention.
-Advanced options: cushion/bed/balance board, multitasking, eyes closed.
-Correlate to: walking, turning, low-light movement, steadiness.
-
-GRIP STRENGTH
-Excellent: Strong grip and upper body support. Maintain with upper body strengthening.
-Good/Moderate: Good starting point. Grip ring/stress ball. Carrying grocery bags.
-Needs Work: Grip strength and upper body support can improve. Grip ring, stress ball, wringing towel, upper body strengthening.
-Urgent: Significant grip weakness. Gentle grip strengthening, functional hand strengthening, improve carrying/holding ability.
-Correlate to: carrying bags, holding objects, opening containers, upper body support.
-
-SIT & REACH
-Excellent: Excellent flexibility and posterior chain mobility (movement through the back of the body). Continue maintaining flexibility.
-Good/Moderate: Good starting flexibility. Hamstring stretching, hinge from hips, knees straight.
-Needs Work: Hamstring flexibility and bending comfort can improve. Focus on hip hinge, avoid rounding the spine, continue stretching and movement work.
-Urgent: Significant flexibility limitation. Gentle stretching, hinge from hips, improve bending/reaching comfort.
-Correlate to: bending, wearing shoes, picking things up, lower back comfort.
-
-SHOULDER REACH (Scratch Your Back)
-Excellent: Good shoulder mobility and movement freedom. Continue maintaining movement.
-Good/Moderate: Good starting mobility. Towel stretch behind back. Gradual mobility improvement.
-Needs Work: Shoulder mobility can improve further. Towel stretch, controlled shoulder movement, improve reaching/dressing comfort.
-Urgent: Significant shoulder mobility restriction. Gentle towel stretches, comfortable mobility work only, gradual progression.
-If frozen shoulder: Gentle movement only — do not force range.
-Correlate to: dressing, reaching, overhead movement, lifting.
-
-PLANK
-Excellent: Strong core stability (spinal support during movement). Continue maintaining core strength.
-Good/Moderate: Good starting core control. Continue gradual core strengthening.
-Needs Work: Core support and stability can improve. Controlled plank progression, core engagement during squats and full-body exercises.
-Urgent: Significant core weakness/stability limitation. Gentle core activation, gradual strengthening, improve posture and movement control.
-Correlate to: posture, spinal support, lifting, balance, overall movement control.
-
-OVERHEAD SQUAT
-Excellent: Good movement quality and control. Continue maintaining mobility and alignment.
-Good/Moderate: Good movement overall. Controlled squatting, continue mobility and stability work.
-Needs Work: Movement control/alignment can improve. Glute engagement, foot stability, controlled squatting.
-Urgent: Significant movement limitation/compensation. Reduce range if needed, build movement confidence gradually.
-If arms drift forward: Work on thoracic mobility (upper back movement) and shoulder mobility.
-If knees cave: Band above knees, focus on glute engagement and knee alignment.
-If feet collapse: Foot stability work — arch support, towel scrunches, orthotics/insoles if relevant.
-Correlate to: posture, bending, lifting, overall movement quality.
-
-WALL SQUAT
-Excellent: Strong lower body support and stamina. Continue maintaining lower body strength.
-Good/Moderate: Good lower body base. Continue building lower body endurance and strength.
-Needs Work: Lower body support and stamina can improve further. Continue lower body strengthening, controlled wall squat progression.
-Urgent: Significant lower body endurance/strength limitation. Comfortable range only, gradual lower body strengthening, build support and confidence.
-Correlate to: stairs, walking, standing longer, sitting/standing, knee support, lower body strength.
-
-CRITICAL RULE: Do NOT correlate only to the station itself. Always explain what the movement reflects FUNCTIONALLY in the body and in the client's daily life. Always factor in any client conditions and context noted above.`;
-
-
 function getAISettings() {
   const ctxStored = localStorage.getItem('90slab.ai.sendContext');
   return {
-    apiKey:       localStorage.getItem('90slab.ai.apiKey')        || '',
-    model:        localStorage.getItem('90slab.ai.model')         || AI_DEFAULT_MODEL,
-    prompt:       localStorage.getItem('90slab.ai.prompt')        || AI_DEFAULT_PROMPT,
-    sendContext:  ctxStored === null ? true : ctxStored === 'true',
-    coachStyle:   localStorage.getItem('90slab.ai.coachStyle')    || AI_DEFAULT_COACH_STYLE,
-    stationRules: localStorage.getItem('90slab.ai.stationRules')  || AI_STATION_RULES,
+    apiKey:     localStorage.getItem('90slab.ai.apiKey')      || '',
+    model:      localStorage.getItem('90slab.ai.model')       || AI_DEFAULT_MODEL,
+    prompt:     localStorage.getItem('90slab.ai.prompt')      || AI_DEFAULT_PROMPT,
+    sendContext: ctxStored === null ? true : ctxStored === 'true',
+    coachStyle: localStorage.getItem('90slab.ai.coachStyle')  || AI_DEFAULT_COACH_STYLE,
   };
 }
 
@@ -6475,7 +6408,6 @@ function openSettings() {
   document.getElementById('set-prompt').value = s.prompt;
   document.getElementById('set-send-context').checked = s.sendContext;
   document.getElementById('set-coach-style').value = s.coachStyle;
-  document.getElementById('set-station-rules').value = s.stationRules;
   document.getElementById('settings-modal').classList.add('open');
 }
 function closeSettings() {
@@ -6487,22 +6419,16 @@ function saveSettings() {
   const prompt = document.getElementById('set-prompt').value;
   const sendContext = document.getElementById('set-send-context').checked;
   const coachStyle = document.getElementById('set-coach-style').value;
-  const stationRules = document.getElementById('set-station-rules').value;
   localStorage.setItem('90slab.ai.apiKey', key);
   localStorage.setItem('90slab.ai.model', model);
   localStorage.setItem('90slab.ai.prompt', prompt);
   localStorage.setItem('90slab.ai.sendContext', String(sendContext));
   localStorage.setItem('90slab.ai.coachStyle', coachStyle);
-  localStorage.setItem('90slab.ai.stationRules', stationRules);
   closeSettings();
 }
 function resetPromptToDefault() {
   document.getElementById('set-prompt').value = AI_DEFAULT_PROMPT;
 }
-function resetStationRulesToDefault() {
-  document.getElementById('set-station-rules').value = AI_STATION_RULES;
-}
-window.resetStationRulesToDefault = resetStationRulesToDefault;
 window.openSettings = openSettings;
 window.closeSettings = closeSettings;
 window.saveSettings = saveSettings;
@@ -6538,7 +6464,7 @@ function collectAssessmentData() {
 }
 
 function buildGenerateAllPrompt() {
-  const { coachStyle, stationRules } = getAISettings();
+  const { coachStyle } = getAISettings();
   const data = collectAssessmentData();
   const demo = [data.age && `Age: ${data.age}`, data.sex && `Sex: ${data.sex}`].filter(Boolean).join(', ');
   const scored = data.stations.filter(s => s.score && s.score !== '—' && s.score !== '–' && s.score !== '');
@@ -6548,26 +6474,20 @@ function buildGenerateAllPrompt() {
   const contextLine = data.context ? `\nCLIENT CONDITIONS / CONTEXT (factor into every recommendation):\n${data.context}` : '';
   return `You are an expert fitness assessment coach generating client recommendations.
 
-${stationRules}
-
 CLIENT:
 Name: ${data.name}${demo ? '\n' + demo : ''}${contextLine}
 
 ASSESSMENT RESULTS (score out of 100):
 ${stationLines}
 
-COACH PERSONAL STYLE:
+COACHING STYLE:
 ${coachStyle || AI_DEFAULT_COACH_STYLE}
 
-OUTPUT INSTRUCTIONS (mandatory):
-Respond with a raw JSON object and nothing else — no preamble, no explanation, no markdown code fences, no trailing text. Start your response with { and end with }.
-Keys: chair, stair, balance, grip, sit, reach, plank, squat, wall, overall.
-For keys chair–wall: the recommendation string for that station.
-For "overall": 3–5 sentences synthesising all results, top 3 priorities ordered most to least impactful.`;
+Return a JSON object ONLY — no preamble, no explanation, no markdown fences. Use exactly these keys: chair, stair, balance, grip, sit, reach, plank, squat, wall, overall. Each value is a string. For the first 9 keys, write the recommendation for that station. For "overall", write a concise overall summary (3–5 sentences) that synthesises all the station results and calls out the top 3 priorities the client should focus on — ordered from most to least impactful.`;
 }
 
 function buildGenerateOnePrompt(stationKey) {
-  const { coachStyle, stationRules } = getAISettings();
+  const { coachStyle } = getAISettings();
   const data = collectAssessmentData();
   const demo = [data.age && `Age: ${data.age}`, data.sex && `Sex: ${data.sex}`].filter(Boolean).join(', ');
 
@@ -6583,18 +6503,16 @@ function buildGenerateOnePrompt(stationKey) {
       : '(No scores entered yet)';
     return `You are an expert fitness assessment coach writing an overall notes section for a client assessment report.
 
-${stationRules}
-
 CLIENT:
 Name: ${data.name}${demo ? '\n' + demo : ''}${contextLine}
 
 ALL STATION RESULTS (sorted lowest to highest):
 ${stationLines}
 
-COACH PERSONAL STYLE:
+COACHING STYLE:
 ${coachStyle || AI_DEFAULT_COACH_STYLE}
 
-Identify the 3 stations that need the most work (lowest scores). For each, write 1–2 sentences explaining why it matters for this client's health and what they should focus on to improve it. Be specific, practical, and factor in any client conditions noted above — not generic. Keep the total response concise (under 120 words). Return only the notes text, no preamble, no headings, no bullet points, no quotes.`;
+Identify the 3 stations that need the most work (lowest scores). For each, write 1–2 sentences explaining why it matters for this client's health and what they should focus on to improve it. Be specific and practical — not generic. Keep the total response concise (under 120 words). Return only the notes text, no preamble, no headings, no bullet points, no quotes.`;
   }
 
   const station = data.stations.find(s => s.key === stationKey) || {};
@@ -6602,15 +6520,13 @@ Identify the 3 stations that need the most work (lowest scores). For each, write
   const scoreLine = hasScore ? `Score: ${station.score}/100` : 'Score: not yet entered';
   return `You are an expert fitness assessment coach writing a recommendation for one station.
 
-${stationRules}
-
 CLIENT:
 Name: ${data.name}${demo ? '\n' + demo : ''}${contextLine}
 
 STATION: ${STATION_NAMES_MAP[stationKey] || stationKey}
 ${scoreLine}
 
-COACH PERSONAL STYLE:
+COACHING STYLE:
 ${coachStyle || AI_DEFAULT_COACH_STYLE}
 
 Return only the recommendation text. No preamble, no quotes, no explanation.`;
@@ -6633,7 +6549,7 @@ async function callClaudeGenerate(prompt) {
     },
     body: JSON.stringify({
       model: model,
-      max_tokens: 4096,
+      max_tokens: 2048,
       messages: [{ role: 'user', content: prompt }],
     }),
   });
@@ -6667,12 +6583,10 @@ async function generateAllRecs(btn) {
     const raw = await callClaudeGenerate(buildGenerateAllPrompt());
     let parsed;
     try {
-      // Find the JSON object anywhere in the response (handles preamble/fences)
-      const jsonMatch = raw.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('no JSON object found');
-      parsed = JSON.parse(jsonMatch[0]);
+      const clean = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+      parsed = JSON.parse(clean);
     } catch(e) {
-      throw new Error('Could not parse Claude response.\n\n' + raw.substring(0, 600));
+      throw new Error('Could not parse Claude response.\n\n' + raw.substring(0, 400));
     }
     keys.forEach(k => {
       const ta = document.getElementById('f-' + k + '-rec');
@@ -6873,14 +6787,6 @@ if ('serviceWorker' in navigator) {
         <label>Coach Style &amp; Method <span style="font-weight:400;font-size:10px;color:#8b7d6b;letter-spacing:0;">(used when generating recommendations)</span></label>
         <textarea id="set-coach-style" rows="5" placeholder="Describe your coaching style, tone, and approach. e.g. 'Write warmly and encourage the client. Lead with a positive, then give one specific actionable tip. Keep it to 2–3 sentences. Avoid jargon. Address the client directly.'"></textarea>
         <div class="settings-hint">Claude uses these instructions when generating recommendations from assessment data. Leave blank to use the built-in default.</div>
-      </div>
-      <div class="settings-field">
-        <label style="display:flex;justify-content:space-between;align-items:center;">
-          Station Writing Rules
-          <button type="button" onclick="resetStationRulesToDefault()" style="font-size:10px;color:var(--rust);border:0;background:transparent;cursor:pointer;text-decoration:underline;font-family:inherit;padding:0;">Reset to default</button>
-        </label>
-        <textarea id="set-station-rules" rows="18" style="font-size:11px;line-height:1.5;"></textarea>
-        <div class="settings-hint">Per-station guidance injected into every generate call — structure, tone rules, band-level content (Excellent / Good / Needs Work / Urgent), and special-case flags.</div>
       </div>
     </div>
     <div class="client-modal-footer" style="justify-content:space-between;">
