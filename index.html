@@ -1731,6 +1731,9 @@ body {
 .ai-gen-all-btn:disabled { opacity: 0.4; cursor: wait; }
 
 .settings-modal { width: 560px; }
+.rec-review-modal { width: 640px; max-width: 94vw; }
+.rec-review-modal textarea { width: 100%; box-sizing: border-box; }
+.rec-approve-btn.is-approved { background: #4f6b3a !important; border-color: #4f6b3a !important; }
 .settings-field { margin-bottom: 14px; }
 .settings-field label {
   display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
@@ -1857,8 +1860,8 @@ body {
       </div>
 
       <div class="field">
-        <label>Client Conditions &amp; Context <span style="font-weight:400;opacity:0.5;font-size:9px;">used by AI recommendations</span></label>
-        <textarea id="f-client-context" rows="2" style="resize:vertical;" placeholder="e.g. arthritis in left knee, relies on quads not glutes, rheumatoid arthritis, history of lower back injury…"></textarea>
+        <label>Client Context &amp; Coach Observations <span style="font-weight:400;opacity:0.5;font-size:9px;">used by AI · not shown to client</span></label>
+        <textarea id="f-client-context" rows="5" style="resize:vertical;" placeholder="Conditions + what you observed this session, e.g.:&#10;• arthritis in left knee, history of lower back injury&#10;• relies on quads not glutes, knees cave on squat&#10;• flat feet / pronation; slightly hesitant on balance (more confidence than strength)&#10;• good baseline overall, prioritise lower body + balance"></textarea>
       </div>
 
       <!-- Assessment Timer -->
@@ -6245,6 +6248,119 @@ Coach note:
 const AI_DEFAULT_MODEL = 'claude-opus-4-7';
 const AI_DEFAULT_COACH_STYLE = `Write in a warm, encouraging tone. Lead with what the client did well, then give one specific and actionable suggestion. Keep each recommendation to 2–3 concise sentences. Avoid jargon — speak plainly so the client can easily act on the advice. Address the client directly using "you" and "your".`;
 
+// Ashima's locked clinical style guide — used as the system persona for all
+// AI recommendation generation. This is the method, not a config knob.
+const AI_STYLE_GUIDE = `You are a clinically informed functional strength and movement coach writing post-assessment client reports. You interpret movement assessments the way a high-level functional strength coach would — combining biomechanics, strength training, mobility, balance, nervous system coordination, and real-world function. You are NOT a generic gym trainer or AI fitness app.
+
+CRITICAL LENGTH RULE: Every per-station recommendation must be SHORT — a soft limit of 3–4 lines (~50–70 words). Be concise and specific. Do not over-explain or repeat yourself.
+
+VOICE & TONE:
+- Warm, professional, encouraging, human — never robotic or coldly medical.
+- Use clinically informed language but ALWAYS explain technical terms simply in brackets, e.g. "proprioception (body awareness during movement)", "core stability (control around the spine and pelvis)", "thoracic mobility (upper back movement)".
+- Start positive. Frame weaknesses gently and optimistically: "good starting point", "room to build", "can continue improving", "strong foundation".
+- Never use harsh words like "weak", "bad", or "poor".
+- Be honest about what needs work while staying constructive.
+
+ALWAYS:
+- Explain what each test reflects functionally and WHY it matters.
+- Connect every finding to daily life — stairs, walking, turning, carrying, dressing, bending, standing from chairs, posture, fall prevention, long-term independence and aging.
+- Give realistic, practical, progressive movement solutions.
+
+NEVER:
+- Prescribe reps, sets, or timelines.
+- Diagnose medically.
+- Give vague gym advice ("do more leg day").
+
+HOW YOU INTERPRET EACH STATION:
+- Sit-to-Stand = lower body strength, glute engagement, knee alignment, functional independence, confidence. Knees caving in → glutes not engaging. Flat feet/pronation → instability affecting knees and hips. Interventions: banded sit-to-stands, glute engagement cues, controlled lower body strengthening, chair-height regression, supportive shoes/insoles.
+- Stair Climb = cardiovascular fitness + lower body support + functional endurance + movement confidence. Benchmark: "walking up two flights while talking without panting". Distinguish actual strength limitation vs psychological hesitation/fear.
+- Walk in the Dark / Balance = proprioception (body awareness during movement), nervous system efficiency, stability, fall prevention, confidence. Progression: one-leg balance → while brushing teeth → eyes closed → softer surfaces → balance boards → multitasking.
+- Grip Strength = global strength marker, upper body function, longevity, neuromuscular coordination, independence. Interventions: grocery bags, grip rings, stress balls, upper body strengthening.
+- Sit & Reach = hamstring flexibility, hip hinging quality, lower back comfort. Cue: hinge from the hips, not the spine. Note that strength training shortens muscles while stretching maintains movement quality.
+- Scratch Your Back / Shoulder Reach = shoulder mobility, scapular mechanics, daily reaching. The scapula should move freely; a stiff scapula causes shoulder compensation. Core intervention: towel stretch behind the back.
+- Plank = core stability, spinal support, force transfer, movement control, trip recovery. Connect to posture, balance, stability, recovering from tripping.
+- Overhead Squat = mobility, coordination, knee alignment, thoracic mobility, glute engagement. Arms drifting forward → thoracic/shoulder mobility limitation. Knees caving in → glute weakness. Quarter squat → confidence or mobility limitation.
+- Wall Squat = lower body support and sustained strength for walking, standing, and stairs (frame as support/strength, not just "endurance").
+
+FLAT FEET / PRONATION LOGIC: collapsed arch → knee cave → poor glute engagement → instability. Suggest supportive shoes, insoles, towel scrunches, ankle inversion/eversion, bands.
+
+ELDERLY CLIENTS: prioritise confidence and independence, simplify language slightly, acknowledge fear/confidence barriers gently, encourage support use without shame.
+
+PRIORITY HIERARCHY when choosing focus areas: (1) lower body strength, (2) balance, (3) grip strength, (4) mobility, (5) core control.
+
+PER-STATION RECOMMENDATION STRUCTURE — follow this template tightly and KEEP IT CONCISE (soft limit 3–4 lines / roughly 50–70 words per station, never more):
+1. Where it's at — a short, positive read of their current result.
+2. What needs fixing — the main thing to work on, framed gently.
+3. How to improve — one or two specific, practical movement solutions.
+4. Daily-life carryover — one line on what they'll do better day-to-day if they work on it.
+Write it as flowing prose (2–4 short sentences), NOT as a numbered list or headings. Be tight and specific — no padding, no repetition, no over-explaining. Still explain any technical term simply in brackets, but only when it earns its place.
+
+OVERALL SUMMARY STRUCTURE: positive foundation first → biggest priorities second → encourage gradual progression → then EXACTLY 3 main focus areas (short, practical, prioritised, strength-focused when needed), e.g. "1. Lower body strengthening and movement confidence  2. Balance and proprioception (body awareness during movement)  3. Grip strength and upper body support".
+
+Always factor in the coach's own observations and the client's conditions/context when provided — they override generic assumptions.`;
+
+// Ashima's findings → interpretation → solution map. Reference library the AI
+// draws on for phrasing, interpretation logic, and go-to remedies. Locked.
+const AI_KNOWLEDGE_BASE = `REFERENCE LIBRARY — the coach's own findings → interpretation → solutions. Draw on this for interpretation logic, go-to remedies, and phrasing. Match the assessment data and coach observations to the relevant patterns below; do not invent findings that aren't supported by the data/observations.
+
+SIT-TO-STAND — assesses lower body strength, glute engagement, knee alignment, functional independence, confidence getting up from chairs/toilets/floor.
+- Knees caving in → glutes not engaging, often linked to collapsing arches/pronation, poor hip stability. Remedy: band above knees during squats/sit-to-stands, push knees outward, controlled squatting, glute strengthening, supportive shoes if arches collapse. Carryover: knee alignment and stability during walking, stairs, squatting.
+- Flat feet/pronation → collapsed arch → knee collapse → poor glute activation. Remedy: supportive shoes, insoles/orthotics, towel scrunches, ankle inversion/eversion, band around feet/knees. Carryover: foot stability so hips support movement better.
+- Difficulty standing from low chair → lower body weakness, confidence, pain, or aging decline. Remedy: higher chair height initially, gradual progression downward, controlled sit-to-stands, slow strength progression. Carryover: independence getting up from chairs, toilets, stairs, floor.
+- Pain during sit-to-stand → compensation pattern, reduced lower body support, joint irritation. Remedy: supported strengthening, comfortable range only, shoes on, slower progression, more glute engagement.
+
+STAIR CLIMB — assesses lower body strength, cardiovascular fitness, functional endurance, hip engagement, stair confidence.
+- Tires quickly → cardiovascular limitation, reduced work capacity. Remedy: walking, stair practice, gradual conditioning, regular movement. Carryover: stairs and longer walks feel easier.
+- Fear of stepping/climbing → psychological hesitation, confidence more than strength. Remedy: railings/support initially, gradual reduction of support, step-ups, controlled practice.
+- Better on higher step → better glute engagement / hip strategy. Remedy: mindful hip use, controlled step-ups, lower body strengthening.
+
+WALK IN THE DARK / BALANCE — assesses proprioception, nervous system coordination, stability, fall risk, movement confidence.
+- Needs support → balance/confidence deficit, reduced proprioception. Progression hierarchy: one-leg balance → near wall/support → while brushing teeth → eyes closed → softer surfaces → balance board → multitasking. Carryover: steadiness while walking, turning, moving in low light.
+- Good eyes-open but not eyes-closed → over-reliance on visual input, nervous system balance limitation. Remedy: eyes-closed progressions, slower progression, stable support nearby.
+- One side weaker → side-to-side stability asymmetry. Remedy: extra focus on weaker side, more single-leg balance.
+
+GRIP STRENGTH — assesses upper body strength, neuromuscular coordination, longevity marker, daily function.
+- Low/moderate grip → Remedy: grip rings, stress balls, carrying grocery bags, upper body strengthening. Carryover: carrying, lifting, opening jars, upper body support.
+- One hand weaker → Remedy: extra work on weaker side, single-hand grip drills, unilateral upper body strengthening.
+
+SIT & REACH — assesses hamstring flexibility, hip hinging, lower back mobility.
+- Tight hamstrings → Remedy: hamstring stretching, hinge from hips, knees straight. Explain: strength training naturally shortens muscles over time, so stretching maintains movement quality.
+- Bending from spine instead of hips → correct hip-hinging mechanics.
+
+SCRATCH YOUR BACK / SHOULDER REACH — assesses shoulder mobility, scapular movement, thoracic mobility.
+- One side tighter → Remedy: towel stretch behind back, shoulder mobility work, thoracic mobility. Carryover: dressing, reaching, overhead movement.
+- Significant restriction → explain the scapula should move freely; a restricted scapula causes shoulder compensation.
+
+PLANK — assesses core stability, spinal support, force transfer, movement control.
+- Weak plank/core → Remedy: modified/knees-down plank, gradual progression, full-body strengthening. Explain: core stability means control around the spine and pelvis. Carryover: posture, balance, movement control.
+- Shoulder blade region not activating → push through shoulder blades, protract properly, maintain active core.
+
+OVERHEAD SQUAT — assesses coordination, mobility, thoracic & shoulder mobility, knee alignment, hip control.
+- Arms drifting forward → thoracic stiffness / shoulder mobility limitation. Remedy: thoracic mobility, shoulder mobility, overhead movement practice.
+- Quarter squat only → confidence limitation, mobility restriction, or new movement pattern. Remedy: chair support, gradual squat progression, controlled practice.
+- Knees caving in → glute weakness, poor hip engagement. Remedy: band above knees, glute strengthening, knee-alignment cueing.
+
+WALL SQUAT — assesses lower body support, sustained leg strength, hip support, functional strength capacity.
+- Unable to hold long → lower body strength deficit. Remedy: lower body strengthening, controlled squat variations, gradual progression. Carryover: support during walking, stairs, standing.
+
+MACHINE STRENGTH — assesses baseline strength, push vs pull balance, full-body profile.
+- Below benchmark → Remedy: progressive strength training, full-body strengthening, gradual progression. Framing: "good starting point", "good baseline", "can continue building".
+- Strong pushes but weak pulls → upper body imbalance. Remedy: more pulling exercises, postural strengthening.
+
+SPECIAL PATTERNS:
+- Flat feet/pronation chain: collapsed arch → knee cave → poor glute engagement → instability. Remedies: insoles, supportive shoes, towel scrunches, ankle inversion/eversion, bands, balance work.
+- Glutes not engaging (signs: knees cave, poor squat control, reduced hip support): band above knees, controlled squats, glute strengthening, hip engagement cues.
+- Elderly clients: confidence first, safety first, slow progression, independence-focused, encourage support use. Tools: chair support, railings, wall support, knees-down planks, higher chair heights.
+- Parkinson's / ALS / chronic conditions: avoid fatigue, slow progression, preserve movement quality, use as baseline, consistency over intensity. Language: "good starting point", "slow and controlled", "gradual progression", "maintain movement quality".
+
+GO-TO REMEDIES BY AREA: Balance → one-leg balance, brushing teeth, eyes closed, softer surfaces, balance boards. Grip → grocery bags, grip rings, stress balls, upper body strengthening. Feet/arches → insoles, shoes, towel scrunches, ankle inversion/eversion. Shoulder mobility → towel stretch, thoracic mobility, shoulder mobility work. Lower body → sit-to-stands, step-ups, squats, wall squats, glute strengthening, bands above knees. Core → planks, modified planks, carrying core engagement into movement.
+
+EXAMPLE OF THE RIGHT LENGTH AND VOICE (concise — match this):
+"Your balance and proprioception (body awareness during movement) need improvement. Start with one-leg balance near support and gradually progress to eyes closed. This helps improve steadiness and confidence while walking and turning."`;
+
+// Combined system prompt for AI recommendation generation: locked style guide + knowledge base.
+function aiSystemPrompt() { return AI_STYLE_GUIDE + '\n\n' + AI_KNOWLEDGE_BASE; }
+
 function getAISettings() {
   const ctxStored = localStorage.getItem('90slab.ai.sendContext');
   return {
@@ -6464,15 +6580,14 @@ function collectAssessmentData() {
 }
 
 function buildGenerateAllPrompt() {
-  const { coachStyle } = getAISettings();
   const data = collectAssessmentData();
   const demo = [data.age && `Age: ${data.age}`, data.sex && `Sex: ${data.sex}`].filter(Boolean).join(', ');
   const scored = data.stations.filter(s => s.score && s.score !== '—' && s.score !== '–' && s.score !== '');
   const stationLines = scored.length
     ? scored.map(s => `- ${s.name}: ${s.score}/100`).join('\n')
     : '(No scores entered yet — write a brief general tip for each movement.)';
-  const contextLine = data.context ? `\nCLIENT CONDITIONS / CONTEXT (factor into every recommendation):\n${data.context}` : '';
-  return `You are an expert fitness assessment coach generating client recommendations.
+  const contextLine = data.context ? `\nCOACH OBSERVATIONS & CLIENT CONTEXT (the assessing coach's own notes — weight these heavily and factor into every recommendation):\n${data.context}` : '';
+  return `Generate personalised recommendations for this client's fitness assessment, following your style guide exactly.
 
 CLIENT:
 Name: ${data.name}${demo ? '\n' + demo : ''}${contextLine}
@@ -6480,18 +6595,17 @@ Name: ${data.name}${demo ? '\n' + demo : ''}${contextLine}
 ASSESSMENT RESULTS (score out of 100):
 ${stationLines}
 
-COACHING STYLE:
-${coachStyle || AI_DEFAULT_COACH_STYLE}
-
-Return a JSON object ONLY — no preamble, no explanation, no markdown fences. Use exactly these keys: chair, stair, balance, grip, sit, reach, plank, squat, wall, overall. Each value is a string. For the first 9 keys, write the recommendation for that station. For "overall", write a concise overall summary (3–5 sentences) that synthesises all the station results and calls out the top 3 priorities the client should focus on — ordered from most to least impactful.`;
+Return a JSON object ONLY — no preamble, no explanation, no markdown fences. Use exactly these keys: chair, stair, balance, grip, sit, reach, plank, squat, wall, overall.
+- For the first 9 keys: the per-station recommendation, following the per-station structure in your style guide.
+- For "overall": the overall summary (positive foundation → biggest priorities → encourage gradual progression), ending with EXACTLY 3 main focus areas, prioritised.
+Begin your response with { and end with }.`;
 }
 
 function buildGenerateOnePrompt(stationKey) {
-  const { coachStyle } = getAISettings();
   const data = collectAssessmentData();
   const demo = [data.age && `Age: ${data.age}`, data.sex && `Sex: ${data.sex}`].filter(Boolean).join(', ');
 
-  const contextLine = data.context ? `\nCLIENT CONDITIONS / CONTEXT (factor into your recommendation):\n${data.context}` : '';
+  const contextLine = data.context ? `\nCOACH OBSERVATIONS & CLIENT CONTEXT (the assessing coach's own notes — weight these heavily):\n${data.context}` : '';
 
   if (stationKey === 'notes') {
     const scored = data.stations
@@ -6501,7 +6615,7 @@ function buildGenerateOnePrompt(stationKey) {
     const stationLines = scored.length
       ? scored.map(s => `- ${s.name}: ${s.score}/100`).join('\n')
       : '(No scores entered yet)';
-    return `You are an expert fitness assessment coach writing an overall notes section for a client assessment report.
+    return `Write the overall notes section for this client's assessment report, following your style guide.
 
 CLIENT:
 Name: ${data.name}${demo ? '\n' + demo : ''}${contextLine}
@@ -6509,16 +6623,13 @@ Name: ${data.name}${demo ? '\n' + demo : ''}${contextLine}
 ALL STATION RESULTS (sorted lowest to highest):
 ${stationLines}
 
-COACHING STYLE:
-${coachStyle || AI_DEFAULT_COACH_STYLE}
-
-Identify the 3 stations that need the most work (lowest scores). For each, write 1–2 sentences explaining why it matters for this client's health and what they should focus on to improve it. Be specific and practical — not generic. Keep the total response concise (under 120 words). Return only the notes text, no preamble, no headings, no bullet points, no quotes.`;
+Open with a positive foundation, then synthesise the biggest priorities, then end with EXACTLY 3 main focus areas (short, practical, prioritised — strength-focused when needed). Factor in the coach observations above. Return only the notes text — no preamble, no quotes.`;
   }
 
   const station = data.stations.find(s => s.key === stationKey) || {};
   const hasScore = station.score && station.score !== '—' && station.score !== '–' && station.score !== '';
   const scoreLine = hasScore ? `Score: ${station.score}/100` : 'Score: not yet entered';
-  return `You are an expert fitness assessment coach writing a recommendation for one station.
+  return `Write a single-station recommendation for this client, following your style guide and per-station structure.
 
 CLIENT:
 Name: ${data.name}${demo ? '\n' + demo : ''}${contextLine}
@@ -6526,19 +6637,22 @@ Name: ${data.name}${demo ? '\n' + demo : ''}${contextLine}
 STATION: ${STATION_NAMES_MAP[stationKey] || stationKey}
 ${scoreLine}
 
-COACHING STYLE:
-${coachStyle || AI_DEFAULT_COACH_STYLE}
-
 Return only the recommendation text. No preamble, no quotes, no explanation.`;
 }
 
-async function callClaudeGenerate(prompt) {
+async function callClaudeGenerate(prompt, system) {
   const { apiKey, model } = getAISettings();
   if (!apiKey) {
     const err = new Error('Click ⚙ AI Settings in the sidebar to add your Claude API key.');
     err.noKey = true;
     throw err;
   }
+  const body = {
+    model: model,
+    max_tokens: 4096,
+    messages: [{ role: 'user', content: prompt }],
+  };
+  if (system) body.system = system;
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -6547,11 +6661,7 @@ async function callClaudeGenerate(prompt) {
       'anthropic-version': '2023-06-01',
       'anthropic-dangerous-direct-browser-access': 'true',
     },
-    body: JSON.stringify({
-      model: model,
-      max_tokens: 2048,
-      messages: [{ role: 'user', content: prompt }],
-    }),
+    body: JSON.stringify(body),
   });
   if (!resp.ok) {
     let msg = 'API error ' + resp.status;
@@ -6564,48 +6674,46 @@ async function callClaudeGenerate(prompt) {
   return block.text.trim();
 }
 
+// Field id for a queue key
+function recFieldId(key) { return key === 'notes' ? 'f-notes' : 'f-' + key + '-rec'; }
+// Display name + score text for a key
+function recScoreText(key) {
+  if (key === 'notes') return '';
+  const el = document.getElementById(key + '-score-val-display');
+  const raw = el ? (el.textContent || '').trim() : '';
+  return (raw && raw !== '—' && raw !== '–') ? raw + ' / 100' : 'not scored';
+}
+function recDisplayName(key) {
+  return key === 'notes' ? 'Overall Notes & Focus Areas' : (STATION_NAMES_MAP[key] || key);
+}
+
 async function generateAllRecs(btn) {
   const { apiKey } = getAISettings();
   if (!apiKey) {
     if (confirm('No Claude API key set.\n\nOpen AI Settings now to add one?')) openSettings();
     return;
   }
-  const keys = Object.keys(STATION_NAMES_MAP);
-  const notesEl = document.getElementById('f-notes');
-  const existingFilled = keys.some(k => {
-    const ta = document.getElementById('f-' + k + '-rec');
-    return ta && ta.value.trim();
-  }) || (notesEl && notesEl.value.trim());
-  if (existingFilled && !confirm('Some recommendations already have content. Replace all with AI-generated versions?')) return;
   btn.disabled = true;
-  btn.textContent = '⟳ Generating all recs…';
+  btn.textContent = '⟳ Generating…';
   try {
-    const raw = await callClaudeGenerate(buildGenerateAllPrompt());
+    const raw = await callClaudeGenerate(buildGenerateAllPrompt(), aiSystemPrompt());
     let parsed;
     try {
-      const clean = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-      parsed = JSON.parse(clean);
+      const m = raw.match(/\{[\s\S]*\}/);
+      if (!m) throw new Error('no JSON object found');
+      parsed = JSON.parse(m[0]);
     } catch(e) {
-      throw new Error('Could not parse Claude response.\n\n' + raw.substring(0, 400));
+      throw new Error('Could not parse Claude response.\n\n' + raw.substring(0, 600));
     }
-    keys.forEach(k => {
-      const ta = document.getElementById('f-' + k + '-rec');
-      if (ta && parsed[k]) {
-        ta.value = String(parsed[k]);
-        ta.dataset.touched = '1';
-        ta.dispatchEvent(new Event('input', { bubbles: true }));
-      }
-    });
-    if (parsed.overall && notesEl) {
-      notesEl.value = String(parsed.overall);
-      notesEl.dataset.touched = '1';
-      notesEl.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-    btn.textContent = '✦ Generate All Recs';
-    btn.style.background = 'var(--sage)';
-    setTimeout(() => { btn.style.background = ''; }, 2000);
+    const orderedKeys = Object.keys(STATION_NAMES_MAP).concat(['notes']);
+    const queue = orderedKeys
+      .map(k => ({ key: k, name: recDisplayName(k), score: recScoreText(k),
+                   text: String((k === 'notes' ? parsed.overall : parsed[k]) || '').trim(),
+                   approved: false }))
+      .filter(item => item.text);
+    if (!queue.length) throw new Error('Claude returned no usable recommendations.');
+    openRecReview(queue);
   } catch(e) {
-    btn.textContent = '✦ Generate All Recs';
     if (e.noKey) {
       if (confirm('No Claude API key.\n\nOpen AI Settings?')) openSettings();
     } else {
@@ -6613,6 +6721,7 @@ async function generateAllRecs(btn) {
     }
   } finally {
     btn.disabled = false;
+    btn.textContent = '✦ Generate All Recs';
   }
 }
 
@@ -6622,19 +6731,14 @@ async function generateStationRec(stationKey, btn) {
     if (confirm('No Claude API key set.\n\nOpen AI Settings now to add one?')) openSettings();
     return;
   }
-  const ta = document.getElementById(stationKey === 'notes' ? 'f-notes' : 'f-' + stationKey + '-rec');
-  if (ta && ta.value.trim() && !confirm('This field already has content. Replace with an AI-generated recommendation?')) return;
   btn.disabled = true;
   btn.textContent = '⟳ …';
   try {
-    const text = await callClaudeGenerate(buildGenerateOnePrompt(stationKey));
-    if (ta) {
-      ta.value = text;
-      ta.dataset.touched = '1';
-      ta.dispatchEvent(new Event('input', { bubbles: true }));
-    }
+    const text = await callClaudeGenerate(buildGenerateOnePrompt(stationKey), aiSystemPrompt());
+    openRecReview([{ key: stationKey, name: recDisplayName(stationKey),
+                     score: recScoreText(stationKey), text: text.trim(), approved: false }]);
     btn.classList.add('ai-ok');
-    btn.textContent = '✓ Done';
+    btn.textContent = '✓ Review';
     setTimeout(() => { btn.classList.remove('ai-ok'); btn.textContent = '✦ Generate'; }, 1800);
   } catch(e) {
     btn.classList.add('ai-err');
@@ -6649,6 +6753,94 @@ async function generateStationRec(stationKey, btn) {
     btn.disabled = false;
   }
 }
+
+// ── REVIEW MODAL (review → edit → approve, one station at a time) ──
+var _recReview = { queue: [], idx: 0 };
+
+function openRecReview(queue) {
+  _recReview.queue = queue;
+  _recReview.idx = 0;
+  document.getElementById('rec-review-modal').classList.add('open');
+  recReviewRender();
+}
+function recReviewSaveCurrentEdit() {
+  const ta = document.getElementById('rec-review-text');
+  const item = _recReview.queue[_recReview.idx];
+  if (ta && item) item.text = ta.value;
+}
+function recReviewRender() {
+  const q = _recReview.queue, i = _recReview.idx, item = q[i];
+  if (!item) return;
+  document.getElementById('rec-review-station').textContent = item.name;
+  document.getElementById('rec-review-score').textContent = item.score ? ('Score: ' + item.score) : '';
+  document.getElementById('rec-review-progress').textContent = (i + 1) + ' / ' + q.length;
+  document.getElementById('rec-review-text').value = item.text;
+  const approvedCount = q.filter(x => x.approved).length;
+  document.getElementById('rec-review-approved-count').textContent =
+    approvedCount + ' of ' + q.length + ' approved';
+  // Approve button reflects current state
+  const appBtn = document.getElementById('rec-review-approve-btn');
+  appBtn.textContent = item.approved ? '✓ Approved — Next' : '✓ Approve & Next';
+  appBtn.classList.toggle('is-approved', !!item.approved);
+  // Prev disabled at start
+  document.getElementById('rec-review-prev-btn').disabled = (i === 0);
+}
+function recReviewNav(delta) {
+  recReviewSaveCurrentEdit();
+  const n = _recReview.queue.length;
+  _recReview.idx = Math.max(0, Math.min(n - 1, _recReview.idx + delta));
+  recReviewRender();
+}
+function recReviewApprove() {
+  recReviewSaveCurrentEdit();
+  const item = _recReview.queue[_recReview.idx];
+  if (item) item.approved = true;
+  if (_recReview.idx < _recReview.queue.length - 1) {
+    _recReview.idx++;
+    recReviewRender();
+  } else {
+    recReviewRender(); // refresh counts; stay on last
+  }
+}
+function recReviewSkip() {
+  recReviewSaveCurrentEdit();
+  const item = _recReview.queue[_recReview.idx];
+  if (item) item.approved = false;
+  if (_recReview.idx < _recReview.queue.length - 1) {
+    _recReview.idx++;
+    recReviewRender();
+  } else {
+    recReviewRender();
+  }
+}
+function recReviewFinish() {
+  recReviewSaveCurrentEdit();
+  const approved = _recReview.queue.filter(x => x.approved && x.text.trim());
+  if (!approved.length) {
+    if (!confirm('No stations approved yet — nothing will be applied. Close anyway?')) return;
+    recReviewClose();
+    return;
+  }
+  approved.forEach(item => {
+    const ta = document.getElementById(recFieldId(item.key));
+    if (ta) {
+      ta.value = item.text.trim();
+      ta.dataset.touched = '1';
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  });
+  recReviewClose();
+}
+function recReviewClose() {
+  document.getElementById('rec-review-modal').classList.remove('open');
+  _recReview.queue = [];
+  _recReview.idx = 0;
+}
+window.recReviewNav = recReviewNav;
+window.recReviewApprove = recReviewApprove;
+window.recReviewSkip = recReviewSkip;
+window.recReviewFinish = recReviewFinish;
+window.recReviewClose = recReviewClose;
 
 function attachGenerateButton(ta, stationKey) {
   if (!ta || ta.dataset.genAttached === '1') return;
@@ -6794,6 +6986,39 @@ if ('serviceWorker' in navigator) {
       <div style="display:flex;gap:8px;">
         <button class="client-modal-close" onclick="closeSettings()">Cancel</button>
         <button class="client-modal-close" onclick="saveSettings()" style="background:var(--ink);color:var(--cream);border-color:var(--ink);">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ AI RECOMMENDATION REVIEW MODAL ══════════════════ -->
+<div class="client-modal-overlay" id="rec-review-modal" onclick="if(event.target===this)recReviewClose()">
+  <div class="client-modal rec-review-modal">
+    <div class="client-modal-header">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;">
+        <h2 style="margin:0;">Review AI Recommendations</h2>
+        <span id="rec-review-progress" style="font-family:'DM Mono',monospace;font-size:13px;color:var(--rust);">1 / 1</span>
+      </div>
+      <p style="font-size:12px;color:#8b7d6b;margin-top:4px;">Review each one, edit if needed, then approve. Only approved stations are applied to the report.</p>
+    </div>
+    <div style="padding:18px 24px;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
+        <div style="font-family:'Nunito',sans-serif;font-weight:700;font-size:16px;color:var(--ink);" id="rec-review-station">Station</div>
+        <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);" id="rec-review-score"></div>
+      </div>
+      <textarea id="rec-review-text" rows="11" style="resize:vertical;width:100%;font-size:13px;line-height:1.6;"></textarea>
+      <div style="font-size:11px;color:#8b7d6b;margin-top:6px;">Edit the text directly above — your edits are kept when you approve.</div>
+    </div>
+    <div class="client-modal-footer" style="justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="client-modal-close" id="rec-review-prev-btn" onclick="recReviewNav(-1)">← Prev</button>
+        <button class="client-modal-close" onclick="recReviewNav(1)">Next →</button>
+        <span id="rec-review-approved-count" style="font-size:11px;color:var(--muted);margin-left:6px;"></span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="client-modal-close" onclick="recReviewSkip()" style="color:var(--muted);">Skip</button>
+        <button class="client-modal-close rec-approve-btn" id="rec-review-approve-btn" onclick="recReviewApprove()" style="background:var(--sage);color:#fff;border-color:var(--sage);">✓ Approve &amp; Next</button>
+        <button class="client-modal-close" onclick="recReviewFinish()" style="background:var(--ink);color:var(--cream);border-color:var(--ink);">Finish &amp; Apply Approved</button>
       </div>
     </div>
   </div>
