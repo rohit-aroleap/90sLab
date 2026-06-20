@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Workout Calendar · v1.291</title>
+<title>Workout Calendar · v1.292</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -1156,7 +1156,11 @@ body:not(.focused) .focus-cloud-inline { display:none; }
   <div class="view-switcher-row">
     <select id="view-switcher" class="view-switcher" onchange="switchView(this.value)" title="Switch view">
       <option value="calendar">📅 Calendar</option>
-      <option value="weekly">🏋️ Weekly Reach Out</option>
+      <!-- v1.292 — Weekly Reach Out moved to Wati-Reach-Outs dashboard.
+           Option hidden but the renderer/candidate code stays in place so
+           we can un-hide in 30 s if Wati flow has issues. switchView()
+           intercepts any lingering 'weekly' calls and redirects. -->
+      <!-- <option value="weekly">🏋️ Weekly Reach Out</option> -->
       <option value="groupmap">📇 Group mapping</option>
       <option value="analysis">📊 Analysis</option>
       <option value="onboarding">📅 Onboarding</option>
@@ -9443,7 +9447,7 @@ window.addEventListener('DOMContentLoaded', () => setTimeout(syncSettingsMenuLab
 // dashboard header, focused-view chip, and document.title in sync without manual
 // edits in multiple places. Update DASHBOARD_VERSION on every release; everything
 // else syncs from this constant at runtime.
-const DASHBOARD_VERSION = 'v1.291';
+const DASHBOARD_VERSION = 'v1.292';
 function applyVersionLabel() {
   for (const el of document.querySelectorAll('.ver, #focus-ver-chip')) {
     el.textContent = DASHBOARD_VERSION;
@@ -13970,6 +13974,16 @@ function syncViewSwitcher(activeName) {
   if (activeName) sel.value = activeName;
 }
 function switchView(name) {
+  // v1.292 — Weekly Reach Out migrated to a dedicated dashboard
+  // (Wati-Reach-Outs). Intercept any lingering 'weekly' calls — from a
+  // bookmarked dropdown state, programmatic navigation, etc. — and open
+  // the new dashboard in a new tab. Falls back to outreach.
+  if (name === 'weekly') {
+    const sel = document.getElementById('view-switcher');
+    if (sel) sel.value = 'outreach';
+    window.open('https://rohit-aroleap.github.io/Wati-Reach-Outs/', '_blank', 'noopener');
+    name = 'outreach';
+  }
   // v1.251 — track the active view so the auth handler can re-render
   // it on re-sign-in after a cascade flips AA anonymous.
   window.__activeView = name;
