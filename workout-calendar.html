@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Workout Calendar · v1.186</title>
+<title>Workout Calendar · v1.291</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, signOut, signInAnonymously, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const fbApp = initializeApp({
   apiKey: "AIzaSyC5mZAG98VAeDpp1IssYYQ2kcKeClyqIGc",
@@ -34,6 +34,7 @@ window.fb = {
   auth: fbAuth,
   signIn: (email, password) => signInWithEmailAndPassword(fbAuth, email, password),
   signOutUser: () => signOut(fbAuth),
+  signInAnon: () => signInAnonymously(fbAuth),
   onAuth: (cb) => onAuthStateChanged(fbAuth, cb),
 };
 window.dispatchEvent(new Event('fb-ready'));
@@ -69,17 +70,25 @@ body {
 #dashboard { display: none; padding: 20px 24px; }
 
 .top-bar {
-  display: flex; justify-content: space-between; align-items: flex-start;
-  margin-bottom: 18px;
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 14px;
 }
-.top-bar h1 { font-size: 22px; font-weight: 700; }
+/* v1.240 — top bar is now a single horizontal row instead of a
+   left-column stack. The previous design vertically stacked h1 +
+   logged-label + cloud-status, which ate ~80px of viewport. Now they
+   flow on one line with the Workout Calendar heading. */
+.top-bar > div:first-child {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap; min-width: 0;
+}
+.top-bar h1 { font-size: 20px; font-weight: 700; }
 .top-bar h1 .ver {
   font-size: 11px; font-weight: 600; color: #7c3aed;
   background: #ede9fe; border: 1px solid #c4b5fd;
   padding: 2px 8px; border-radius: 10px;
   vertical-align: middle; margin-left: 8px;
 }
-.top-bar .sub { font-size: 13px; color: #666; margin-top: 2px; }
+.top-bar .sub { font-size: 12px; color: #666; margin-top: 0; }
+.top-bar .sub#cloud-status { gap: 6px; }
 
 .btn-purple {
   background: #7c3aed; color: white; border: none;
@@ -337,6 +346,11 @@ tr.section-divider td {
 
 /* ── Login overlay ── */
 #login-overlay { position:fixed; inset:0; background:#ededff; z-index:10000; display:flex; align-items:center; justify-content:center; }
+/* v1.289 — semi-transparent backdrop variant for the auto-pop re-auth
+   modal. Dashboard stays visible behind the dimmed scrim so the operator
+   sees they're still in their session and just need to re-enter the
+   password — not "you've been logged out, start over". */
+body.reauth-popover #login-overlay { background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(2px); }
 #login-overlay.show { display:flex !important; }
 .login-card { background:white; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,0.1); padding:36px 30px; width:380px; max-width:90vw; }
 .login-card h2 { font-size:22px; font-weight:700; color:#7c3aed; }
@@ -366,6 +380,20 @@ tr.section-divider td {
 
 /* ── View tabs ── */
 .view-tabs { display:flex; gap:8px; margin-bottom:16px; border-bottom:2px solid #e5e7eb; }
+/* v1.241 — view switcher dropdown that replaces the pill row. Styled
+   as a prominent heading-like control: large font, purple border, the
+   chevron is rendered by the native select arrow. */
+.view-switcher-row { margin-bottom:10px; }
+.view-switcher {
+  font-family:inherit; font-size:18px; font-weight:700;
+  padding:8px 36px 8px 14px; border:2px solid #ede9fe; border-radius:10px;
+  background:white; color:#1a1a2e; cursor:pointer; min-width:240px;
+  appearance:none; -webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'><path fill='%237c3aed' d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat:no-repeat; background-position:right 12px center;
+}
+.view-switcher:hover { border-color:#c4b5fd; }
+.view-switcher:focus { outline:none; border-color:#7c3aed; box-shadow:0 0 0 3px rgba(124,58,237,.18); }
 .view-tab { padding:10px 18px; border:none; background:transparent; cursor:pointer; font-size:14px; font-weight:600; color:#666; border-bottom:3px solid transparent; margin-bottom:-2px; transition:all 0.15s; }
 .view-tab:hover { color:#7c3aed; }
 .view-tab.active { color:#7c3aed; border-bottom-color:#7c3aed; }
@@ -601,6 +629,90 @@ body:not(.focused) .focus-cloud-inline { display:none; }
 .ot-actions .skip { background:#f3f4f6; color:#374151; }
 .ot-actions .skip:hover { background:#e5e7eb; }
 .ot-actions button:disabled { opacity:0.5; cursor:wait; }
+/* ── v1.233 — Two-pane Outreach + body-mounted CommonComm iframe ── */
+/* v1.239 — full-height two-pane. Two-pane fills the viewport below
+   the page header; both panes stretch to that height. Left pane is a
+   flex column: dropdown row at top, candidate list scrolls below.
+   Right pane is also a flex column: iframe pane (flex:1) + send
+   panel (auto). */
+.ot-twopane { display:grid; grid-template-columns:minmax(320px, 420px) minmax(0, 1fr); gap:14px; align-items:stretch; margin-top:10px; height:calc(100vh - 140px); }
+.ot-left  { min-width:0; display:flex; flex-direction:column; min-height:0; }
+.ot-cat-row { display:flex; gap:6px; margin-bottom:8px; flex-shrink:0; }
+.ot-cat-select { flex:1; padding:7px 10px; font-family:inherit; font-size:13px; border:1px solid #d1d5db; border-radius:7px; background:white; cursor:pointer; color:#1a1a2e; min-width:0; }
+/* v1.246 — search + internal toggle row */
+.ot-search-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-shrink:0; }
+.ot-search-input { flex:1; padding:6px 10px; font-family:inherit; font-size:13px; border:1px solid #d1d5db; border-radius:7px; background:white; color:#1a1a2e; min-width:0; }
+.ot-search-input:focus { outline:2px solid #7c3aed; outline-offset:-1px; border-color:#7c3aed; }
+.ot-search-toggle { display:flex; align-items:center; gap:5px; font-size:11px; color:#666; white-space:nowrap; cursor:pointer; user-select:none; }
+.ot-search-toggle input { margin:0; cursor:pointer; }
+/* v1.253 — keyboard shortcut hint */
+.ot-kbd-hint { font-size:10px; color:#9ca3af; margin-bottom:6px; line-height:1.4; user-select:none; }
+.ot-kbd-hint kbd { display:inline-block; padding:1px 5px; font-family:ui-monospace, Menlo, Consolas, monospace; font-size:10px; color:#374151; background:#f3f4f6; border:1px solid #d1d5db; border-bottom-width:2px; border-radius:3px; }
+.ot-cat-select:focus { outline:2px solid #7c3aed; outline-offset:-1px; }
+#ot-list { flex:1; overflow-y:auto; padding-right:4px; min-height:0; }
+.ot-right { display:flex; flex-direction:column; min-width:0; gap:10px; min-height:0; }
+.ot-chat-anchor { flex:1; min-height:0; background:#f5f3ff; border:1px dashed #d4cffa; border-radius:10px; position:relative; display:flex; align-items:center; justify-content:center; }
+.ot-chat-placeholder { color:#7c6fb8; font-size:13px; padding:0 24px; text-align:center; }
+/* v1.234 — AA-side send panel. Sits below the chat iframe in the right
+   pane. Sending from here logs to sendLog + triggers cooldown (so the
+   candidate falls out of the queue) — sending from CommonComm's own
+   composer inside the iframe does NOT, by design. */
+.ot-send-panel { background:white; border:1px solid #ececff; border-radius:10px; padding:10px 12px; }
+/* v1.247 — Weekly Reach Out: hide chat iframe, let send panel fill the
+   right pane so message + image preview + Send button are all visible
+   without scrolling. Textarea grows to use the freed vertical space. */
+.ot-right-weekly .ot-send-panel { flex:1; display:flex; flex-direction:column; min-height:0; }
+.ot-right-weekly .ot-send-row { flex:1; min-height:0; align-items:stretch; }
+.ot-right-weekly .ot-send-input { max-height:none; flex:1; }
+.ot-send-meta { display:flex; align-items:center; gap:10px; margin-bottom:6px; min-height:24px; }
+.ot-send-target { font-size:12px; color:#5b21b6; font-weight:600; flex:1; }
+.ot-send-status { font-size:11px; color:#888; }
+.ot-send-status.ok { color:#16a34a; }
+.ot-send-status.err { color:#dc2626; }
+.ot-send-actions { display:flex; gap:6px; align-items:center; }
+.ot-send-action-btn { padding:4px 10px; border:none; border-radius:6px; cursor:pointer; font-size:11px; font-weight:600; transition:opacity .12s, filter .12s; }
+.ot-send-action-btn.ai { background:linear-gradient(135deg,#7c3aed,#ec4899); color:white; }
+.ot-send-action-btn.ai:hover:not(:disabled) { filter:brightness(1.08); }
+.ot-send-action-btn.skip { background:#f3f4f6; color:#374151; border:1px solid #e5e7eb; }
+.ot-send-action-btn.skip:hover:not(:disabled) { background:#e5e7eb; }
+.ot-send-action-btn:disabled { opacity:0.4; cursor:not-allowed; }
+/* v1.238 — Trello-style row card. No right column actions anymore. */
+.ot-card.ot-rowonly { grid-template-columns:1fr; padding:8px 12px; margin-bottom:5px; }
+.ot-card.ot-rowonly .who { font-size:13px; }
+.ot-send-row { display:flex; gap:8px; align-items:flex-end; }
+.ot-send-imgpreview { display:flex; align-items:center; gap:10px; padding:6px 8px; margin-bottom:8px; background:#fafaff; border:1px solid #ece8fa; border-radius:8px; }
+.ot-send-imgpreview img { width:64px; height:48px; object-fit:cover; border-radius:6px; flex-shrink:0; }
+.ot-send-imgpreview-label { font-size:11px; color:#6b7280; line-height:1.4; }
+.ot-send-input { flex:1; font-family:inherit; font-size:13px; line-height:1.45; padding:8px 10px; border:1px solid #d1d5db; border-radius:8px; resize:vertical; min-height:60px; max-height:160px; background:#fafaff; }
+.ot-send-input:disabled { background:#f3f4f6; color:#9ca3af; cursor:not-allowed; }
+.ot-send-btn { padding:0 18px; height:42px; border:none; border-radius:8px; background:#16a34a; color:white; font-size:18px; cursor:pointer; transition:background .12s; }
+.ot-send-btn:hover:not(:disabled) { background:#15803d; }
+.ot-send-btn:disabled { background:#e5e7eb; color:#9ca3af; cursor:not-allowed; }
+.ot-card.ot-clickable { cursor:pointer; transition:border-color .12s, box-shadow .12s; }
+.ot-card.ot-clickable:hover { border-color:#7c3aed; box-shadow:0 2px 8px rgba(90,50,200,.08); }
+.ot-card.ot-active { border-color:#7c3aed; box-shadow:0 0 0 2px rgba(124,58,237,.22); background:#fafaff; }
+/* v1.252 — Sent-this-week cards: green tint to differentiate from To-send. */
+.ot-card-sent { background:#f0fdf4; border-color:#bbf7d0; }
+.ot-card-sent.ot-active { background:#dcfce7; border-color:#16a34a; box-shadow:0 0 0 2px rgba(22,163,74,.22); }
+.ot-section-sent .ot-section-h h4 { color:#15803d; }
+.ot-section-sent .ot-section-h .count { background:#dcfce7; color:#15803d; }
+/* Send-button warn variant (Re-send) */
+.ot-send-btn.ot-btn-warn { background:#eab308; }
+.ot-send-btn.ot-btn-warn:hover:not(:disabled) { background:#ca8a04; }
+/* Body-mounted iframe — position:fixed, painted over #ot-chat-pane via
+   getBoundingClientRect. Same pattern as SAT's reachOutPersistentIframe. */
+.ot-comm-iframe { position:fixed; border:none; border-radius:10px; box-shadow:0 4px 18px rgba(90,50,200,.08); background:white; z-index:5; }
+.ot-comm-overlay { position:fixed; z-index:6; display:flex; align-items:center; justify-content:center; background:rgba(245,243,255,0.95); border-radius:10px; }
+.ot-comm-loading-card { background:white; padding:18px 22px; border-radius:10px; box-shadow:0 4px 14px rgba(0,0,0,0.08); display:flex; flex-direction:column; align-items:center; gap:10px; }
+.ot-comm-spinner { width:28px; height:28px; border:3px solid #ece8fa; border-top-color:#7c3aed; border-radius:50%; animation:ot-spin 0.8s linear infinite; }
+@keyframes ot-spin { to { transform:rotate(360deg); } }
+.ot-comm-loading-text { font-size:13px; color:#5b21b6; font-weight:600; }
+.ot-comm-loading-sub { font-size:11px; color:#888; }
+.ot-comm-loading-sub.warn { color:#d97706; }
+@media (max-width: 1100px) {
+  .ot-twopane { grid-template-columns:1fr; }
+  .ot-right { display:none; }
+}
 .ot-status { font-size:11px; color:#666; margin-top:6px; }
 .ots-row { display:grid; grid-template-columns: 200px 1fr; gap:10px; margin-bottom:8px; align-items:center; }
 .ots-row label { font-size:13px; font-weight:600; color:#444; }
@@ -1027,13 +1139,30 @@ body:not(.focused) .focus-cloud-inline { display:none; }
     </div>
   </div>
 
-  <div class="view-tabs">
+  <!-- v1.241 — view nav collapsed from a 6-button pill row into a single
+       dropdown styled like the page heading. Each view's count from
+       the prior view-tab-count spans is now rendered inside the option
+       label (rebuilt on every switchView via syncViewSwitcherCounts).
+       The legacy button row stays hidden but in-DOM because various
+       counter-update callsites still write to view-tab-*-count IDs. -->
+  <div class="view-tabs" style="display:none">
     <button class="view-tab active" id="view-tab-calendar" onclick="switchView('calendar')">📅 Calendar</button>
     <button class="view-tab" id="view-tab-groupmap" onclick="switchView('groupmap')">📇 Group mapping <span class="view-tab-count" id="view-tab-gm-count"></span></button>
     <button class="view-tab" id="view-tab-analysis" onclick="switchView('analysis')">📊 Analysis <span class="view-tab-count" id="view-tab-an-count"></span></button>
     <button class="view-tab" id="view-tab-onboarding" onclick="switchView('onboarding')">📅 Onboarding <span class="view-tab-count" id="view-tab-onb-count"></span></button>
     <button class="view-tab" id="view-tab-replies" onclick="switchView('replies')">💬 Replies <span class="view-tab-count" id="view-tab-rep-count"></span></button>
     <button class="view-tab" id="view-tab-outreach" onclick="switchView('outreach')">🎯 Outreach <span class="view-tab-count" id="view-tab-outreach-count"></span></button>
+  </div>
+  <div class="view-switcher-row">
+    <select id="view-switcher" class="view-switcher" onchange="switchView(this.value)" title="Switch view">
+      <option value="calendar">📅 Calendar</option>
+      <option value="weekly">🏋️ Weekly Reach Out</option>
+      <option value="groupmap">📇 Group mapping</option>
+      <option value="analysis">📊 Analysis</option>
+      <option value="onboarding">📅 Onboarding</option>
+      <option value="replies">💬 Replies</option>
+      <option value="outreach" selected>🎯 Outreach</option>
+    </select>
   </div>
 
   <div id="view-calendar" class="view-pane">
@@ -1274,9 +1403,13 @@ body:not(.focused) .focus-cloud-inline { display:none; }
   </div>
 
   <div id="view-outreach" class="view-pane" style="display:none">
-    <div class="ach-page-head focus-flex-head">
-      <h2>🎯 Outreach<span class="focus-ver-chip" id="focus-ver-chip">v1.180</span></h2>
-      <span class="focus-cloud-inline" id="focus-cloud-inline">
+    <!-- v1.241 — Outreach h2 hidden: the view-switcher dropdown above
+         already shows "🎯 Outreach". focus-ver-chip + focus-cloud-inline
+         + focus-fetch-recompute-btn are still needed in the DOM
+         (referenced elsewhere); kept but visually compact. -->
+    <div class="ach-page-head focus-flex-head" style="margin-bottom:6px">
+      <h2 style="display:none">🎯 Outreach<span class="focus-ver-chip" id="focus-ver-chip">v1.180</span></h2>
+      <span class="focus-cloud-inline" id="focus-cloud-inline" style="margin-left:0">
         <span id="focus-cloud-text">☁ syncing…</span>
         <span id="focus-last-updated" class="gm-hint" style="font-size:11px;color:#9ca3af"></span>
         <button id="focus-fetch-recompute-btn" onclick="fetchAndRecompute(this)" title="Fetch latest data from Ferra API and recompute outreach suggestions">🔄 Fetch &amp; Recompute</button>
@@ -1284,6 +1417,10 @@ body:not(.focused) .focus-cloud-inline { display:none; }
     </div>
     <div class="an-tools">
       <button class="btn-purple" id="ot-recompute-btn" onclick="triggerOutreachRecompute(this)">↻ Recompute</button>
+      <!-- v1.258 — Weekly mode shows when the per-customer activity cache
+           was last refreshed. Hidden in Outreach mode (no per-candidate
+           fetch happens there). -->
+      <span id="ot-weekly-updated" class="gm-hint" style="display:none;font-size:11px;color:#6b7280"></span>
       <span class="gm-hint" id="ot-status"></span>
       <div class="ot-tools-wrap" style="margin-left:auto;position:relative">
         <button class="settings-btn" onclick="toggleOutreachToolsMenu(event)" title="Outreach options" style="padding:6px 11px;font-size:12px"><span>⚙</span><span class="caret">▾</span></button>
@@ -1305,7 +1442,11 @@ body:not(.focused) .focus-cloud-inline { display:none; }
         </div>
       </div>
     </div>
-    <div class="an-subtabs" id="ot-subtabs">
+    <!-- v1.239 — sub-tab pills retired as inline rows. Kept in the DOM
+         (style="display:none") because setOutreachTab() updates their
+         .active class and other code may query them. The visible
+         category switcher is now the two dropdowns inside .ot-left. -->
+    <div class="an-subtabs" id="ot-subtabs" style="display:none">
       <button class="an-subtab active" data-tab="all" onclick="setOutreachTab('all')">All <span class="n" id="ot-tab-all-n">0</span></button>
       <button class="an-subtab" data-tab="risk" onclick="setOutreachTab('risk')">🔴 At Risk <span class="n" id="ot-tab-risk-n">0</span></button>
       <button class="an-subtab" data-tab="celebrate" onclick="setOutreachTab('celebrate')">🌟 Celebrate <span class="n" id="ot-tab-celebrate-n">0</span></button>
@@ -1316,8 +1457,64 @@ body:not(.focused) .focus-cloud-inline { display:none; }
       <button class="an-subtab" data-tab="log" onclick="setOutreachTab('log')">📜 Send Log</button>
     </div>
     <div class="an-subtabs an-subtabs-2" id="ot-subtabs-2" style="display:none"></div>
-    <div id="ot-list"></div>
-    <div id="ot-empty" class="ach-empty" style="display:none"></div>
+    <div class="ot-twopane">
+      <div class="ot-left">
+        <!-- v1.239 — category dropdowns replace the two pill rows.
+             otOnMainChange / otOnSubChange delegate to existing
+             setOutreachTab / setOutreachSubsection. -->
+        <div class="ot-cat-row">
+          <select id="ot-cat-main" class="ot-cat-select" onchange="otOnMainChange(this.value)" title="Category"></select>
+          <select id="ot-cat-sub" class="ot-cat-select" onchange="otOnSubChange(this.value)" title="Sub-category" style="display:none"></select>
+        </div>
+        <!-- v1.246 — search row, shown in both Outreach and Weekly modes. -->
+        <div class="ot-search-row" id="ot-search-row">
+          <input type="search" id="ot-search-input" class="ot-search-input" placeholder="Search name or phone…" oninput="filterOutreachList()">
+          <label class="ot-search-toggle" id="ot-internal-toggle" style="display:none" title="Include internal Ferra team members (Rohit, etc.) for testing">
+            <input type="checkbox" id="ot-include-internal" onchange="renderWeeklyReachOutPage()"> Include internal
+          </label>
+          <select id="ot-week-filter" class="ot-cat-select" style="display:none" onchange="renderWeeklyReachOutPage()" title="Filter the list by customer week"></select>
+        </div>
+        <!-- v1.253 — shortcut hint -->
+        <div class="ot-kbd-hint" title="Single-letter keys disable when typing in the message">
+          <kbd>↓</kbd>/<kbd>j</kbd> next · <kbd>↑</kbd>/<kbd>k</kbd> prev · <kbd>Ctrl</kbd>+<kbd>Enter</kbd> send · <kbd>s</kbd> skip · <kbd>r</kbd> AI
+        </div>
+        <div id="ot-list"></div>
+        <div id="ot-empty" class="ach-empty" style="display:none"></div>
+      </div>
+      <div class="ot-right">
+        <div id="ot-chat-pane" class="ot-chat-anchor">
+          <div class="ot-chat-placeholder" id="ot-chat-placeholder">Click a candidate to open their WhatsApp chat here.</div>
+        </div>
+        <!-- v1.234 — AA's own send panel. Mirrors SAT's Reach Out custom
+             send bar. Sending from HERE (not from inside the CommonComm
+             iframe) writes to AA's sendLog and triggers the cooldown so
+             the candidate disappears from future outreach queues. The
+             iframe's own composer is still there for chat replies, but
+             this bar is the "I'm done with this outreach" entry point. -->
+        <div class="ot-send-panel" id="ot-send-panel">
+          <div class="ot-send-meta" id="ot-send-meta">
+            <span class="ot-send-target" id="ot-send-target">No candidate selected</span>
+            <span class="ot-send-status" id="ot-send-status"></span>
+            <span class="ot-send-actions">
+              <button id="ot-send-ai" class="ot-send-action-btn ai" onclick="aiRewriteSelected()" disabled title="Rewrite with Claude using full customer context">✨ AI rewrite</button>
+              <button id="ot-send-skip" class="ot-send-action-btn skip" onclick="skipSelected()" disabled title="Skip — hide this candidate without sending">Skip</button>
+            </span>
+          </div>
+          <!-- v1.245 — image attachment preview. Shown only when the
+               selected candidate has imageUrl set (currently only Weekly
+               Reach Out). Tells the operator the image is part of the
+               outgoing message before they hit Send. -->
+          <div class="ot-send-imgpreview" id="ot-send-imgpreview" style="display:none">
+            <img id="ot-send-imgpreview-img" alt="attached image" />
+            <span class="ot-send-imgpreview-label">📎 Will send as image with caption — single WhatsApp bubble.</span>
+          </div>
+          <div class="ot-send-row">
+            <textarea id="ot-send-input" class="ot-send-input" rows="3" placeholder="Click a candidate on the left — the suggested message lands here. Edit if needed, then Send." disabled></textarea>
+            <button id="ot-send-btn" class="ot-send-btn" onclick="sendSelectedOutreach()" disabled title="Send via Periskope and log so this candidate stops appearing in the queue">➤</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1589,9 +1786,71 @@ function showLoginOverlay() {
   document.getElementById('login-overlay').style.display = 'flex';
   document.getElementById('upload-screen').style.display = 'none';
   document.getElementById('dashboard').style.display = 'none';
+  // v1.251 — hide the body-mounted Outreach iframe while the login overlay
+  // is up. It's position:fixed on document.body so it survives any
+  // #dashboard display:none; without this it floats over the login form.
+  try { if (typeof _otCommIframe !== 'undefined' && _otCommIframe) _otCommIframe.style.display = 'none'; } catch (_) {}
 }
 function hideLoginOverlay() {
   document.getElementById('login-overlay').style.display = 'none';
+  // v1.289 — clear the popover variant class if it was set by popReauthModal.
+  document.body.classList.remove('reauth-popover');
+}
+// v1.237 — replaced the full-width amber banner with a subtle indicator
+// in the existing header "Logged in" label. When the SAT-pattern anon-
+// signin floor catches a null-tick cascade, the label flips to a small
+// "🔒 Anonymous · Sign in" link instead of dominating the top of the
+// viewport.
+function showAnonBanner() {
+  const ll = document.getElementById('logged-label');
+  if (!ll) return;
+  ll.innerHTML = '<span style="color:#d97706;font-weight:600">🔒 Anonymous</span> <button onclick="showLoginOverlay()" style="font-size:11px;padding:2px 8px;border:1px solid #d97706;border-radius:5px;background:white;cursor:pointer;color:#d97706;font-weight:600">Sign in</button>';
+  // Drop any leftover full-width banner from earlier versions still in DOM.
+  const old = document.getElementById('anon-banner');
+  if (old) old.remove();
+}
+function hideAnonBanner() {
+  const old = document.getElementById('anon-banner');
+  if (old) old.remove();
+}
+
+// v1.288 — Auto-pop the login overlay on cascade so re-auth is a single
+// keystroke for a real-user-turned-anonymous operator. Unlike
+// showLoginOverlay() this does NOT hide the dashboard / upload-screen —
+// the login card sits on top via its existing high z-index, so the
+// operator can still see their work behind the modal. Once they re-auth
+// the modal closes and they're back where they were.
+let __reauthPopGuard = 0;
+function popReauthModal() {
+  // Don't re-pop while it's already open OR if the operator just
+  // dismissed it in the last 5 seconds (avoids fight-the-user loop if
+  // Firebase keeps reverting to anonymous).
+  const overlay = document.getElementById('login-overlay');
+  if (!overlay) return;
+  if (overlay.style.display === 'flex') return;
+  if (Date.now() - __reauthPopGuard < 5000) return;
+  __reauthPopGuard = Date.now();
+  // v1.289 — mark the body so the overlay uses the semi-transparent
+  // popover backdrop CSS variant instead of the solid #ededff full-
+  // screen background.
+  document.body.classList.add('reauth-popover');
+  overlay.style.display = 'flex';
+  // Pre-fill email with the last real user we knew about so browser
+  // autofill targets the password field.
+  const emailEl = document.getElementById('login-email');
+  const pwEl    = document.getElementById('login-password');
+  if (emailEl && __lastRealUserEmail) emailEl.value = __lastRealUserEmail;
+  // Focus the password field. If email is empty (very first session),
+  // focus email instead.
+  setTimeout(() => {
+    if (pwEl && emailEl && emailEl.value) pwEl.focus();
+    else if (emailEl) emailEl.focus();
+  }, 50);
+  const statusEl = document.getElementById('login-status');
+  if (statusEl) {
+    statusEl.textContent = 'Session expired — sign back in to keep going.';
+    statusEl.style.color = '#d97706';
+  }
 }
 // Queue of subscribers that need authenticated access to Firebase.
 // Pushed by `runAfterAuth(fn)`; drained the first time auth fires with a user.
@@ -1610,17 +1869,36 @@ function setupAuthGate() {
     return;
   }
   window.fb.onAuth(user => {
-    __authUser = user;
-    if (user) {
+    // v1.233 — SAT-pattern auth handling. The Firebase project + same-origin
+    // shared IndexedDB couples AA to any sibling Firebase context (embedded
+    // CommonComm iframe, second tab, etc.). When the sibling mutates the
+    // persisted record, AA's poll fires onAuth with user=null even though
+    // the operator hasn't signed out. v1.226-v1.231 treated that null as a
+    // genuine sign-out and showed the login overlay — wrecking the session.
+    // SAT's fix (Strength_Assessment_Tracker/index.html:1933-1942 + 1895-
+    // 1915) is to absorb null ticks by signing in anonymously, so the auth
+    // object is always populated. Admin features are layered on top via the
+    // !user.isAnonymous && isAdminEmail check; non-admin / anonymous users
+    // see a "Sign in to make changes" banner but the dashboard stays up.
+    if (user && !user.isAnonymous) {
+      __authUser = user;
+      __lastRealUserEmail = user.email || null;
       hideLoginOverlay();
-      // If dashboard is meant to be shown, show it; otherwise upload screen
+      hideAnonBanner();
       const us = document.getElementById('upload-screen');
       const dash = document.getElementById('dashboard');
-      if (allUsers && allUsers.length) { if (dash) dash.style.display = ''; if (us) us.style.display = 'none'; }
+      // v1.290 — set dashboard display explicitly to 'block', NOT ''. The
+      // CSS rule for #dashboard is `display: none` (line 70). Clearing the
+      // inline style with '' lets that CSS rule take over and hides the
+      // dashboard. The bug was masked on first sign-in because init()
+      // separately sets dashboard.style.display = 'block' after data
+      // loads; on re-auth init() isn't called again, so '' silently
+      // re-hid the whole page. upload-screen has display:flex as CSS
+      // default so '' is safe there.
+      if (allUsers && allUsers.length) { if (dash) dash.style.display = 'block'; if (us) us.style.display = 'none'; }
       else { if (us) us.style.display = ''; if (dash) dash.style.display = 'none'; }
       const ll = document.getElementById('logged-label');
       if (ll) ll.textContent = 'Logged in as ' + (user.email || user.uid);
-      // Fire any queued Firebase subscribers (only once on first auth)
       if (!__afterAuthFired) {
         __afterAuthFired = true;
         const q = __afterAuthQueue.slice();
@@ -1628,16 +1906,69 @@ function setupAuthGate() {
         for (const fn of q) {
           try { fn(); } catch (e) { console.warn('runAfterAuth fn threw', e); }
         }
-        // Load Ferra data ONCE per session, on first successful auth.
-        // Previously this ran on EVERY auth-state callback (token refresh,
-        // 2nd tab) AND at module init — each call re-downloaded ~9MB of
-        // ferraDataChunks (~3.6 GB/mo of redundant Firebase egress).
         try { tryAutoLoad(); } catch {}
       }
+      // v1.251 — re-render the active view-pane on re-sign-in after a
+      // cascade. Without this, the dashboard background shows but no
+      // pane's content does, and the body-mounted iframe floats with
+      // stale coordinates. Skip on the upload-screen path (no dashboard
+      // to re-render).
+      // v1.289 — also force-reposition the body-mounted Outreach iframe
+      // (it's position:fixed at hardcoded top/left coords; if the
+      // dashboard scroll position shifted while the modal was up, the
+      // iframe stays at stale coords and "covers" the wrong area).
+      if (dash && dash.style.display !== 'none') {
+        try {
+          const v = window.__activeView || document.getElementById('view-switcher')?.value || 'calendar';
+          switchView(v);
+        } catch (e) { console.warn('[auth] post-auth view restore failed', e); }
+        // Defer to next tick so the render has populated #ot-chat-pane.
+        setTimeout(() => {
+          try {
+            if (typeof positionOutreachCommIframe === 'function') positionOutreachCommIframe();
+          } catch (_) {}
+        }, 50);
+      }
+    } else if (user && user.isAnonymous) {
+      // v1.260 — distinguish two cascade-anon cases (see prior comment).
+      // v1.288 — mid-session case ALSO auto-pops the login modal so the
+      // operator just types their password (browser autofill makes it
+      // a one-keystroke recovery). Cascade still fires under the hood
+      // but is invisible by the time they'd notice the orange chip.
+      __authUser = user;
+      if (allUsers && allUsers.length && __afterAuthFired) {
+        hideLoginOverlay();
+        showAnonBanner();
+        try { popReauthModal(); } catch (_) {}
+      } else {
+        // Fresh load — stay on login screen, no auto-pop needed (it's
+        // already the only thing visible).
+        showLoginOverlay();
+      }
     } else {
-      showLoginOverlay();
+      // user is null. If we had a real user this session, this is the
+      // cascade between an auth state mutation and Firebase's anonymous
+      // sign-in floor catching it. Floor it via signInAnonymously so we
+      // don't even flash the login overlay. If signInAnonymously itself
+      // fails (network down, anonymous auth disabled in project settings),
+      // fall back to the login overlay so the operator can recover.
+      if (__lastRealUserEmail) {
+        window.fb.signInAnon().catch(e => {
+          console.warn('[auth] anon-signin fallback failed', e);
+          showLoginOverlay();
+        });
+      } else {
+        // True first load (no prior session). Show login overlay.
+        showLoginOverlay();
+      }
     }
   });
+}
+// v1.233 — admin email allowlist for the SAT pattern's gating.
+const AA_ADMIN_EMAILS = new Set(['rohit@aroleap.com']);
+let __lastRealUserEmail = null;
+function isAdminEmail(email) {
+  return !!email && AA_ADMIN_EMAILS.has(String(email).toLowerCase());
 }
 setupAuthGate();
 // Also hide everything until first auth callback fires
@@ -6524,6 +6855,7 @@ const DEFAULT_OUTREACH_COOLDOWNS = {
   perfectWeek: 14,
   workoutTotal: 365,
   anniversary: 365,
+  weeklyReachOut: 6, // v1.242 — weekly progress recap, one per ~week per customer
 };
 const DEFAULT_OUTREACH_CLAUDE_PROMPTS = {
   dipNudge:
@@ -6758,6 +7090,1011 @@ function resolveOutreachKind(type, cohort, defaultTarget) {
   const kind = (target === 'both' && cohortChatId) ? 'both'
     : (target === 'group' && cohortChatId) ? 'group' : 'dm';
   return { kind, cohortChatId };
+}
+
+// v1.243 — Public URL of the Ferra "Your Progress This Week" banner
+// image. Hosted in this repo's assets/ folder; GitHub Pages serves it.
+// Periskope server-side-fetches the URL when sending each weekly recap.
+const WEEKLY_HEADER_IMAGE_URL = 'https://rohit-aroleap.github.io/Achievement-analysis/assets/weekly-progress-header.jpeg';
+// ──────────────────────────────────────────────────────────────────
+// v1.242 — Weekly Reach Out
+//
+// Weekly progress recap sent to each customer once per week:
+//   Hi <Name>,
+//   ✅ ✅ ✅ ✅ ✅ ⬜ ⬜
+//   You completed 5 of 7 workouts this week. Great work! 🧡
+//   Week 1 is your starting point. Let's keep building strength together!
+//
+// v1 omits the muscle-groups line — the dashboard export doesn't carry
+// exercise names / muscle tags per workout, only counts + duration. v2
+// will swap that line in once Ferra extends the export with
+// exerciseNames or muscleGroups per dailyActivity entry.
+// ──────────────────────────────────────────────────────────────────
+// v1.250 — Weekly recap week boundary anchored to the upcoming Friday send.
+// The window is always a Fri→Thu block. Examples for today=Jun 17 (Wed):
+//   Wed Jun 17 → window Jun 12 (Fri) – Jun 18 (Thu) — current in-progress week
+//   Thu Jun 18 → window Jun 12 (Fri) – Jun 18 (Thu) — today is last day
+//   Fri Jun 19 → window Jun 12 (Fri) – Jun 18 (Thu) — last week's recap (the
+//                send-day case; same window as Thu, now fully complete)
+//   Sat Jun 20 → window Jun 19 (Fri) – Jun 25 (Thu) — new week, day 2
+//
+// On Sat→Thu the window stays fixed (we're inside it); on Fri it stays
+// fixed once more (the just-completed window we're about to send); then
+// rolls forward on the next Sat. Today never falsely shows ⬜ on data
+// that hasn't happened yet because future days within the window are
+// rendered as ⬜ in buildWeekProgress (workoutMap lookup returns nothing).
+function getWeekStartFriday(today) {
+  const d = new Date(today);
+  const dow = d.getDay(); // 0=Sun..6=Sat; Fri=5
+  // Days back to the Friday that started the relevant window.
+  //   dow=5 (Fri): back=7  — yesterday's-window (just-completed; send-day mode)
+  //   dow=6 (Sat): back=1
+  //   dow=0..4 (Sun..Thu): (dow - 5 + 7) % 7 = dow + 2
+  const back = dow === 5 ? 7 : ((dow - 5 + 7) % 7);
+  d.setDate(d.getDate() - back);
+  d.setHours(0,0,0,0);
+  return d;
+}
+function pickFirstName(user) {
+  const n = String(user && user.name || '').trim();
+  if (!n) return 'there';
+  // Skip single-letter initials (e.g. "K G VENKATESH" → "VENKATESH"); use the
+  // first real name token. Fall back to the first token if all are initials.
+  const tokens = n.split(/\s+/);
+  const isInitial = t => /^[A-Za-z]\.?$/.test(t);
+  const pick = tokens.find(t => !isInitial(t)) || tokens[0];
+  // If the chosen name has no letters (e.g. a phone number), greet generically.
+  if (!/[A-Za-z]/.test(pick)) return 'there';
+  return pick;
+}
+function buildWeekProgress(uid, weekStart) {
+  // v1.258 — prefer fresh per-customer activity from exportCustomerActivity
+  // (populated on Recompute in Weekly mode). Falls back to the bulk
+  // workoutMap snapshot when no per-customer fetch has happened yet.
+  const fresh = getWeeklyActivityFor(uid);
+  let activityByDate = workoutMap[uid] || {};
+  let overloadByDate = null;
+  let exerciseCountByDate = null;
+  if (fresh && Array.isArray(fresh.dailyActivity)) {
+    activityByDate = {};
+    overloadByDate = {};
+    exerciseCountByDate = {};
+    for (const a of fresh.dailyActivity) {
+      activityByDate[a.date] = a;
+      overloadByDate[a.date] = a.progressiveOverloadCount || 0;
+      exerciseCountByDate[a.date] = a.exerciseCount || 0;
+    }
+  }
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + i);
+    const key = fmtDate(d);
+    const entry = activityByDate[key];
+    days.push({
+      date: key,
+      completed: !!(entry && (entry.exerciseCount > 0 || entry.totalDuration > 0)),
+      progressiveOverloadCount: entry ? (entry.progressiveOverloadCount || 0) : 0,
+      exerciseCount: entry ? (entry.exerciseCount || 0) : 0,
+    });
+  }
+  return days;
+}
+// v1.259 — Exercise → muscle-group mapping.
+//
+// Internal 14-group taxonomy (chest / back / lowerBack / shoulders / rearDelts /
+// traps / biceps / triceps / forearms / quads / hamstrings / glutes / calves /
+// core). At render time these collapse to ~6 customer-facing labels via
+// friendlyGroup() — "shoulders, core" and "lower back" read naturally; raw
+// taxonomy stays granular enough to support future analysis.
+//
+// Resolution order in inferMuscleGroups():
+//   1. Exact-match EXERCISE_MUSCLE_MAP (curated from observed exerciseIds)
+//   2. Keyword regex on the exerciseId + name string (catches the long tail)
+//   3. Empty array (unknown — warn + skip from the muscle tally)
+const EXERCISE_MUSCLE_MAP = {
+  seatedBarbellShoulderPress: ['shoulders', 'triceps'],
+  benchSquats:                ['quads', 'glutes', 'hamstrings', 'core'],
+  singleArmGoodMorning:       ['hamstrings', 'glutes', 'lowerBack'],
+  barbellBicepCurl:           ['biceps', 'forearms'],
+  barbellTricepPushDown:      ['triceps'],
+};
+// v1.274 — exact mapping for the AroLeap catalog, keyed by display name
+// (case/space-insensitive). Anatomically precise: prime movers + the
+// synergists that actually contribute meaningful load.
+const NAME_MUSCLE_MAP = {
+  'bicep curls':     ['biceps', 'forearms'],
+  'seated rows':     ['back', 'rearDelts', 'biceps'],
+  'tricep pushdown': ['triceps'],
+  'lat pulldown':    ['back', 'biceps'],
+  'shoulder press':  ['shoulders', 'triceps'],
+  'squats':          ['quads', 'glutes', 'hamstrings', 'core'],
+  'good mornings':   ['hamstrings', 'glutes', 'lowerBack'],
+};
+function normExName(s) { return String(s || '').trim().toLowerCase().replace(/s+$/,'').replace(/\s+/g, ' '); }
+function inferMuscleGroups(exerciseId, exerciseName) {
+  if (exerciseId && EXERCISE_MUSCLE_MAP[exerciseId]) return EXERCISE_MUSCLE_MAP[exerciseId].slice();
+  // Exact name match (and a singular/plural-tolerant variant).
+  const raw = String(exerciseName || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  if (raw && NAME_MUSCLE_MAP[raw]) return NAME_MUSCLE_MAP[raw].slice();
+  const singered = raw.replace(/s$/, '');
+  for (const k in NAME_MUSCLE_MAP) { if (k.replace(/s$/, '') === singered) return NAME_MUSCLE_MAP[k].slice(); }
+  const text = ((exerciseId || '') + ' ' + (exerciseName || '')).toLowerCase();
+  if (/shoulder|lateral.?raise|front.?raise|arnold|overhead.?press/.test(text)) return ['shoulders'];
+  if (/trap|shrug/.test(text))                                                  return ['traps'];
+  if (/(rear|reverse).?(delt|fly)/.test(text))                                  return ['rearDelts'];
+  if (/bicep|chin.?up/.test(text))                                              return ['biceps'];
+  if (/tricep|push.?down|skull.?crusher|\bdip\b|kickback/.test(text))           return ['triceps'];
+  if (/wrist|forearm/.test(text))                                               return ['forearms'];
+  if (/good.?morning|back.?extension|hyperextension/.test(text))                return ['lowerBack', 'hamstrings'];
+  if (/deadlift|hip.?thrust|glute.?bridge|kick.?back/.test(text))               return ['glutes', 'hamstrings'];
+  if (/hamstring|leg.?curl|ham.?curl/.test(text))                               return ['hamstrings'];
+  if (/squat|lunge|leg.?press|step.?up|leg.?extension/.test(text))              return ['quads', 'glutes'];
+  if (/\bcalf\b|calves/.test(text))                                             return ['calves'];
+  if (/bench.?press|push.?up|chest|pec|fly/.test(text))                         return ['chest'];
+  if (/pull.?up|lat.?pull|lat.?down/.test(text))                                return ['back', 'biceps'];
+  if (/row\b|rowing/.test(text))                                                return ['back'];
+  if (/plank|crunch|sit.?up|leg.?raise|russian.?twist|\bab\b|abdominal|hollow.?body|deadbug|bird.?dog|woodchop/.test(text))
+                                                                                return ['core'];
+  return [];
+}
+// Customer-facing labels — plain words a 50+ member actually uses, not
+// gym/anatomy terms. The precise taxonomy above stays for analysis.
+const FRIENDLY_GROUP = {
+  biceps: 'arms', triceps: 'arms', forearms: 'arms',
+  quads: 'legs', hamstrings: 'legs', calves: 'legs',
+  glutes: 'hips',
+  rearDelts: 'upper back', traps: 'upper back',
+  lowerBack: 'lower back',
+  chest: 'chest', back: 'back', shoulders: 'shoulders', core: 'stomach',
+};
+function friendlyGroup(g) { return FRIENDLY_GROUP[g] || g; }
+function joinList(arr) {
+  if (!arr || !arr.length) return '';
+  if (arr.length === 1) return arr[0];
+  if (arr.length === 2) return arr[0] + ' and ' + arr[1];
+  return arr.slice(0, -1).join(', ') + ', and ' + arr[arr.length - 1];
+}
+
+// v1.259 — Per-customer workout-detail cache fed by Ferra's
+// exportCustomerWorkoutDetail. Heavier than exportCustomerActivity
+// (sessions + sets + every exercise instance) so runs after the lighter
+// fetch resolves on Recompute. Pre-flattens sessions[] → exercises[]
+// at fetch time so buildWeeklyMessage stays pure-synchronous.
+const EXPORT_WORKOUT_DETAIL_URL = 'https://asia-south1-aroleap-fa76f.cloudfunctions.net/exportCustomerWorkoutDetail';
+const weeklyDetailCache = new Map(); // uid → { weekStart, exercises:[{date, exerciseId, name, muscleGroups, anyProgressiveOverload}], ts }
+let weeklyDetailLastUpdated = 0;
+
+async function fetchCustomerWorkoutDetail(uid, days) {
+  if (!uid) return null;
+  if (!ferraApiCfg || !ferraApiCfg.apiKey) throw new Error('Ferra API key not set');
+  const url = EXPORT_WORKOUT_DETAIL_URL + '?uid=' + encodeURIComponent(uid) + '&days=' + (days || 7);
+  const r = await fetch(url, { headers: { 'x-api-key': ferraApiCfg.apiKey } });
+  if (!r.ok) {
+    const body = await r.text().catch(() => '');
+    throw new Error('HTTP ' + r.status + (body ? ': ' + body.slice(0, 200) : ''));
+  }
+  return r.json();
+}
+async function fetchAllWeeklyDetail(items, opts) {
+  opts = opts || {};
+  const concurrency = opts.concurrency || 4;
+  const days = opts.days || 7;
+  const onProgress = opts.onProgress || function(){};
+  const weekStartIso = opts.weekStartIso || '';
+  let done = 0, failed = 0;
+  const unknownIds = new Set();
+  const queue = items.slice();
+  async function worker() {
+    while (queue.length) {
+      const it = queue.shift();
+      if (!it || !it.uid) { done++; onProgress(done, items.length, failed); continue; }
+      try {
+        const data = await fetchCustomerWorkoutDetail(it.uid, days);
+        if (data && Array.isArray(data.sessions)) {
+          const exercises = [];
+          for (const s of data.sessions) {
+            if (!Array.isArray(s.exercises)) continue;
+            for (const ex of s.exercises) {
+              const muscleGroups = inferMuscleGroups(ex.exerciseId, ex.name);
+              if (!muscleGroups.length && ex.exerciseId) unknownIds.add(ex.exerciseId);
+              const anyProgressiveOverload = Array.isArray(ex.sets) && ex.sets.some(set => set && set.progressiveOverloading === true);
+              exercises.push({
+                date: s.date,
+                exerciseId: ex.exerciseId || null,
+                name: ex.name || '',
+                muscleGroups,
+                anyProgressiveOverload,
+              });
+            }
+          }
+          weeklyDetailCache.set(it.uid, { weekStart: weekStartIso, exercises, ts: Date.now() });
+        }
+      } catch (e) {
+        failed++;
+        console.warn('[weekly-detail] fetch failed for uid=' + it.uid, e && e.message || e);
+      }
+      done++;
+      onProgress(done, items.length, failed);
+    }
+  }
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, () => worker());
+  await Promise.all(workers);
+  weeklyDetailLastUpdated = Date.now();
+  if (unknownIds.size) {
+    console.warn('[weekly-detail] unknown exerciseIds (add to EXERCISE_MUSCLE_MAP or pattern):', Array.from(unknownIds));
+  }
+}
+
+// v1.264 — Set-level volume via getUserExerciseSets. Each set carries
+// reps + avgSetResistance, so set volume = avgSetResistance × reps. We
+// fetch a 56-day window (covers both the 1-month and 2-month reports),
+// keep per-set {startTs, vol} so summariseVolume can window by days, and
+// read it synchronously from buildWeeklyMessage's monthly reports.
+const EXPORT_USER_SETS_URL = 'https://asia-south1-aroleap-fa76f.cloudfunctions.net/getUserExerciseSets';
+const weeklyVolumeCache = new Map(); // uid → { toMs, sets:[{startTs, vol, exerciseId}], ts }
+let weeklyVolumeLastUpdated = 0;
+
+async function fetchUserExerciseSets(uid, fromMs, toMs) {
+  if (!uid) return null;
+  if (!ferraApiCfg || !ferraApiCfg.apiKey) throw new Error('Ferra API key not set');
+  const url = EXPORT_USER_SETS_URL + '?uid=' + encodeURIComponent(uid) + '&from=' + fromMs + '&to=' + toMs;
+  const r = await fetch(url, { headers: { 'x-api-key': ferraApiCfg.apiKey } });
+  if (!r.ok) {
+    const body = await r.text().catch(() => '');
+    throw new Error('HTTP ' + r.status + (body ? ': ' + body.slice(0, 200) : ''));
+  }
+  return r.json();
+}
+async function fetchAllWeeklyVolume(items, opts) {
+  opts = opts || {};
+  const concurrency = opts.concurrency || 4;
+  const toMs = opts.toMs || Date.now();
+  const fromMs = opts.fromMs || (toMs - 56 * 86400000);
+  const onProgress = opts.onProgress || function(){};
+  let done = 0, failed = 0;
+  const queue = items.slice();
+  async function worker() {
+    while (queue.length) {
+      const it = queue.shift();
+      if (!it || !it.uid) { done++; onProgress(done, items.length, failed); continue; }
+      try {
+        const data = await fetchUserExerciseSets(it.uid, fromMs, toMs);
+        const arr = Array.isArray(data) ? data
+          : (data && (data.sets || data.exerciseSets || data.data)) || [];
+        const sets = [];
+        for (const s of arr) {
+          const reps = +(s && s.reps) || 0;
+          // Raw avgSetResistance is per-side — actual load is doubled.
+          const res  = (+(s && s.avgSetResistance) || 0) * 2;
+          const startTs = +(s && s.startTs) || 0;
+          if (reps > 0 && res > 0) sets.push({ startTs, vol: res * reps, exerciseId: s.exerciseId || null });
+        }
+        weeklyVolumeCache.set(it.uid, { toMs, sets, ts: Date.now() });
+      } catch (e) {
+        failed++;
+        console.warn('[weekly-volume] fetch failed for uid=' + it.uid, e && e.message || e);
+      }
+      done++;
+      onProgress(done, items.length, failed);
+    }
+  }
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, () => worker());
+  await Promise.all(workers);
+  weeklyVolumeLastUpdated = Date.now();
+}
+// Total volume (kg) lifted in the trailing `days` window, from cached sets.
+function summariseVolume(uid, days) {
+  const entry = weeklyVolumeCache.get(uid);
+  if (!entry || !Array.isArray(entry.sets) || !entry.sets.length) return 0;
+  const cutoff = entry.toMs - days * 86400000;
+  let v = 0;
+  for (const s of entry.sets) if (s.startTs >= cutoff) v += s.vol;
+  return Math.round(v);
+}
+
+// Summarise a customer's week from the cached detail. Returns null when
+// no detail is cached for this uid OR when the cache was populated for a
+// different week (so buildWeeklyMessage gracefully falls back).
+// Coerce any date-ish value (YYYY-MM-DD, ISO datetime, ms/sec timestamp,
+// numeric string) to a YYYY-MM-DD key so date comparisons are robust to
+// whatever shape the Cloud Function returns.
+function toDayKey(v) {
+  if (v == null || v === '') return '';
+  if (typeof v === 'number') return fmtDate(new Date(v < 1e12 ? v * 1000 : v));
+  const s = String(v).trim();
+  const m = s.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (m) return m[1];
+  if (/^\d+$/.test(s)) { const num = parseInt(s, 10); return fmtDate(new Date(num < 1e12 ? num * 1000 : num)); }
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? '' : fmtDate(d);
+}
+function summariseWeekDetail(uid, weekStartIso) {
+  const entry = weeklyDetailCache.get(uid);
+  if (!entry || !Array.isArray(entry.exercises)) return null;
+  if (weekStartIso && entry.weekStart && entry.weekStart !== weekStartIso) return null;
+  // Restrict to the Fri→Thu recap window (weekStartIso = that Friday). The
+  // 7/8-day fetch can straddle the boundary on a Friday send, so we filter
+  // by each exercise's date to keep the muscle tally — and the
+  // missed-muscle list — exactly the week being recapped. Dates are
+  // normalised so a non-YYYY-MM-DD format can't silently drop everything;
+  // if the filter empties the set (format we don't recognise), fall back
+  // to all cached exercises rather than losing the named-area line.
+  let ex = entry.exercises;
+  if (weekStartIso) {
+    const endD = new Date(weekStartIso + 'T00:00:00');
+    endD.setDate(endD.getDate() + 6);
+    const end = fmtDate(endD);
+    const filtered = ex.filter(e => { const k = toDayKey(e.date); return k && k >= weekStartIso && k <= end; });
+    if (filtered.length) ex = filtered;
+  }
+  if (!ex.length) return null;
+  // Count DISTINCT exercises (by id/name), not per-session instances — the
+  // copy says "X of your 7 exercises", so X must be 0..(distinct done).
+  const exSet = new Set(), strongSet = new Set();
+  ex.forEach(e => {
+    const id = e.exerciseId || e.name || '';
+    if (!id) return;
+    exSet.add(id);
+    if (e.anyProgressiveOverload) strongSet.add(id);
+  });
+  const stronger = strongSet.size;
+  const totalExercises = exSet.size;
+  const tally = {}, strongTally = {};
+  ex.forEach(e => {
+    for (const g of e.muscleGroups) {
+      tally[g] = (tally[g] || 0) + 1;
+      if (e.anyProgressiveOverload) strongTally[g] = (strongTally[g] || 0) + 1;
+    }
+  });
+  // Helper: top N distinct friendly groups from a tally (collapse + dedupe).
+  const topFriendly = (t, n) => {
+    const seen = new Set(), out = [];
+    for (const [g] of Object.entries(t).sort((a, b) => b[1] - a[1])) {
+      const f = friendlyGroup(g);
+      if (seen.has(f)) continue;
+      seen.add(f); out.push(f);
+      if (out.length === n) break;
+    }
+    return out;
+  };
+  // Areas trained (top 2) and areas that actually got STRONGER (top 2).
+  const areasTopK   = topFriendly(tally, 2);
+  const strongAreasK = topFriendly(strongTally, 2);
+  // Missed: canonical big-groups the customer skipped this week.
+  const CANONICAL = ['chest', 'back', 'shoulders', 'quads', 'core', 'biceps'];
+  const seenMissed = new Set(Object.keys(tally));
+  const missedFriendly = [];
+  const seenF = new Set();
+  for (const c of CANONICAL) {
+    if (seenMissed.has(c)) continue;
+    const f = friendlyGroup(c);
+    if (seenF.has(f)) continue;
+    seenF.add(f);
+    missedFriendly.push(f);
+    if (missedFriendly.length === 2) break;
+  }
+  return { stronger, totalExercises, areasTopK, strongAreasK, areasMissed: missedFriendly };
+}
+
+// v1.258 — Per-customer activity cache fed by Ferra's exportCustomerActivity
+// Cloud Function. Populated on demand when the operator hits Recompute
+// in Weekly Reach Out (never auto-fetched). Keys are uid; values are
+// { data, ts }. data shape mirrors workoutMap[uid] for compatibility,
+// PLUS top-level summary fields (workoutDaysInWindow, currentStreakDays,
+// streakActive, progressiveOverloadCount per day).
+const EXPORT_CUSTOMER_ACTIVITY_URL = 'https://asia-south1-aroleap-fa76f.cloudfunctions.net/exportCustomerActivity';
+const weeklyActivityCache = new Map(); // uid → { data, ts }
+let weeklyActivityLastUpdated = 0;     // ms epoch, used by the header label
+
+async function fetchCustomerActivity(uid, days) {
+  if (!uid) return null;
+  if (!ferraApiCfg || !ferraApiCfg.apiKey) throw new Error('Ferra API key not set');
+  const url = EXPORT_CUSTOMER_ACTIVITY_URL + '?uid=' + encodeURIComponent(uid) + '&days=' + (days || 30);
+  const r = await fetch(url, { headers: { 'x-api-key': ferraApiCfg.apiKey } });
+  if (!r.ok) {
+    const body = await r.text().catch(() => '');
+    throw new Error('HTTP ' + r.status + (body ? ': ' + body.slice(0, 200) : ''));
+  }
+  return r.json();
+}
+
+// Limit concurrency so we don't slam the Cloud Function with hundreds of
+// parallel requests. 8 in flight at once is a healthy middle ground.
+async function fetchAllWeeklyActivity(items, opts) {
+  opts = opts || {};
+  const concurrency = opts.concurrency || 8;
+  const onProgress = opts.onProgress || function(){};
+  const days = opts.days || 30;
+  let done = 0, failed = 0;
+  const queue = items.slice();
+  async function worker() {
+    while (queue.length) {
+      const it = queue.shift();
+      if (!it || !it.uid) { done++; onProgress(done, items.length, failed); continue; }
+      try {
+        const data = await fetchCustomerActivity(it.uid, days);
+        if (data) weeklyActivityCache.set(it.uid, { data, ts: Date.now() });
+      } catch (e) {
+        failed++;
+        console.warn('[weekly-recompute] fetch failed for uid=' + it.uid, e && e.message || e);
+      }
+      done++;
+      onProgress(done, items.length, failed);
+    }
+  }
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, () => worker());
+  await Promise.all(workers);
+  weeklyActivityLastUpdated = Date.now();
+}
+
+// Read the cached per-customer data if present. Returns the same shape
+// workoutMap normally provides (a dict of "YYYY-MM-DD" → activity row)
+// plus an optional .summary block. Falls back to workoutMap when no
+// fresh fetch has happened for this uid.
+function getWeeklyActivityFor(uid) {
+  if (!uid) return null;
+  const cached = weeklyActivityCache.get(uid);
+  if (!cached) return null;
+  return cached.data;
+}
+
+// Render the "Last updated …" label next to the Recompute button.
+// Hidden in non-Weekly modes since per-customer fetch is Weekly-only.
+function renderWeeklyLastUpdated() {
+  const el = document.getElementById('ot-weekly-updated');
+  if (!el) return;
+  const isWeekly = window.__activeView === 'weekly';
+  if (!isWeekly) { el.style.display = 'none'; return; }
+  // v1.259 — surface the more recent of the two fetch timestamps. The
+  // detail fetch is the gate for muscle-group lines, so that's what
+  // the operator cares about; activity fetch comes first and is usually
+  // a few seconds older.
+  const ts = Math.max(weeklyActivityLastUpdated || 0, weeklyDetailLastUpdated || 0);
+  if (!ts) {
+    el.textContent = '· Activity not fetched yet — Recompute to load';
+    el.style.display = '';
+    return;
+  }
+  const ageMin = Math.round((Date.now() - ts) / 60000);
+  let when;
+  if (ageMin < 1) when = 'just now';
+  else if (ageMin < 60) when = ageMin + ' min ago';
+  else if (ageMin < 24*60) when = Math.round(ageMin/60) + ' h ago';
+  else when = Math.round(ageMin/(60*24)) + ' d ago';
+  el.textContent = '· Last refreshed ' + when + ' (' + weeklyActivityCache.size + ' activity, ' + weeklyDetailCache.size + ' detail)';
+  el.style.display = '';
+  el.title = 'Activity: ' + (weeklyActivityLastUpdated ? new Date(weeklyActivityLastUpdated).toLocaleString() : 'never') +
+             '\nDetail: ' + (weeklyDetailLastUpdated ? new Date(weeklyDetailLastUpdated).toLocaleString() : 'never');
+}
+
+// v1.256 — workout-count helpers used by the new milestone + improvement
+// lines in buildWeeklyMessage. All read workoutMap; pure functions.
+function countWorkoutsInWeek(uid, weekStart) {
+  if (!uid || !weekStart || isNaN(weekStart.getTime())) return 0;
+  const wmap = workoutMap[uid] || {};
+  let n = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + i);
+    const key = fmtDate(d);
+    const e = wmap[key];
+    if (e && (e.exerciseCount > 0 || e.totalDuration > 0)) n++;
+  }
+  return n;
+}
+function lifetimeWorkoutDays(uid, untilDate) {
+  if (!uid) return 0;
+  const wmap = workoutMap[uid] || {};
+  const cutoff = untilDate && !isNaN(untilDate.getTime()) ? fmtDate(untilDate) : '9999-99-99';
+  let n = 0;
+  for (const date of Object.keys(wmap)) {
+    if (date > cutoff) continue;
+    const e = wmap[date];
+    if (e && (e.exerciseCount > 0 || e.totalDuration > 0)) n++;
+  }
+  return n;
+}
+// v1.262 — progressive-overload exercises across the trailing 4 weeks
+// (the 28 days ending with this week). Powers the every-4-weeks
+// encouraging recap ("You got stronger in N exercises this month").
+function monthlyOverloadCount(uid, weekStart) {
+  if (!uid || !weekStart || isNaN(weekStart.getTime())) return 0;
+  const wmap = workoutMap[uid] || {};
+  const start = new Date(weekStart);
+  start.setDate(start.getDate() - 21); // 3 weeks back + this week = 4 weeks
+  let total = 0;
+  for (let i = 0; i < 28; i++) {
+    const d = new Date(start);
+    d.setDate(d.getDate() + i);
+    const e = wmap[fmtDate(d)];
+    if (e) total += (e.progressiveOverloadCount || 0);
+  }
+  return total;
+}
+// v1.263 — names of exercises that progressively overloaded in the cached
+// detail week (proxy for "top improved exercises"; we have the names + a
+// went-heavier flag, but no magnitude to rank a true "biggest"). Returns
+// up to k friendly exercise names.
+function topImprovedExercises(uid, weekStartIso, k) {
+  const entry = (typeof weeklyDetailCache !== 'undefined') ? weeklyDetailCache.get(uid) : null;
+  if (!entry || (weekStartIso && entry.weekStart !== weekStartIso) || !Array.isArray(entry.exercises)) return [];
+  const names = [];
+  const seen = new Set();
+  for (const e of entry.exercises) {
+    if (e.anyProgressiveOverload && e.name && !seen.has(e.name)) {
+      seen.add(e.name);
+      names.push(e.name);
+      if (names.length >= (k || 2)) break;
+    }
+  }
+  return names;
+}
+function hadAnyPerfectWeek(uid, beforeWeekStart) {
+  if (!uid || !beforeWeekStart || isNaN(beforeWeekStart.getTime())) return false;
+  for (let weeksAgo = 1; weeksAgo <= 52; weeksAgo++) {
+    const ws = new Date(beforeWeekStart);
+    ws.setDate(ws.getDate() - 7 * weeksAgo);
+    if (countWorkoutsInWeek(uid, ws) === 7) return true;
+  }
+  return false;
+}
+// v1.261 — milestones per the Ferra 90-Day skill: "🏆 … completed." format.
+function findWeeklyMilestone(uid, weekNumber, weekStart, n) {
+  if (n === 7 && uid && !hadAnyPerfectWeek(uid, weekStart)) return '🏆 Your first perfect week.';
+  if (weekNumber === 4)  return '🏆 Four weeks completed.';
+  if (weekNumber === 8)  return '🏆 Two months completed.';
+  if (weekNumber === 12) return '🏆 Three months completed.';
+  if (weekNumber === 26) return '🏆 Six months completed.';
+  if (weekNumber === 52) return '🏆 One year completed.';
+  // Cumulative-total milestones ("🏆 N workouts completed") stay OUT of
+  // weekly messages until the customer is a month in — the first month is
+  // about weekly progress, and totals belong in the monthly reports.
+  if (weekNumber > 4 && uid && weekStart && !isNaN(weekStart.getTime())) {
+    const endOfWeek = new Date(weekStart);
+    endOfWeek.setDate(endOfWeek.getDate() + 6);
+    const total = lifetimeWorkoutDays(uid, endOfWeek);
+    const prev  = total - n;
+    for (const m of [10, 20, 50, 100, 250, 500]) {
+      if (prev < m && total >= m) return `🏆 ${m} workouts completed.`;
+    }
+  }
+  return null;
+}
+
+// v1.261 — Weekly recap copy per the FERRA 90-Day Weekly Coaching skill.
+// A coach reviewing the week, not a dashboard. Greeting + checkboxes + the
+// most relevant 2-3 takeaways (≤60 words). Emojis 🧡 💪 🏆 only.
+//
+// Takeaways are selected in the skill's priority order:
+//   1 Milestone  2 Workout completion  3 Consistency improvement
+//   4 Strength improvement  5 Coverage insight  6 Functional insight
+//   7 Focus area
+// — with month themes layering in: Month 1 (wk1-4) awareness & momentum,
+// Month 2 (wk5-8) capability/function, Month 3 (wk9-12) confidence/identity.
+// Named muscle groups come from summariseWeekDetail when cached; otherwise
+// we fall back to counts / data-free phrasing.
+function assembleWeekly(name, row, takeaways) {
+  const lines = [row, '', `Hi ${name},`];
+  for (const t of takeaways) if (t) lines.push('', t);
+  return lines.join('\n');
+}
+// v1.271 — FERRA COACHING ENGINE (90-day). Every weekly message follows
+// EFFORT → RESULT → ACHIEVEMENT and ALWAYS ends on a positive achievement
+// line (never a focus area, correction, or nudge). Emojis 🧡 💪 🏆 only.
+// Monthly override replaces weeks 4/8/12/16/… with a milestone recap.
+function buildWeeklyMessage(user, weekDays, weekNumber) {
+  const name = pickFirstName(user);
+  const row  = weekDays.map(d => d.completed ? '✅' : '⬜').join(' ');
+  const n    = weekDays.filter(d => d.completed).length;
+
+  const weekStartStr = weekDays && weekDays[0] && weekDays[0].date;
+  const weekStart = weekStartStr ? new Date(weekStartStr) : null;
+  const uid = user && user.uid;
+  const haveWeek = uid && weekStart && !isNaN(weekStart.getTime());
+  const wk = weekNumber || 1;
+  const isWeek1 = wk <= 1;
+
+  const detail = (uid && weekStartStr) ? summariseWeekDetail(uid, weekStartStr) : null;
+  const areasTop = (detail && detail.areasTopK) || [];
+  const strongAreas = (detail && detail.strongAreasK) || [];
+  // Distinct exercises that got stronger (0..7). detail.stronger is already
+  // distinct; the no-detail fallback sums per-day counts (instances), so
+  // clamp it to the 7-exercise program — never "23 of 7".
+  const stronger = (detail && detail.totalExercises > 0)
+    ? Math.min(detail.stronger, 7)
+    : Math.min(weekDays.reduce((s, d) => s + (d.progressiveOverloadCount || 0), 0), 7);
+
+  // Weeks 4/8/12 use the SAME week-on-week logic as every other week —
+  // no special monthly message. (Monthly-report override removed v1.277.)
+
+  // ── Special cases (explicit copy) ──
+  if (n === 0) {
+    return assembleWeekly(name, row, [
+      "This week didn't go as planned, and that's okay. 🧡",
+      'A new week is a fresh opportunity to get moving again.',
+      "We're ready when you are.",
+    ]);
+  }
+  if (n === 1) {
+    return assembleWeekly(name, row, [
+      'You showed up for yourself once this week. 🧡',
+      'Every strong routine starts with a single session.',
+      "You've taken the first step — and that's the one that matters most.",
+    ]);
+  }
+  if (n === 2) {
+    return assembleWeekly(name, row, [
+      'You showed up for yourself twice this week. 🧡',
+      'Every workout is a step in the right direction.',
+      "Let's keep building momentum.",
+    ]);
+  }
+
+  // ── EFFORT ──
+  let improved = false, diff = 0;
+  if (haveWeek && !isWeek1) {
+    const prevStart = new Date(weekStart);
+    prevStart.setDate(prevStart.getDate() - 7);
+    const prevN = countWorkoutsInWeek(uid, prevStart);
+    if (n > prevN) { improved = true; diff = n - prevN; }
+  }
+  let effort;
+  if (isWeek1) {
+    effort = `You showed up for yourself ${n} times this week. 🧡`;
+  } else if (improved) {
+    effort = `You completed ${diff} more workout${diff > 1 ? 's' : ''} than last week. 🧡`;
+  } else {
+    const base = [
+      `You showed up for yourself ${n} times this week. 🧡`,
+      `You made time for ${n} workouts this week. 🧡`,
+      'You stayed consistent with your training this week. 🧡',
+    ];
+    effort = base[wk % 3];
+  }
+
+  // ── RESULT — name the muscles that actually got stronger this week
+  //    (plain labels), or omit the line entirely. No counts, no coverage
+  //    claims, no fabrication: muscle data → name it; no data → no line. ──
+  const result = strongAreas.length
+    ? `Your ${joinList(strongAreas)} got stronger this week. 💪`
+    : null;
+
+  // ── ACHIEVEMENT — closing line: a warm positive, plus an encouraging
+  //    "aim for more" nudge for anyone short of a full week. (7/7 = pure
+  //    celebration; there's nothing more to push for.) ──
+  let achievement;
+  if (n === 7) {
+    achievement = 'Fantastic work.';
+  } else if (n === 6) {
+    achievement = "So close to a full week — let's go for all 7 next week!";
+  } else if (n === 5) {
+    achievement = "That's a strong week — see if you can add one more next week!";
+  } else if (n === 4) {
+    achievement = "That's a strong foundation to build on. Let's try to get at least one more in next week!";
+  } else {
+    achievement = "That's a great foundation to build on. Let's aim for a couple more next week!";
+  }
+
+  const takeaways = [effort];
+  if (result) takeaways.push(result);
+  takeaways.push(achievement);
+  return assembleWeekly(name, row, takeaways);
+}
+// v1.242 — render the Weekly Reach Out view. Reuses the Outreach pane's
+// DOM (#view-outreach + #ot-list + #ot-chat-pane + #ot-send-panel) so
+// the iframe lifecycle, send panel, AI rewrite, and Skip all work
+// unchanged. The category dropdowns are hidden since there are no
+// sub-categories within Weekly Reach Out.
+function renderWeeklyReachOutPage() {
+  const list = document.getElementById('ot-list');
+  const empty = document.getElementById('ot-empty');
+  if (!list) return;
+  // Hide category dropdowns and the Outreach sub-tab pills — not applicable
+  // to weekly view.
+  const catRow = document.querySelector('#view-outreach .ot-cat-row');
+  if (catRow) catRow.style.display = 'none';
+  const subBar = document.getElementById('ot-subtabs-2');
+  if (subBar) subBar.style.display = 'none';
+  // v1.246 — show the "Include internal" toggle for Weekly mode.
+  const internalToggle = document.getElementById('ot-internal-toggle');
+  if (internalToggle) internalToggle.style.display = '';
+  // v1.248 — keep the chat iframe visible (it shows prior WhatsApp
+  // history with this customer, useful context before sending) but
+  // split it 50/50 with the send panel so both fit in one viewport.
+  // Iframe stays at flex:1 (existing CSS); .ot-right-weekly forces the
+  // send panel to also be flex:1 so they share the available height.
+  const chatPane = document.getElementById('ot-chat-pane');
+  if (chatPane) chatPane.style.display = '';
+  const rightPane = document.querySelector('#view-outreach .ot-right');
+  if (rightPane) rightPane.classList.add('ot-right-weekly');
+  if (!allUsers.length) {
+    list.innerHTML = '';
+    if (empty) { empty.style.display = ''; empty.textContent = 'Load a JSON first.'; }
+    return;
+  }
+  const includeInternal = !!document.getElementById('ot-include-internal')?.checked;
+  const today = TODAY || new Date();
+  const weekStart = getWeekStartFriday(today);
+  let toSend   = weeklyReachOutCandidates({ includeInternal });
+  const sent   = weeklySentCandidates(weekStart);
+
+  // v1.277 — week-selector dropdown: a fixed Week 1–12 list (each week's
+  // message differs), so the operator can pick any week. Filters the
+  // To-send list to that week.
+  const weekFilter = document.getElementById('ot-week-filter');
+  if (weekFilter) {
+    weekFilter.style.display = '';
+    const prev = weekFilter.value || 'all';
+    let opts = '<option value="all">First 12 weeks</option>';
+    for (let w = 1; w <= 12; w++) opts += `<option value="${w}">Week ${w}</option>`;
+    opts += '<option value="gt12">12+ weeks</option>';
+    weekFilter.innerHTML = opts;
+    const valid = prev === 'all' || prev === 'gt12' || (+prev >= 1 && +prev <= 12);
+    weekFilter.value = valid ? prev : 'all';
+    // Bucketing: "all" = onboarding window (weeks 1–12); "gt12" = veterans
+    // past week 12; a number = that exact week.
+    if (weekFilter.value === 'all') {
+      toSend = toSend.filter(it => it.meta.weekNumber <= 12);
+    } else if (weekFilter.value === 'gt12') {
+      toSend = toSend.filter(it => it.meta.weekNumber > 12);
+    } else {
+      toSend = toSend.filter(it => it.meta.weekNumber === +weekFilter.value);
+    }
+  }
+  if (!toSend.length && !sent.length) {
+    list.innerHTML = '';
+    if (empty) {
+      const v = weekFilter && weekFilter.value;
+      empty.style.display = '';
+      empty.textContent =
+        v === 'gt12' ? 'No 12+ week customers to send to right now.' :
+        (v && v !== 'all') ? `No Week ${v} customers to send to right now.` :
+        '✅ Nothing to send and nothing sent yet this week.';
+    }
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  window.__otItems = window.__otItems || {};
+  window.__otItems['weekly']     = toSend;
+  window.__otItems['weeklySent'] = sent;
+
+  // v1.282 — TEMP muscle-data diagnostic. Prints why the "muscles got
+  // stronger" line is/ isn't showing. Open devtools console on the Weekly
+  // tab to read it. Remove once the data path is confirmed.
+  try {
+    const wkIso = fmtDate(weekStart);
+    const sz = (typeof weeklyDetailCache !== 'undefined') ? weeklyDetailCache.size : 'n/a';
+    console.log('%c[muscle-debug] render week=' + wkIso + ' · detail cache size=' + sz,
+      'color:#6d28d9;font-weight:bold');
+    if (typeof weeklyDetailCache !== 'undefined' && weeklyDetailCache.size) {
+      let i = 0;
+      for (const [uid, e] of weeklyDetailCache) {
+        if (i++ >= 6) break;
+        const weekMatch = e.weekStart === wkIso ? 'WEEK-OK' : ('WEEK-MISMATCH(cache=' + e.weekStart + ')');
+        const sample = (e.exercises || []).slice(0, 5).map(x =>
+          (x.name || x.exerciseId || '?') + '→' + JSON.stringify(x.muscleGroups || []));
+        console.log('[muscle-debug]', uid, weekMatch, '| exercises:', sample);
+      }
+    } else {
+      console.log('[muscle-debug] cache EMPTY → detail fetch did not run/succeed. Hit Recompute and watch the "⏳ Detail" phase.');
+    }
+  } catch (err) { console.warn('[muscle-debug] failed', err); }
+
+  // v1.283 — on-screen muscle-data status, so the cause is visible without
+  // the console. Summarises the detail cache: is it loaded, fetched for THIS
+  // week, and do exercises map to muscles?
+  let muscleNote = '';
+  try {
+    const wkIso = fmtDate(weekStart);
+    if (typeof weeklyDetailCache === 'undefined' || !weeklyDetailCache.size) {
+      muscleNote = '⚠ No exercise detail loaded yet — hit Recompute (watch the “Detail” phase) to show the “muscles got stronger” line.';
+    } else {
+      let wkMatch = 0, withGroups = 0; const unmapped = new Set();
+      for (const [, e] of weeklyDetailCache) {
+        const match = e.weekStart === wkIso;
+        if (match) wkMatch++;
+        let hasG = false;
+        for (const x of (e.exercises || [])) {
+          if ((x.muscleGroups || []).length) hasG = true;
+          else if (x.name || x.exerciseId) unmapped.add(x.name || x.exerciseId);
+        }
+        if (match && hasG) withGroups++;
+      }
+      muscleNote = `🔎 Muscle data: detail for ${weeklyDetailCache.size} · ${wkMatch} for this week · ${withGroups} with muscles`;
+      if (!wkMatch) muscleNote += ' — detail was fetched for a different week; Recompute to refresh.';
+      else if (!withGroups && unmapped.size) muscleNote += ' — unmapped exercises: ' + [...unmapped].slice(0, 8).join(', ');
+    }
+  } catch (err) { /* non-fatal */ }
+
+  const renderRouteBadge = '<span class="cohort-chip" style="background:#ede9fe;color:#6d28d9">DM</span>';
+  let html = '';
+  if (muscleNote) {
+    html += `<div style="margin:0 0 10px;padding:8px 10px;border-radius:8px;background:#f5f3ff;color:#5b21b6;font-size:12px;line-height:1.4">${esc(muscleNote)}</div>`;
+  }
+  // ── To-send section ─────────────────────────────────────────────
+  html += '<div class="ot-section">';
+  html += `<div class="ot-section-h">
+    <h4>📤 To send</h4>
+    <span class="count">${toSend.length}</span>
+    <span class="explain">≥1 workout this week · cooldown ${outreachCooldowns.weeklyReachOut || 6}d · use the week filter to pick a cohort</span>
+    ${toSend.length ? `
+      <label style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
+        <input type="checkbox" id="ot-wk-selectall" onchange="toggleSelectAllWeekly(this)"> Select all
+      </label>
+      <button class="btn-purple" id="ot-wk-sendsel" style="font-size:12px;padding:4px 10px" onclick="sendSelectedWeekly(this)" disabled title="Send the weekly message to the selected customers">📤 Send selected (0)</button>
+    ` : ''}
+  </div>`;
+  for (let i = 0; i < toSend.length; i++) {
+    const it = toSend[i];
+    const cohortBit = it.cohort ? `<span class="cohort-chip" style="margin-left:8px">${esc(it.cohort)}</span>` : '<span class="gm-hint">no cohort</span>';
+    const weekMeta = ` · ⚡${it.meta.completed}/7 · Week ${it.meta.weekNumber}`;
+    const isActive = _otSelectedCandidate && _otSelectedCandidate.secId === 'weekly' && _otSelectedCandidate.idx === i;
+    const searchAttr = ((it.name || '') + ' ' + (it.phone || '') + ' ' + (it.k10 || '')).toLowerCase();
+    html += `<div class="ot-card ot-clickable ot-rowonly dm${isActive ? ' ot-active' : ''}" id="ot-card-weekly-${i}" data-search="${esc(searchAttr)}" onclick="openOutreachChatFor('weekly', ${i})">
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="checkbox" class="ot-wk-check" data-idx="${i}" onclick="event.stopPropagation()" onchange="updateWeeklySelCount()" title="Select for bulk send">
+        <div>
+          <div class="who">${esc(it.name || ('+' + it.k10))} ${renderRouteBadge}${cohortBit}</div>
+          <div class="meta-row">${esc(it.phone || '')}${weekMeta}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+  html += '</div>';
+  // ── Sent-this-week section ─────────────────────────────────────
+  // v1.258 — surface the per-customer activity cache freshness label.
+  if (typeof renderWeeklyLastUpdated === 'function') renderWeeklyLastUpdated();
+  if (sent.length) {
+    const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    html += '<div class="ot-section ot-section-sent">';
+    html += `<div class="ot-section-h">
+      <h4>✅ Sent this week</h4>
+      <span class="count">${sent.length}</span>
+      <span class="explain">Click to view the message sent</span>
+    </div>`;
+    for (let i = 0; i < sent.length; i++) {
+      const it = sent[i];
+      const cohortBit = it.cohort ? `<span class="cohort-chip" style="margin-left:8px">${esc(it.cohort)}</span>` : '<span class="gm-hint">no cohort</span>';
+      const sentDate = new Date(it.meta.sentTs);
+      const sentLabel = dayNames[sentDate.getDay()] + ' ' + sentDate.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      const isActive = _otSelectedCandidate && _otSelectedCandidate.secId === 'weeklySent' && _otSelectedCandidate.idx === i;
+      const searchAttr = ((it.name || '') + ' ' + (it.phone || '') + ' ' + (it.k10 || '')).toLowerCase();
+      html += `<div class="ot-card ot-clickable ot-rowonly ot-card-sent dm${isActive ? ' ot-active' : ''}" id="ot-card-weeklySent-${i}" data-search="${esc(searchAttr)}" onclick="openOutreachChatFor('weeklySent', ${i})">
+        <div>
+          <div class="who">${esc(it.name || ('+' + it.k10))} ${renderRouteBadge}${cohortBit}</div>
+          <div class="meta-row">${esc(it.phone || '')} · ✓ sent ${esc(sentLabel)}</div>
+        </div>
+      </div>`;
+    }
+    html += '</div>';
+  }
+  list.innerHTML = html;
+  // v1.246 — re-apply the active search filter (if any) on the freshly
+  // rendered cards so toggling Include internal preserves the query.
+  if (typeof filterOutreachList === 'function') filterOutreachList();
+}
+
+// v1.252 — "Sent this week" candidate builder. Reads sendLog for entries
+// in the current Fri-Thu window with kind 'outreach-weekly-reach-out' and
+// result 'success'. Joins to allUsers by k10 phone so the card can render
+// name + cohort. The actual sent message text is carried on the
+// candidate as sentMessage so the send panel can display it verbatim
+// when the operator clicks the Sent card (rather than re-generating it).
+function weeklySentCandidates(weekStart) {
+  const startMs = weekStart.getTime();
+  const endMs = startMs + 7 * 86400000;
+  const KIND = 'outreach-weekly-reach-out';
+  const seen = new Set();
+  const out = [];
+  for (const e of (sendLog || [])) {
+    if (!e || e.kind !== KIND || e.result !== 'success') continue;
+    if (typeof e.ts !== 'number' || e.ts < startMs || e.ts >= endMs) continue;
+    const k10 = normalizePhone(e.chatId || '');
+    if (!k10 || seen.has(k10)) continue;
+    seen.add(k10);
+    const u = (allUsers || []).find(x => normalizePhone(x.phone || '') === k10);
+    if (!u) continue;
+    const cohort = lookupGroup(u.phone);
+    out.push({
+      type: 'weeklyReachOut',
+      kind: 'dm',
+      k10,
+      name: u.name || ('+91' + k10),
+      phone: u.phone,
+      cohort,
+      cohortChatId: null,
+      message: e.message || '',
+      sentMessage: e.message || '',
+      alreadySent: true,
+      meta: { sentTs: e.ts },
+    });
+  }
+  out.sort((a, b) => b.meta.sentTs - a.meta.sentTs); // newest first
+  return out;
+}
+
+function weeklyReachOutCandidates(opts) {
+  const out = [];
+  const includeInternal = !!(opts && opts.includeInternal);
+  const today = TODAY || new Date();
+  const weekStart = getWeekStartFriday(today);
+  const seenK10 = new Set();
+  for (const u of (allUsers || [])) {
+    const k10 = normalizePhone(u.phone || '');
+    if (!k10) continue;
+    const isInternal = COHORT_INTERNAL_PHONES.has(k10);
+    if (!includeInternal && isInternal) continue;
+    // v1.255 — when Include internal is on, internal users bypass ALL
+    // the standard gates (subscription, segment, cooldown, 0-workouts).
+    // The whole point of the toggle is testing; the operator wants to
+    // see themselves regardless of subscription state or workout count.
+    if (!isInternal) {
+      if (u.subscriptionStatus !== 'active') continue;
+      if (u.segment === 'Unknown User') continue;
+      if (!isOutreachEligible(k10, 'weeklyReachOut')) continue;
+    }
+    // v1.273 — derive tenure (days since signup) from startDate, falling
+    // back to userAgeDays (the field the data actually carries). Without
+    // this fallback every customer defaulted to Week 1 and got identical
+    // copy. userAgeDays is as-of-today; close enough to the week boundary.
+    let weekNumber = 1;
+    let days = null;
+    if (u.startDate) {
+      const start = new Date(u.startDate);
+      if (!isNaN(start.getTime())) days = Math.floor((weekStart - start) / 86400000);
+    }
+    if (days == null && typeof u.userAgeDays === 'number') days = u.userAgeDays;
+    if (days != null) {
+      if (days < 0 && !isInternal) continue; // future sub — skip non-internal only
+      weekNumber = Math.max(1, Math.floor(days / 7) + 1);
+      // v1.287 — past-90-day customers are no longer excluded; they're
+      // bucketed under the "12+ weeks" option in the week filter and still
+      // get a weekly recap (weekNumber keeps counting up).
+    }
+    const weekDays = buildWeekProgress(u.uid, weekStart);
+    const completed = weekDays.filter(d => d.completed).length;
+    if (!isInternal && completed === 0) continue; // 0/7 routes elsewhere for real customers
+    const cohort = lookupGroup(u.phone);
+    const message = buildWeeklyMessage(u, weekDays, weekNumber);
+    out.push({
+      type: 'weeklyReachOut',
+      kind: 'dm',
+      k10, phone: u.phone, name: u.name || '',
+      cohort, cohortChatId: null,
+      message,
+      imageUrl: WEEKLY_HEADER_IMAGE_URL,
+      meta: { completed, total: 7, weekNumber, score: typeof u.habitScore === 'number' ? Math.round(u.habitScore) : null },
+    });
+    seenK10.add(k10);
+  }
+  // v1.255 — if Include internal is on, synthesize candidates for any
+  // internal-team member NOT in allUsers (e.g. dashboard-only admins
+  // without an active Ferra subscription). Uses the name + phone from
+  // the internalTeam seed so search by name works ('rohi' → Rohit).
+  if (includeInternal && Array.isArray(internalTeam)) {
+    for (const m of internalTeam) {
+      if (!m || !m.phone) continue;
+      const k10 = normalizePhone(m.phone);
+      if (!k10 || seenK10.has(k10)) continue;
+      const weekDays = Array.from({length: 7}, (_, i) => ({ date: '', completed: false }));
+      out.push({
+        type: 'weeklyReachOut',
+        kind: 'dm',
+        k10, phone: '+91' + k10, name: m.name || ('+91' + k10),
+        cohort: null, cohortChatId: null,
+        message: buildWeeklyMessage({ name: m.name }, weekDays, 1),
+        imageUrl: WEEKLY_HEADER_IMAGE_URL,
+        meta: { completed: 0, total: 7, weekNumber: 1, score: null },
+      });
+      seenK10.add(k10);
+    }
+  }
+  // Order: highest-completion first (positive momentum), then alpha by name.
+  return out.sort((a, b) => {
+    if (b.meta.completed !== a.meta.completed) return b.meta.completed - a.meta.completed;
+    return String(a.name).localeCompare(String(b.name));
+  });
 }
 
 function streakMilestoneCandidates() {
@@ -8106,7 +9443,7 @@ window.addEventListener('DOMContentLoaded', () => setTimeout(syncSettingsMenuLab
 // dashboard header, focused-view chip, and document.title in sync without manual
 // edits in multiple places. Update DASHBOARD_VERSION on every release; everything
 // else syncs from this constant at runtime.
-const DASHBOARD_VERSION = 'v1.225';
+const DASHBOARD_VERSION = 'v1.291';
 function applyVersionLabel() {
   for (const el of document.querySelectorAll('.ver, #focus-ver-chip')) {
     el.textContent = DASHBOARD_VERSION;
@@ -8241,26 +9578,88 @@ function invalidateOutreachCache() {
   __outreachSectionCache = null;
 }
 // Visual-feedback wrapper for the Recompute button
-function triggerOutreachRecompute(btn) {
+async function triggerOutreachRecompute(btn) {
   const origLabel = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Recomputing…'; }
   // Defer one tick so the button visibly updates BEFORE the heavy generator run
-  setTimeout(() => {
-    const t0 = performance.now();
-    invalidateOutreachCache();
-    renderOutreachPage();
-    const ms = Math.round(performance.now() - t0);
-    // Count current suggestions for the toast
-    let total = 0;
+  await new Promise(r => setTimeout(r, 16));
+  const t0 = performance.now();
+  invalidateOutreachCache();
+  const isWeekly = window.__activeView === 'weekly';
+  // v1.258 — in Weekly mode, fetch fresh per-customer activity (last 30d)
+  // for each To-send candidate before re-rendering. Updates the
+  // 'Last updated' label and lets the message generator use richer signals
+  // (progressive-overload count, streak state) than the stale workoutMap.
+  if (isWeekly) {
+    // Build the initial candidate list (uses cached / stale data) so we
+    // know whose activity to fetch.
+    const initial = weeklyReachOutCandidates({ includeInternal: !!document.getElementById('ot-include-internal')?.checked });
+    const withUid = initial.filter(c => c.uid || (allUsers.find(u => normalizePhone(u.phone || '') === c.k10)?.uid));
+    // Hydrate uid for candidates that don't have it directly.
+    withUid.forEach(c => {
+      if (!c.uid) {
+        const u = allUsers.find(u => normalizePhone(u.phone || '') === c.k10);
+        if (u && u.uid) c.uid = u.uid;
+      }
+    });
+    if (btn) btn.textContent = '⏳ Activity 0/' + withUid.length;
     try {
+      await fetchAllWeeklyActivity(withUid, {
+        days: 30,
+        concurrency: 8,
+        onProgress: (done, total, failed) => {
+          if (btn) btn.textContent = '⏳ Activity ' + done + '/' + total + (failed ? ' (' + failed + ' failed)' : '');
+        },
+      });
+    } catch (e) {
+      console.warn('[recompute] activity fetch failed', e);
+      if (typeof flashToast === 'function') flashToast('⚠ Couldn\'t refresh some customers — using cached data');
+    }
+    // v1.259 — second phase: pull per-session per-exercise detail for the
+    // 7-day window so we get strengthened_areas + stronger count from the
+    // real progressiveOverloading flag (rather than the per-day overload
+    // count from the lighter exportCustomerActivity endpoint).
+    const weekStartIso = (function(){
+      try { return fmtDate(getWeekStartFriday(TODAY || new Date())); } catch (_) { return ''; }
+    })();
+    if (btn) btn.textContent = '⏳ Detail 0/' + withUid.length;
+    try {
+      await fetchAllWeeklyDetail(withUid, {
+        days: 8, // 8d margin so a Friday send still covers the full prev Fri→Thu window; summariseWeekDetail filters to exactly that window
+        concurrency: 4,
+        weekStartIso,
+        onProgress: (done, total, failed) => {
+          if (btn) btn.textContent = '⏳ Detail ' + done + '/' + total + (failed ? ' (' + failed + ' failed)' : '');
+        },
+      });
+    } catch (e) {
+      console.warn('[recompute] detail fetch failed', e);
+    }
+    // v1.278 — set-level volume fetch removed from Recompute (monthly reports
+    // are gone, nothing reads it). fetchAllWeeklyVolume/summariseVolume stay
+    // defined for the parked strength-kg-from-week-1 feature; re-add this
+    // phase when that ships.
+    renderWeeklyReachOutPage();
+    if (typeof renderWeeklyLastUpdated === 'function') renderWeeklyLastUpdated();
+  } else {
+    renderOutreachPage();
+  }
+  const ms = Math.round(performance.now() - t0);
+  let total = 0;
+  try {
+    if (isWeekly) {
+      const items = (window.__otItems && window.__otItems['weekly']) || [];
+      total = items.length;
+    } else {
       const secs = buildOutreachSections();
       total = secs.reduce((s, x) => s + x.items.length, 0);
-    } catch {}
-    if (btn) { btn.disabled = false; btn.textContent = origLabel || '↻ Recompute'; }
-    if (typeof flashToast === 'function') {
-      flashToast('✓ Recomputed — ' + total + ' suggestion' + (total === 1 ? '' : 's') + ' (' + ms + 'ms)');
     }
-  }, 16);
+  } catch {}
+  if (btn) { btn.disabled = false; btn.textContent = origLabel || '↻ Recompute'; }
+  if (typeof flashToast === 'function') {
+    flashToast('✓ Recomputed — ' + total + ' suggestion' + (total === 1 ? '' : 's') + ' (' + ms + 'ms)');
+  }
+  return;
 }
 function buildOutreachSections() {
   if (__outreachSectionCache) return __outreachSectionCache;
@@ -8285,6 +9684,88 @@ function buildOutreachSections() {
 }
 
 // Render the second-row pills (sub-category narrowing inside the current main tab)
+// v1.239 — populate the main + sub category dropdowns. Called from
+// renderOutreachPage (which has the up-to-date filteredSections and
+// counts). Mirrors the old pill-row labels so the menu reads the same.
+function renderOtCategoryDropdowns(filteredSections, totalCount) {
+  const main = document.getElementById('ot-cat-main');
+  const sub = document.getElementById('ot-cat-sub');
+  if (!main) return;
+  const mainTabs = [
+    { val:'all',           label:'All',                count:document.getElementById('ot-tab-all-n')?.textContent || '0' },
+    { val:'risk',          label:'🔴 At Risk',          count:document.getElementById('ot-tab-risk-n')?.textContent || '0' },
+    { val:'celebrate',     label:'🌟 Celebrate',        count:document.getElementById('ot-tab-celebrate-n')?.textContent || '0' },
+    { val:'periodic',      label:'📅 Periodic',         count:document.getElementById('ot-tab-periodic-n')?.textContent || '0' },
+    { val:'featured',      label:'🎁 Featured',         count:document.getElementById('ot-tab-featured-n')?.textContent || '0' },
+    { val:'newcust',       label:'🆕 New (30d)',        count:document.getElementById('ot-tab-newcust-n')?.textContent || '0' },
+    { val:'effectiveness', label:'📈 Effectiveness',    count:null },
+    { val:'log',           label:'📜 Send Log',         count:null },
+  ];
+  main.innerHTML = mainTabs.map(t =>
+    `<option value="${t.val}"${t.val === outreachTab ? ' selected' : ''}>${esc(t.label)}${t.count ? ' (' + t.count + ')' : ''}</option>`
+  ).join('');
+  // Sub dropdown: only show when there are >=2 sub-sections within the main tab.
+  const isSpecialTab = outreachTab === 'effectiveness' || outreachTab === 'log' || outreachTab === 'newcust';
+  const meaningfulSections = (filteredSections || []).filter(s => s.items && s.items.length);
+  if (isSpecialTab || outreachTab === 'all' || meaningfulSections.length < 2) {
+    sub.style.display = 'none';
+    sub.innerHTML = '';
+    return;
+  }
+  const allLabel = outreachTab === 'risk' ? 'All at-risk'
+    : outreachTab === 'celebrate' ? 'All to celebrate'
+    : outreachTab === 'periodic' ? 'All periodic'
+    : outreachTab === 'featured' ? 'All featured'
+    : 'All';
+  const total = meaningfulSections.reduce((s, x) => s + x.items.length, 0);
+  let html = `<option value="">${esc(allLabel)} (${total})</option>`;
+  for (const sec of meaningfulSections) {
+    html += `<option value="${esc(sec.id)}"${outreachSubsection === sec.id ? ' selected' : ''}>${esc(sec.title)} (${sec.items.length})</option>`;
+  }
+  sub.innerHTML = html;
+  sub.style.display = '';
+}
+window.otOnMainChange = function(value) {
+  if (typeof setOutreachTab === 'function') setOutreachTab(value);
+};
+window.otOnSubChange = function(value) {
+  if (typeof setOutreachSubsection === 'function') setOutreachSubsection(value || null);
+};
+
+// v1.246 — search filter. Runs on every keystroke of #ot-search-input.
+// Pure DOM filter — hides cards whose data-search attribute doesn't
+// contain the query. Section headers + page nav stay visible. Avoids
+// re-rendering the list so the iframe / send panel state survives.
+window.filterOutreachList = function() {
+  const input = document.getElementById('ot-search-input');
+  const q = (input?.value || '').trim().toLowerCase();
+  const cards = document.querySelectorAll('#ot-list .ot-card');
+  let visible = 0;
+  cards.forEach(c => {
+    const hay = c.getAttribute('data-search') || '';
+    const match = !q || hay.indexOf(q) !== -1;
+    c.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  // Hide section wrappers that ended up with zero visible cards.
+  document.querySelectorAll('#ot-list .ot-section').forEach(sec => {
+    const anyVisible = Array.from(sec.querySelectorAll('.ot-card')).some(c => c.style.display !== 'none');
+    sec.style.display = anyVisible ? '' : 'none';
+  });
+  // Show an empty hint when the query nukes everything.
+  const empty = document.getElementById('ot-empty');
+  if (empty) {
+    if (q && visible === 0) {
+      empty.style.display = '';
+      empty.textContent = 'No candidates match "' + q + '". Try a partial name or last digits of phone.';
+    } else if (!q) {
+      // Restore default empty handling — leave whatever the renderer set.
+    } else {
+      empty.style.display = 'none';
+    }
+  }
+};
+
 function renderOtSecondRow(filteredSections) {
   const row = document.getElementById('ot-subtabs-2');
   if (!row) return;
@@ -8375,6 +9856,8 @@ function renderOutreachPage() {
   }
   // Render second-row pills (sub-category narrowing within the current main tab)
   renderOtSecondRow(filteredSections);
+  // v1.239 — also populate the new dropdowns that replaced the pill rows visually.
+  if (typeof renderOtCategoryDropdowns === 'function') renderOtCategoryDropdowns(filteredSections);
   // Apply second-row narrowing
   if (outreachSubsection) {
     filteredSections = filteredSections.filter(s => s.id === outreachSubsection);
@@ -8418,36 +9901,20 @@ function renderOutreachPage() {
       const cohortBit = it.cohort ? `<span class="cohort-chip" style="margin-left:8px">${esc(it.cohort)}</span>` : '<span class="gm-hint">no cohort</span>';
       const habit = it.meta.score != null ? ` · ⚡${it.meta.score}` : '';
       const trend = it.meta.trend != null ? ` · trend ${it.meta.trend > 0 ? '+' : ''}${it.meta.trend}` : '';
-      let targetLine, sendLabel;
-      if (it.kind === 'dm') {
-        targetLine = `→ DM <code>+${esc('91' + it.k10)}</code>`;
-        sendLabel = '📨 Send DM';
-      } else if (it.kind === 'group') {
-        targetLine = `→ Cohort group <code>${esc(it.cohortChatId)}</code>`;
-        sendLabel = '📢 Send to ' + esc(it.cohort || 'group');
-      } else { // both
-        targetLine = `→ DM <code>+${esc('91' + it.k10)}</code> AND group <code>${esc(it.cohortChatId)}</code>`;
-        sendLabel = '📨📢 Send DM + group';
-      }
-      // Always editable textarea — operator can tweak before sending
-      const rowCount = computeTextareaRows(it.message);
-      const previewBlock = `<textarea class="preview" id="ot-tx-${sec.id}-${i}" rows="${rowCount}" style="width:100%;font-family:inherit;font-size:12px;line-height:1.45;border:1px solid #d1d5db;border-radius:6px;padding:8px 10px;resize:vertical;background:#fafaff;">${esc(it.message)}</textarea>`;
-      const extraBtn = it.type === 'surprise'
-        ? `<button class="skip" onclick="repickSurprise('${esc(it.cohort)}')">↻ Pick another</button>`
-        : '';
-      html += `<div class="ot-card ${it.kind}" id="ot-card-${sec.id}-${i}">
+      let routeBadge;
+      if (it.kind === 'dm') routeBadge = '<span class="cohort-chip" style="background:#ede9fe;color:#6d28d9">DM</span>';
+      else if (it.kind === 'group') routeBadge = '<span class="cohort-chip" style="background:#dcfce7;color:#166534">Group</span>';
+      else routeBadge = '<span class="cohort-chip" style="background:linear-gradient(90deg,#ede9fe,#dcfce7);color:#374151">DM + Group</span>';
+      // v1.238 — Trello-style row. No buttons on the card; AI rewrite and
+      // Skip moved into the send panel where they act on the selected
+      // candidate. Cards are now just a list of names — scannable.
+      const isActive = _otSelectedCandidate && _otSelectedCandidate.secId === sec.id && _otSelectedCandidate.idx === i;
+      const searchAttr = ((it.name || '') + ' ' + (it.phone || '') + ' ' + (it.k10 || '')).toLowerCase();
+      html += `<div class="ot-card ot-clickable ot-rowonly ${it.kind}${isActive ? ' ot-active' : ''}" id="ot-card-${sec.id}-${i}" data-search="${esc(searchAttr)}" onclick="openOutreachChatFor('${esc(sec.id)}', ${i})">
         <div>
-          <div class="who">${esc(it.name || ('+' + it.k10))} ${cohortBit}</div>
+          <div class="who">${esc(it.name || ('+' + it.k10))} ${routeBadge}${cohortBit}</div>
           <div class="meta-row">${esc(it.phone || '')}${habit}${trend}</div>
-          ${previewBlock}
-          <div class="target">${targetLine}</div>
           <div class="ot-status" id="ot-status-${sec.id}-${i}"></div>
-        </div>
-        <div class="ot-actions">
-          <button class="send" onclick="executeOutreach('${esc(sec.id)}', ${i})">${sendLabel}</button>
-          <button class="ai-btn" onclick="rewriteWithClaude('${esc(sec.id)}', ${i})" title="Rewrite with Claude using full customer context" style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:white;border:none;padding:7px 11px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600">✨ AI rewrite</button>
-          <button class="skip" onclick="skipOutreach('${esc(sec.id)}', ${i})">Skip</button>
-          ${extraBtn}
         </div>
       </div>`;
     }
@@ -8457,6 +9924,473 @@ function renderOutreachPage() {
     html += `</div>`;
   }
   list.innerHTML = html;
+  // v1.247 — restore the chat pane that Weekly mode hides.
+  const chatPaneRestore = document.getElementById('ot-chat-pane');
+  if (chatPaneRestore) chatPaneRestore.style.display = '';
+  const rightPaneRestore = document.querySelector('#view-outreach .ot-right');
+  if (rightPaneRestore) rightPaneRestore.classList.remove('ot-right-weekly');
+  // v1.233 — drive the right-pane iframe lifecycle (show / hide / reposition
+  // based on current selection). Idempotent — safe on every render.
+  if (typeof syncOutreachCommIframe === 'function') syncOutreachCommIframe();
+  if (typeof bindOutreachCommReposition === 'function') bindOutreachCommReposition();
+  // v1.246 — hide the "Include internal" toggle outside Weekly mode + apply
+  // any active search filter.
+  const internalToggle = document.getElementById('ot-internal-toggle');
+  if (internalToggle) internalToggle.style.display = 'none';
+  const weekFilterEl = document.getElementById('ot-week-filter');
+  if (weekFilterEl) weekFilterEl.style.display = 'none';
+  if (typeof filterOutreachList === 'function') filterOutreachList();
+  // v1.258 — hide the Weekly activity-updated label in Outreach mode.
+  const wkUpd = document.getElementById('ot-weekly-updated');
+  if (wkUpd) wkUpd.style.display = 'none';
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// v1.233 — Outreach embedded CommonCommunication chat (body-mounted
+// iframe pattern, copied bug-for-bug from SAT's reachOutPersistent-
+// Iframe at Strength_Assessment_Tracker/index.html:6540-6562). The
+// iframe lives on document.body — NOT inside #ot-chat-pane — so that
+// renderOutreachPage()'s innerHTML rewrites don't tear it down. Its
+// rect is painted over #ot-chat-pane on every render + on window
+// scroll/resize.
+// ─────────────────────────────────────────────────────────────────────
+const _otCommCcOrigin = 'https://rohit-aroleap.github.io';
+let _otCommIframe = null;
+let _otCommOverlay = null;
+let _otCommIframeReady = false;
+let _otCommIframeChatKey = null;
+let _otCommLoadingTimer = null;
+let _otCommSlowWarnTimer = null;
+let _otCommReposBound = false;
+let _otCommPendingLoadHandler = null;
+let _otSelectedCandidate = null;
+
+function ensureOutreachCommIframe() {
+  if (_otCommIframe) return _otCommIframe;
+  const f = document.createElement('iframe');
+  f.id = 'otCommPersistentIframe';
+  f.className = 'ot-comm-iframe';
+  f.title = 'CommonCommunication chat (outreach)';
+  f.style.display = 'none';
+  f.addEventListener('load', () => {
+    _otCommIframeReady = true;
+    setTimeout(() => hideOutreachCommLoading(), 600);
+  });
+  document.body.appendChild(f);
+  _otCommIframe = f;
+  return f;
+}
+function ensureOutreachCommOverlay() {
+  if (_otCommOverlay) return _otCommOverlay;
+  const ov = document.createElement('div');
+  ov.id = 'otCommLoadingOverlay';
+  ov.className = 'ot-comm-overlay';
+  ov.style.display = 'none';
+  ov.innerHTML =
+    '<div class="ot-comm-loading-card">' +
+      '<div class="ot-comm-spinner"></div>' +
+      '<div class="ot-comm-loading-text" id="otCommLoadingTitle">Opening chat…</div>' +
+      '<div class="ot-comm-loading-sub" id="otCommLoadingSub">Waiting for CommonCommunication</div>' +
+    '</div>';
+  document.body.appendChild(ov);
+  _otCommOverlay = ov;
+  return ov;
+}
+function showOutreachCommLoading(text) {
+  const ov = ensureOutreachCommOverlay();
+  ov.style.display = 'flex';
+  positionOutreachCommOverlay();
+  const t = document.getElementById('otCommLoadingTitle');
+  const s = document.getElementById('otCommLoadingSub');
+  if (t) t.textContent = text || 'Opening chat…';
+  if (s) { s.textContent = 'Waiting for CommonCommunication'; s.classList.remove('warn'); }
+  clearTimeout(_otCommSlowWarnTimer);
+  clearTimeout(_otCommLoadingTimer);
+  _otCommSlowWarnTimer = setTimeout(() => {
+    const s2 = document.getElementById('otCommLoadingSub');
+    if (s2 && ov.style.display !== 'none') { s2.textContent = 'Taking longer than usual…'; s2.classList.add('warn'); }
+  }, 8000);
+  _otCommLoadingTimer = setTimeout(() => hideOutreachCommLoading(), 15000);
+}
+function hideOutreachCommLoading() {
+  if (_otCommOverlay) _otCommOverlay.style.display = 'none';
+  clearTimeout(_otCommLoadingTimer);
+  clearTimeout(_otCommSlowWarnTimer);
+}
+function positionOutreachCommOverlay() {
+  if (!_otCommOverlay || _otCommOverlay.style.display === 'none') return;
+  if (!_otCommIframe || _otCommIframe.style.display === 'none') {
+    _otCommOverlay.style.visibility = 'hidden';
+    return;
+  }
+  const r = _otCommIframe.getBoundingClientRect();
+  _otCommOverlay.style.visibility = 'visible';
+  _otCommOverlay.style.top = r.top + 'px';
+  _otCommOverlay.style.left = r.left + 'px';
+  _otCommOverlay.style.width = r.width + 'px';
+  _otCommOverlay.style.height = r.height + 'px';
+}
+function positionOutreachCommIframe() {
+  if (!_otCommIframe || _otCommIframe.style.display === 'none') return;
+  const pane = document.getElementById('ot-chat-pane');
+  if (!pane) { _otCommIframe.style.display = 'none'; return; }
+  const r = pane.getBoundingClientRect();
+  if (r.bottom < 0 || r.top > window.innerHeight || r.width === 0) {
+    _otCommIframe.style.visibility = 'hidden';
+    if (_otCommOverlay) _otCommOverlay.style.visibility = 'hidden';
+    return;
+  }
+  _otCommIframe.style.visibility = 'visible';
+  _otCommIframe.style.top = r.top + 'px';
+  _otCommIframe.style.left = r.left + 'px';
+  _otCommIframe.style.width = r.width + 'px';
+  _otCommIframe.style.height = r.height + 'px';
+  positionOutreachCommOverlay();
+}
+function bindOutreachCommReposition() {
+  if (_otCommReposBound) return;
+  _otCommReposBound = true;
+  window.addEventListener('resize', () => positionOutreachCommIframe());
+  window.addEventListener('scroll', () => positionOutreachCommIframe(), { passive: true });
+}
+function syncOutreachCommIframe() {
+  const onOutreach = document.getElementById('view-outreach')?.style.display !== 'none';
+  const pane = document.getElementById('ot-chat-pane');
+  const isCandidateTab = !(outreachTab === 'effectiveness' || outreachTab === 'log');
+  if (!onOutreach || !pane || !_otSelectedCandidate || !isCandidateTab) {
+    if (_otCommIframe) _otCommIframe.style.display = 'none';
+    hideOutreachCommLoading();
+    return;
+  }
+  const f = ensureOutreachCommIframe();
+  f.style.display = 'block';
+  positionOutreachCommIframe();
+}
+
+// ACK listener from CommonComm (origin-checked).
+window.addEventListener('message', (ev) => {
+  if (ev.origin !== _otCommCcOrigin) return;
+  if (!ev.data || typeof ev.data !== 'object') return;
+  if (ev.data.type === 'chat-open-ok') {
+    if (ev.data.chatKey !== _otCommIframeChatKey) return;
+    hideOutreachCommLoading();
+  } else if (ev.data.type === 'chat-open-failed') {
+    if (ev.data.chatKey !== _otCommIframeChatKey) return;
+    const ov = ensureOutreachCommOverlay();
+    const sub = document.getElementById('otCommLoadingSub');
+    if (sub) {
+      const reason = ev.data.reason || 'unknown';
+      sub.textContent = reason === 'chat-not-in-cache-after-15s'
+        ? "Couldn't find this customer's chat. Open CommonCommunication once to seed the cache, then come back."
+        : 'Failed to open chat: ' + reason;
+      sub.classList.add('warn');
+    }
+    const spin = ov.querySelector('.ot-comm-spinner');
+    if (spin) spin.style.display = 'none';
+  }
+});
+
+// Card click handler. Builds the chatKey from the candidate's kind +
+// k10 + cohortChatId, marks the card active, and posts to the iframe.
+window.openOutreachChatFor = function(secId, idx, opts) {
+  const item = (window.__otItems[secId] || [])[idx];
+  if (!item) return;
+  const useGroup = (opts && opts.group === true) || item.kind === 'group';
+  let chatKey;
+  if (useGroup) {
+    const cid = String(item.cohortChatId || '').trim();
+    chatKey = cid.replace(/@g\.us$/i, '@g_us');
+    if (!/^\d+@g_us$/.test(chatKey)) {
+      if (typeof flashToast === 'function') flashToast('✗ No group chat ID for this candidate');
+      return;
+    }
+  } else {
+    chatKey = String(item.k10 || '').replace(/\D/g, '') + '@c_us';
+    if (/^\d{10}@c_us$/.test(chatKey)) chatKey = '91' + chatKey;
+    if (!/^\d+@c_us$/.test(chatKey)) {
+      if (typeof flashToast === 'function') flashToast('✗ Invalid phone for this candidate');
+      return;
+    }
+  }
+  // Mobile fallback — the right pane is display:none under 1100px (CSS
+  // media query), so the body-mounted iframe would paint at zero rect.
+  // Open CommonComm in a new tab instead. No pre-fill on this path.
+  if (window.innerWidth <= 1100) {
+    const url = _otCommCcOrigin + '/CommonCommunication/?chat=' + encodeURIComponent(chatKey);
+    try { window.open(url, '_blank', 'noopener'); } catch (_) {}
+    if (typeof flashToast === 'function') flashToast('Opened chat in new tab (narrow screen).');
+    return;
+  }
+  _otSelectedCandidate = { secId, idx, chatKey, kind: useGroup ? 'group' : 'dm' };
+  document.querySelectorAll('.ot-card.ot-active').forEach(el => el.classList.remove('ot-active'));
+  const cardEl = document.getElementById('ot-card-' + secId + '-' + idx);
+  if (cardEl) cardEl.classList.add('ot-active');
+  // v1.235 — open the chat for context/history only; do NOT push the
+  // AI message into CommonComm's composer. The AA send panel below is
+  // the single source of truth for the outgoing text. Having the
+  // message visible in both places was confusing.
+  _postOutreachOpenChat(chatKey, '');
+  syncOutreachSendPanel();
+};
+
+// v1.234 — keep the send panel in sync with _otSelectedCandidate.
+// Called from openOutreachChatFor + after AI rewrite + after a send.
+// v1.238 — also toggle the AI rewrite + Skip buttons.
+function syncOutreachSendPanel() {
+  const tx = document.getElementById('ot-send-input');
+  const btn = document.getElementById('ot-send-btn');
+  const meta = document.getElementById('ot-send-target');
+  const status = document.getElementById('ot-send-status');
+  const aiBtn = document.getElementById('ot-send-ai');
+  const skipBtn = document.getElementById('ot-send-skip');
+  if (!tx || !btn || !meta) return;
+  if (!_otSelectedCandidate) {
+    tx.value = ''; tx.disabled = true;
+    btn.disabled = true;
+    if (aiBtn) aiBtn.disabled = true;
+    if (skipBtn) skipBtn.disabled = true;
+    meta.textContent = 'No candidate selected';
+    if (status) { status.textContent = ''; status.className = 'ot-send-status'; }
+    return;
+  }
+  const { secId, idx, kind } = _otSelectedCandidate;
+  const item = (window.__otItems[secId] || [])[idx];
+  if (!item) {
+    tx.value = ''; tx.disabled = true;
+    btn.disabled = true;
+    if (aiBtn) aiBtn.disabled = true;
+    if (skipBtn) skipBtn.disabled = true;
+    meta.textContent = 'Candidate gone';
+    return;
+  }
+  // v1.252 — branch on "already sent this week" for the Sent section.
+  const isSent = secId === 'weeklySent' || item.alreadySent === true;
+  tx.value = isSent ? (item.sentMessage || item.message || '') : (item.message || '');
+  tx.disabled = false;
+  btn.disabled = !tx.value || !tx.value.trim();
+  btn.textContent = isSent ? '↻' : '➤';
+  btn.title = isSent ? 'Re-send this message (the cooldown still applies)' : 'Send via Periskope and log so this candidate stops appearing in the queue';
+  btn.classList.toggle('ot-btn-warn', isSent);
+  if (aiBtn) { aiBtn.disabled = isSent; aiBtn.textContent = '✨ AI rewrite'; }
+  if (skipBtn) skipBtn.disabled = false;
+  const who = item.name || ('+91' + item.k10);
+  if (isSent && item.meta && item.meta.sentTs) {
+    const d = new Date(item.meta.sentTs);
+    meta.textContent = '✓ Sent to ' + who + ' on ' + d.toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+  } else {
+    meta.textContent = '→ Sending to ' + who + (kind === 'group' ? (' · cohort ' + (item.cohort || '')) : ' · DM') + ' (' + (item.type || 'outreach') + ')';
+  }
+  if (status) { status.textContent = ''; status.className = 'ot-send-status'; }
+  // v1.245 — image attachment preview: show the thumbnail + caption hint
+  // whenever the selected candidate has imageUrl set (currently only
+  // Weekly Reach Out). Reassures the operator that the image WILL go
+  // with the send despite not being visible in the textarea.
+  const imgPrev = document.getElementById('ot-send-imgpreview');
+  const imgEl   = document.getElementById('ot-send-imgpreview-img');
+  if (imgPrev && imgEl) {
+    if (item.imageUrl) {
+      imgEl.src = item.imageUrl;
+      imgPrev.style.display = 'flex';
+    } else {
+      imgPrev.style.display = 'none';
+      imgEl.removeAttribute('src');
+    }
+  }
+}
+
+// v1.238 — wrappers that pull from _otSelectedCandidate so the panel
+// buttons operate on whatever card is currently active.
+window.aiRewriteSelected = function() {
+  if (!_otSelectedCandidate) return;
+  rewriteWithClaude(_otSelectedCandidate.secId, _otSelectedCandidate.idx);
+};
+window.skipSelected = function() {
+  if (!_otSelectedCandidate) return;
+  skipOutreach(_otSelectedCandidate.secId, _otSelectedCandidate.idx);
+};
+
+// v1.253 — keyboard shortcuts for the Outreach + Weekly Reach Out send
+// loop. Scoped to whenever #view-outreach is the active pane. Single-
+// letter shortcuts (j/k/s/r) suppressed when focus is inside any input,
+// textarea, or select so typing the message doesn't fire navigation.
+// Ctrl/Cmd+Enter works anywhere — even from inside the message textarea.
+function _otVisibleCards() {
+  return Array.from(document.querySelectorAll('#ot-list .ot-card.ot-clickable'))
+    .filter(c => c.style.display !== 'none' && c.offsetParent !== null);
+}
+function _otSelectNeighborCard(delta) {
+  const cards = _otVisibleCards();
+  if (!cards.length) return;
+  let idx = cards.findIndex(c => c.classList.contains('ot-active'));
+  if (idx < 0) idx = delta > 0 ? -1 : cards.length; // first delta hop lands on edge
+  const next = Math.max(0, Math.min(cards.length - 1, idx + delta));
+  if (next === idx) return; // already at edge
+  cards[next].click();
+  cards[next].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+document.addEventListener('keydown', function(e) {
+  const view = document.getElementById('view-outreach');
+  if (!view || view.style.display === 'none') return;
+  const tag = (e.target && e.target.tagName) || '';
+  const inEditor = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable);
+  // Ctrl/Cmd+Enter — send, works everywhere
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    if (typeof window.sendSelectedOutreach === 'function') window.sendSelectedOutreach();
+    return;
+  }
+  if (inEditor) return;
+  // Modifier keys reserved for normal use — don't hijack
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  switch (e.key) {
+    case 'j':
+    case 'J':
+    case 'ArrowDown':
+      e.preventDefault();
+      _otSelectNeighborCard(+1);
+      break;
+    case 'k':
+    case 'K':
+    case 'ArrowUp':
+      e.preventDefault();
+      _otSelectNeighborCard(-1);
+      break;
+    case 's':
+    case 'S':
+      e.preventDefault();
+      if (typeof window.skipSelected === 'function') window.skipSelected();
+      break;
+    case 'r':
+    case 'R':
+      e.preventDefault();
+      if (typeof window.aiRewriteSelected === 'function') window.aiRewriteSelected();
+      break;
+  }
+});
+
+// v1.234 — Send button handler. Takes the send-panel textarea contents,
+// writes it back onto item.message so executeOutreach reads the operator-
+// edited version, then delegates to the existing executeOutreach which
+// handles gateway POST + sendLog + cooldown + card "done" state. After
+// success, hide the card and clear the panel.
+window.sendSelectedOutreach = async function() {
+  if (!_otSelectedCandidate) return;
+  const { secId, idx } = _otSelectedCandidate;
+  const item = (window.__otItems[secId] || [])[idx];
+  if (!item) return;
+  // v1.252 — confirm before re-sending an already-sent weekly message.
+  if (item.alreadySent) {
+    const who = item.name || ('+91' + item.k10);
+    if (!confirm('Already sent to ' + who + ' this week. Re-send the message?')) return;
+  }
+  const tx = document.getElementById('ot-send-input');
+  const btn = document.getElementById('ot-send-btn');
+  const status = document.getElementById('ot-send-status');
+  const text = (tx && tx.value || '').trim();
+  if (!text) {
+    if (status) { status.textContent = 'Message is empty'; status.className = 'ot-send-status err'; }
+    return;
+  }
+  // Push the operator-edited text into item.message so executeOutreach reads it.
+  item.message = text;
+  if (btn) btn.disabled = true;
+  if (tx) tx.disabled = true;
+  if (status) { status.textContent = 'Sending…'; status.className = 'ot-send-status'; }
+  try {
+    await executeOutreach(secId, idx);
+    // executeOutreach updates the card state (done/failed). Check it.
+    const card = document.getElementById('ot-card-' + secId + '-' + idx);
+    if (card && card.classList.contains('done')) {
+      if (status) { status.textContent = '✓ Sent & logged'; status.className = 'ot-send-status ok'; }
+      // Hide the candidate's card after a brief moment so the operator
+      // sees the success state, then advance to the next.
+      setTimeout(() => {
+        if (card) card.style.display = 'none';
+        // Clear selection — operator picks the next candidate manually.
+        _otSelectedCandidate = null;
+        if (_otCommIframe) _otCommIframe.style.display = 'none';
+        syncOutreachSendPanel();
+      }, 1200);
+    } else if (card && card.classList.contains('failed')) {
+      // v1.291 — surface the ACTUAL error from the per-card status set by
+      // executeOutreach instead of the generic 'Send failed' message.
+      // executeOutreach writes '✗ <reason>' to #ot-status-<secId>-<idx>;
+      // reading it gives the operator the gateway / Periskope error
+      // text (HTTP code, permission_denied, invalid phone, etc.) so they
+      // can act without opening DevTools.
+      const cardStatusEl = document.getElementById('ot-status-' + secId + '-' + idx);
+      const cardErr = cardStatusEl ? cardStatusEl.textContent.replace(/^✗\s*/, '').trim() : '';
+      if (status) {
+        status.textContent = '✗ ' + (cardErr || 'Send failed — try again or skip');
+        status.className = 'ot-send-status err';
+        status.title = cardErr || '';
+      }
+      if (btn) btn.disabled = false;
+      if (tx) tx.disabled = false;
+    } else {
+      // Neither state applied — recover the UI so operator can retry.
+      if (status) { status.textContent = 'Status unclear — check Send Log'; status.className = 'ot-send-status err'; }
+      if (btn) btn.disabled = false;
+      if (tx) tx.disabled = false;
+    }
+  } catch (e) {
+    if (status) { status.textContent = '✗ ' + (e.message || 'Send threw'); status.className = 'ot-send-status err'; }
+    if (btn) btn.disabled = false;
+    if (tx) tx.disabled = false;
+  }
+};
+
+function _postOutreachOpenChat(chatKey, initialText) {
+  const f = ensureOutreachCommIframe();
+  f.style.display = 'block';
+  positionOutreachCommIframe();
+  showOutreachCommLoading('Opening chat…');
+  if (_otCommPendingLoadHandler) {
+    f.removeEventListener('load', _otCommPendingLoadHandler);
+    _otCommPendingLoadHandler = null;
+  }
+  // v1.233 — always overwriteComposer:true. CommonComm doesn't clear
+  // composerInput when switching chats, so the previous click's text
+  // would block the new card's pre-fill via the draft-preserve check.
+  const postNow = () => {
+    try {
+      f.contentWindow.postMessage(
+        { type: 'open-chat', chatKey, initialText, overwriteComposer: true },
+        _otCommCcOrigin
+      );
+    } catch (_) {}
+  };
+  if (!f.src) {
+    f.src = `${_otCommCcOrigin}/CommonCommunication/?embed=1&chat=${encodeURIComponent(chatKey)}`;
+    const onLoad = function () {
+      postNow();
+      f.removeEventListener('load', onLoad);
+      _otCommPendingLoadHandler = null;
+    };
+    _otCommPendingLoadHandler = onLoad;
+    f.addEventListener('load', onLoad);
+  } else if (_otCommIframeReady) {
+    postNow();
+  } else {
+    const onLoad = function () {
+      postNow();
+      f.removeEventListener('load', onLoad);
+      _otCommPendingLoadHandler = null;
+    };
+    _otCommPendingLoadHandler = onLoad;
+    f.addEventListener('load', onLoad);
+  }
+  _otCommIframeChatKey = chatKey;
+}
+
+// Called after AI rewrite updates item.message. Re-posts to the iframe
+// so the composer text refreshes.
+function refreshOutreachChatComposer() {
+  if (!_otSelectedCandidate) return;
+  const { secId, idx, chatKey } = _otSelectedCandidate;
+  const item = (window.__otItems[secId] || [])[idx];
+  if (!item) return;
+  _postOutreachOpenChat(chatKey, item.message || '');
 }
 
 function renderOtSectionPageNav(secId, page, totalPages, startIdx, endIdx, totalItems) {
@@ -8502,6 +10436,14 @@ function otSetSectionPage(secId, p) {
 function skipOutreach(secId, idx) {
   const card = document.getElementById('ot-card-' + secId + '-' + idx);
   if (card) card.style.display = 'none';
+  // v1.234 — if the skipped card was the selected one, clear the send
+  // panel + hide the chat iframe so we're not left staring at a
+  // dismissed candidate's chat.
+  if (_otSelectedCandidate && _otSelectedCandidate.secId === secId && _otSelectedCandidate.idx === idx) {
+    _otSelectedCandidate = null;
+    if (_otCommIframe) _otCommIframe.style.display = 'none';
+    if (typeof syncOutreachSendPanel === 'function') syncOutreachSendPanel();
+  }
 }
 function repickSurprise(cohortCode) {
   // Just re-render — surprise is randomized each call
@@ -8605,7 +10547,13 @@ async function rewriteWithClaude(secId, idx) {
   }
   const tx = document.getElementById('ot-tx-' + secId + '-' + idx);
   const status = document.getElementById('ot-status-' + secId + '-' + idx);
-  const aiBtn = document.querySelector('#ot-card-' + secId + '-' + idx + ' .ai-btn');
+  // v1.238 — AI button now lives in the send panel (when the rewrite is
+  // triggered for the selected candidate). Fall back to any legacy card-
+  // level .ai-btn (renderNewCustomers still emits one).
+  const isSelected = _otSelectedCandidate && _otSelectedCandidate.secId === secId && _otSelectedCandidate.idx === idx;
+  const aiBtn = isSelected
+    ? document.getElementById('ot-send-ai')
+    : document.querySelector('#ot-card-' + secId + '-' + idx + ' .ai-btn');
   const origLabel = aiBtn ? aiBtn.textContent : '';
   if (aiBtn) { aiBtn.disabled = true; aiBtn.textContent = '⏳ Thinking…'; }
   if (status) status.textContent = 'Asking Claude…';
@@ -8650,12 +10598,29 @@ async function rewriteWithClaude(secId, idx) {
     ].join('\n');
     const out = await callClaude(systemPrompt, userPrompt, { max_tokens: 600, feature: 'outreach-rewrite' });
     if (tx) {
+      // Legacy textarea path (renderNewCustomers still emits ot-tx-* ids)
       tx.value = out;
       const rowCount = computeTextareaRows(out);
       tx.rows = rowCount;
     }
     item.message = out;
-    if (status) status.textContent = '✨ Rewritten by Claude. Review before sending.';
+    // v1.233 — update the card's preview snippet so the operator sees
+    // the new text without a full re-render.
+    const card = document.getElementById('ot-card-' + secId + '-' + idx);
+    if (card) {
+      const prev = card.querySelector('.preview');
+      if (prev && prev.tagName !== 'TEXTAREA') {
+        prev.textContent = out.slice(0, 180) + (out.length > 180 ? '…' : '');
+      }
+    }
+    // v1.235 — refresh ONLY the AA send panel after AI rewrite.
+    // Previously also pushed the new text into CommonComm's iframe
+    // composer; that caused the same message to appear in two places.
+    if (typeof syncOutreachSendPanel === 'function' && _otSelectedCandidate
+        && _otSelectedCandidate.secId === secId && _otSelectedCandidate.idx === idx) {
+      syncOutreachSendPanel();
+    }
+    if (status) status.textContent = '✨ Rewritten.';
     flashToast('✨ Claude rewrite ready');
   } catch (e) {
     if (status) status.textContent = '✗ ' + (e.message || 'Claude failed');
@@ -8665,13 +10630,14 @@ async function rewriteWithClaude(secId, idx) {
   }
 }
 
-async function executeOutreach(secId, idx) {
+async function executeOutreach(secId, idx, opts) {
+  opts = opts || {};
   const item = window.__otItems?.[secId]?.[idx];
-  if (!item) return;
+  if (!item) return false;
   // Always pull current text from the editable textarea
   const tx = document.getElementById('ot-tx-' + secId + '-' + idx);
   if (tx) item.message = tx.value || item.message;
-  if (!item.message.trim()) { alert('Message is empty.'); return; }
+  if (!item.message.trim()) { if (!opts.silent) alert('Message is empty.'); return false; }
   // No key needed in browser — sendPeriskopeMessage routes via the gateway.
   const card = document.getElementById('ot-card-' + secId + '-' + idx);
   const status = document.getElementById('ot-status-' + secId + '-' + idx);
@@ -8684,19 +10650,22 @@ async function executeOutreach(secId, idx) {
   let res;
   let resGroup = null;
   const gwKind = outreachTypeToKind(item.type);
+  // v1.243 — pass item.imageUrl so Weekly Reach Out attaches the header
+  // image; other categories leave it undefined and send text-only.
+  const sendOpts = item.imageUrl ? { imageUrl: item.imageUrl } : undefined;
   if (item.kind === 'dm') {
     const intl = toIntlDigits(item.k10);
-    res = await sendToChatId(intl + '@c.us', item.message, gwKind);
+    res = await sendToChatId(intl + '@c.us', item.message, gwKind, sendOpts);
   } else if (item.kind === 'group') {
-    res = await sendToChatId(item.cohortChatId, item.message, gwKind);
+    res = await sendToChatId(item.cohortChatId, item.message, gwKind, sendOpts);
   } else { // both
     const intl = toIntlDigits(item.k10);
     if (status) status.textContent = 'Sending DM…';
-    res = await sendToChatId(intl + '@c.us', item.message, gwKind);
+    res = await sendToChatId(intl + '@c.us', item.message, gwKind, sendOpts);
     if (res.ok) {
       await new Promise(r => setTimeout(r, 1000));
       if (status) status.textContent = 'Sending to group…';
-      resGroup = await sendToChatId(item.cohortChatId, item.message, gwKind);
+      resGroup = await sendToChatId(item.cohortChatId, item.message, gwKind, sendOpts);
     }
   }
   const allOk = res.ok && (item.kind !== 'both' || (resGroup && resGroup.ok));
@@ -8717,6 +10686,59 @@ async function executeOutreach(secId, idx) {
     if (btnSend) btnSend.disabled = false;
     if (btnSkip) btnSkip.disabled = false;
   }
+  return allOk;
+}
+
+// v1.286 — Per-customer selection for bulk send. Checkbox on each weekly
+// row + a "Select all" header toggle drive a "Send selected (N)" button.
+function _weeklyCheckboxes() {
+  return Array.from(document.querySelectorAll('#ot-list .ot-wk-check'));
+}
+function updateWeeklySelCount() {
+  const boxes = _weeklyCheckboxes();
+  const checked = boxes.filter(b => b.checked);
+  const btn = document.getElementById('ot-wk-sendsel');
+  if (btn) {
+    btn.textContent = `📤 Send selected (${checked.length})`;
+    btn.disabled = checked.length === 0;
+  }
+  const all = document.getElementById('ot-wk-selectall');
+  if (all) {
+    all.checked = boxes.length > 0 && checked.length === boxes.length;
+    all.indeterminate = checked.length > 0 && checked.length < boxes.length;
+  }
+}
+function toggleSelectAllWeekly(el) {
+  _weeklyCheckboxes().forEach(b => { b.checked = el.checked; });
+  updateWeeklySelCount();
+}
+// Send only the checked rows. Sequential with a delay so the gateway isn't
+// hammered; reuses executeOutreach, so each send logs its cooldown and drops
+// off on the next render. Confirmation required — real WhatsApp messages.
+async function sendSelectedWeekly(btn) {
+  const idxs = _weeklyCheckboxes().filter(b => b.checked).map(b => +b.dataset.idx);
+  if (!idxs.length) { flashToast('Select at least one customer.'); return; }
+  if (!confirm(`Send the weekly message to ${idxs.length} selected customer(s)?\n\nThis sends real WhatsApp messages now, one after another.`)) return;
+  const orig = btn ? btn.textContent : '';
+  if (btn) btn.disabled = true;
+  const allEl = document.getElementById('ot-wk-selectall');
+  if (allEl) allEl.disabled = true;
+  let ok = 0, fail = 0;
+  for (let n = 0; n < idxs.length; n++) {
+    if (btn) btn.textContent = `Sending ${n + 1}/${idxs.length}…`;
+    let success = false;
+    try { success = await executeOutreach('weekly', idxs[n], { silent: true }); } catch (e) { success = false; }
+    success ? ok++ : fail++;
+    // Randomised 1–3s gap between sends so the pattern doesn't look automated.
+    if (n < idxs.length - 1) {
+      const gap = 1000 + Math.floor(Math.random() * 2001); // 1000–3000 ms
+      await new Promise(r => setTimeout(r, gap));
+    }
+  }
+  if (btn) btn.disabled = false;
+  if (allEl) allEl.disabled = false;
+  flashToast(`✓ Sent ${ok}${fail ? ' · ' + fail + ' failed' : ''}`);
+  renderWeeklyReachOutPage();
 }
 
 // ─── Settings modal ───
@@ -9954,7 +11976,7 @@ async function sendPeriskopeMessage({ chatId, toPhone, message, kind, media, rep
   const logBase = {
     kind: resolvedKind,
     chatId: resolvedChatId,
-    message: (message || '').slice(0, 200),
+    message: (message || '').slice(0, 2000), // v1.252 — was 200; need full text for "Sent this week" replay
     via: 'gateway',
   };
 
@@ -10111,9 +12133,17 @@ function outreachTypeToKind(t) {
 // Backwards-compat wrappers. `kind` is REQUIRED for new callsites — the gateway
 // rejects sends without one. Old callsites that omit `kind` log a warning and
 // fall through with 'admin-notification' (no dedup) so nothing silently breaks.
-function sendToChatId(chatId, message, kind) {
+function sendToChatId(chatId, message, kind, opts) {
   if (!kind) console.warn('[periskope] sendToChatId called without kind; defaulting to admin-notification', { chatId });
-  return sendPeriskopeMessage({ chatId, message, kind: kind || 'admin-notification' });
+  // v1.243 — optional image attachment. When opts.imageUrl is set, the
+  // gateway's existing /send route forwards a `media` object to Periskope
+  // so the image renders as a WhatsApp image-with-caption (single
+  // notification, one bubble). The gateway already accepts media; no
+  // worker changes needed. See ferra-periskope-gateway/worker.js L725-736.
+  const media = opts && opts.imageUrl
+    ? { type: 'image', url: opts.imageUrl, filename: 'weekly-progress-header.jpeg', mimetype: 'image/jpeg' }
+    : undefined;
+  return sendPeriskopeMessage({ chatId, message, kind: kind || 'admin-notification', media });
 }
 function sendViaPeriskope(toPhone, message, kind) {
   if (!kind) console.warn('[periskope] sendViaPeriskope called without kind; defaulting to admin-notification', { toPhone });
@@ -10348,7 +12378,20 @@ function refreshUploadButtonsAfterDataLoad() {
 }
 
 // ─── Auto-load latest JSON: Firebase → data/ folder → upload UI ───
+let __autoLoadInFlight = false;
 async function tryAutoLoad() {
+  // v1.260 — re-entry guard. Without this, a second onAuth tick during
+  // a chunked download (e.g. anonymous → real-user resolved mid-load)
+  // could fire a parallel loader, double-populate, and confuse the UI.
+  if (__autoLoadInFlight) return;
+  __autoLoadInFlight = true;
+  try {
+    return await _tryAutoLoadImpl();
+  } finally {
+    __autoLoadInFlight = false;
+  }
+}
+async function _tryAutoLoadImpl() {
   // 1) Try Firebase first
   setUploadStatus('Checking cloud for the latest data…');
   const cloudOk = await tryLoadFromFirebase();
@@ -10385,7 +12428,7 @@ async function tryAutoLoad() {
       return;
     } catch { /* try next */ }
   }
-  setUploadStatus('No data found. <button class="btn-secondary" onclick="cloudDiagnose()" style="font-size:11px;padding:3px 8px;margin:0 6px">🔍 Diagnose cloud</button> Drop a JSON below or save as <code>data/latest.json</code>.');
+  setUploadStatus('No data found yet. <button class="btn-purple" onclick="tryAutoLoad()" style="font-size:12px;padding:4px 10px;margin:0 6px">↻ Retry</button> <button class="btn-secondary" onclick="cloudDiagnose()" style="font-size:11px;padding:3px 8px;margin:0 6px">🔍 Diagnose cloud</button> <span class="hint">or drop a JSON below.</span>');
 }
 function setUploadStatus(html) {
   const el = document.getElementById('upload-status');
@@ -10440,11 +12483,23 @@ async function tryLoadFromFirebase() {
         const progress = `chunk ${i + 1}/${meta.chunkCount}` + (totalKb ? ` (~${totalKb} KB total)` : '');
         setCloudStatus('☁ Cloud: loading ' + progress + '…');
         setUploadStatus('Loading from cloud · ' + progress + '… <span style="color:#888">(can take a few seconds)</span>');
-        // Per-chunk timeout (15s) so we don't hang forever on a slow connection
-        const part = await Promise.race([
+        // v1.260 — per-chunk timeout raised to 30s with one auto-retry.
+        // Was 15s single-shot; on a slow 4G the first chunk often hits
+        // the wire and times out, then the whole load fails. With one
+        // retry we get two 30s budgets per chunk and recover from
+        // transient hiccups without giving up on "No data found".
+        const fetchChunk = () => Promise.race([
           window.fb.get('ferraDataChunks/' + i).then(s => s.val()),
-          new Promise((_, rej) => setTimeout(() => rej(new Error('chunk ' + i + ' timeout after 15s')), 15000)),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('chunk ' + i + ' timeout after 30s')), 30000)),
         ]);
+        let part;
+        try {
+          part = await fetchChunk();
+        } catch (firstErr) {
+          setCloudStatus('☁ Cloud: ' + progress + ' slow, retrying…');
+          setUploadStatus('Slow network · ' + progress + ' retrying once…');
+          part = await fetchChunk();
+        }
         if (typeof part !== 'string') {
           setCloudStatus('☁ Cloud: missing chunk ' + i, 'err');
           setUploadStatus('Cloud chunk ' + i + ' missing — drop a JSON below.');
@@ -10479,8 +12534,28 @@ async function tryLoadFromFirebase() {
     return true;
   } catch (err) {
     console.error('Firebase load failed', err);
-    setCloudStatus('☁ Cloud: load failed (' + err.message + ')', 'err');
-    setUploadStatus('Cloud load failed: ' + esc(err.message) + '. Drop a JSON below.');
+    // v1.260 — reason-aware copy so the operator knows WHY instead of
+    // a generic "No data found / Drop a JSON". Permission_denied is the
+    // common case after the iframe cascade flips them anonymous mid-
+    // download — we should send them back to the login overlay rather
+    // than ask them to drop a JSON.
+    const msg = String(err && err.message || err || '');
+    const code = String((err && err.code) || '').toUpperCase();
+    const isPermission = code === 'PERMISSION_DENIED' || /permission[_ ]denied/i.test(msg);
+    const isTimeout = /timeout/i.test(msg);
+    if (isPermission) {
+      setCloudStatus('☁ Cloud: session expired — sign in to reload', 'err');
+      setUploadStatus('Session expired — sign back in to reload cloud data. <button class="btn-purple" onclick="showLoginOverlay()" style="font-size:12px;padding:4px 10px;margin-left:6px">Sign in</button>');
+      // Pop the login overlay automatically so the operator doesn't get
+      // stuck on the upload screen wondering what to do.
+      try { showLoginOverlay(); } catch (_) {}
+    } else if (isTimeout) {
+      setCloudStatus('☁ Cloud: network slow — load timed out', 'err');
+      setUploadStatus('Network is slow — cloud download timed out. <button class="btn-purple" onclick="tryAutoLoad()" style="font-size:12px;padding:4px 10px;margin-left:6px">↻ Retry</button> <span class="hint">or drop a JSON below.</span>');
+    } else {
+      setCloudStatus('☁ Cloud: load failed (' + esc(msg) + ')', 'err');
+      setUploadStatus('Cloud load failed: ' + esc(msg) + '. <button class="btn-purple" onclick="tryAutoLoad()" style="font-size:12px;padding:4px 10px;margin-left:6px">↻ Retry</button> <span class="hint">or drop a JSON below.</span>');
+    }
     return false;
   }
 }
@@ -11870,7 +13945,37 @@ function showAchievements() {
   if (badge) badge.textContent = total;
 }
 function renderTabAccountSelectorsSafe() { /* retired in v1.187 — single account / gateway */ }
+// v1.241 — keep the new view-switcher <select> in sync with the active
+// view name AND pull the latest counts from the legacy view-tab-*-count
+// spans (which various render*/load* functions still write to).
+function syncViewSwitcher(activeName) {
+  const sel = document.getElementById('view-switcher');
+  if (!sel) return;
+  const cnt = (id) => {
+    const el = document.getElementById(id);
+    const v = (el?.textContent || '').trim();
+    return v ? ' (' + v + ')' : '';
+  };
+  const labels = {
+    calendar:   '📅 Calendar',
+    groupmap:   '📇 Group mapping' + cnt('view-tab-gm-count'),
+    analysis:   '📊 Analysis' + cnt('view-tab-an-count'),
+    onboarding: '📅 Onboarding' + cnt('view-tab-onb-count'),
+    replies:    '💬 Replies' + cnt('view-tab-rep-count'),
+    outreach:   '🎯 Outreach' + cnt('view-tab-outreach-count'),
+  };
+  for (const opt of sel.options) {
+    if (labels[opt.value]) opt.textContent = labels[opt.value];
+  }
+  if (activeName) sel.value = activeName;
+}
 function switchView(name) {
+  // v1.251 — track the active view so the auth handler can re-render
+  // it on re-sign-in after a cascade flips AA anonymous.
+  window.__activeView = name;
+  // v1.242 — 'weekly' alias for 'outreach' pane. Same DOM; render swaps.
+  const isWeekly = name === 'weekly';
+  if (isWeekly) name = '_weekly_pseudo'; // sentinel so the pane-loop below shows outreach via fall-through
   const panes = {
     calendar:    document.getElementById('view-calendar'),
     achievements: document.getElementById('view-achievements'),
@@ -11890,9 +13995,22 @@ function switchView(name) {
     outreach:    document.getElementById('view-tab-outreach'),
   };
   for (const k of Object.keys(panes)) {
-    if (panes[k]) panes[k].style.display = (k === name) ? '' : 'none';
-    if (tabs[k]) tabs[k].classList.toggle('active', k === name);
+    const shouldShow = isWeekly ? (k === 'outreach') : (k === name);
+    if (panes[k]) panes[k].style.display = shouldShow ? '' : 'none';
+    if (tabs[k]) tabs[k].classList.toggle('active', !isWeekly && k === name);
   }
+  // v1.241 — keep the view-switcher dropdown in sync + refresh option labels
+  // with the live counts that the hidden view-tab-*-count spans carry.
+  if (typeof syncViewSwitcher === 'function') syncViewSwitcher(isWeekly ? 'weekly' : name);
+  if (isWeekly) {
+    // v1.242 — render Weekly Reach Out into the Outreach pane's DOM.
+    if (typeof renderWeeklyReachOutPage === 'function') renderWeeklyReachOutPage();
+    return; // skip the per-tab branches below
+  }
+  // Coming back from weekly → outreach: restore the category dropdown row
+  // that renderWeeklyReachOutPage hid.
+  const catRow = document.querySelector('#view-outreach .ot-cat-row');
+  if (catRow) catRow.style.display = '';
   if (name === 'achievements') showAchievements();
   if (name === 'groupmap') showGroupMap();
   if (name === 'analysis') renderAnalysis();
@@ -11901,6 +14019,12 @@ function switchView(name) {
   if (name === 'onboarding') { ensureOnboardingSubscribed(); renderOnboardingPage(); }
   if (name === 'replies') { ensureRepliesSubscribed(); renderRepliesPage(); renderTabAccountSelectorsSafe(); }
   if (name === 'outreach') { ensureOutreachLogSubscribed(); renderOutreachPage(); renderTabAccountSelectorsSafe(); }
+  else {
+    // v1.233 — hide the body-mounted Outreach chat iframe when leaving the
+    // Outreach tab. Otherwise it stays painted over other panes.
+    if (typeof _otCommIframe !== 'undefined' && _otCommIframe) _otCommIframe.style.display = 'none';
+    if (typeof hideOutreachCommLoading === 'function') hideOutreachCommLoading();
+  }
   if (name === 'groupmap') { renderTabAccountSelectorsSafe(); }
   if (name === 'achievements' || name === 'calendar' || name === 'onboarding') renderTabAccountSelectorsSafe();
 }
